@@ -30,11 +30,8 @@ Graph::~Graph()
 
 Hyperedges Graph::createDomain(const UniqueId uid, const std::string& name)
 {
-    if (!create(uid, name).empty())
-    {
-        isA(Hyperedges{uid}, Graph::DomainId);
+    if (!isA(create(uid, name), Hyperedges{Graph::DomainId}).empty())
         return Hyperedges{uid};
-    }
     return Hyperedges();
 }
 
