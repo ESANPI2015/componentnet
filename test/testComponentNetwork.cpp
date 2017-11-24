@@ -15,7 +15,7 @@ int main(void)
     std::cout << cnd.createComponent("MySecondComponent", "B") << "\n";
 
     std::cout << "> Create common interface class\n";
-    std::cout << cnd.createInterface("CommonInterface", "x") << "\n";
+    std::cout << cnd.createInterface("CommonInterface", "Interface") << "\n";
 
     std::cout << "> Each component shall get two common interfaces\n";
     std::cout << cnd.hasInterface(Hyperedges{"MyFirstComponent"},  cnd.instantiateFrom(Hyperedges{"CommonInterface"}, "x")) << "\n";
