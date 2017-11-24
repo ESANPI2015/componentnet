@@ -23,6 +23,22 @@ int main(void)
     std::cout << cnd.hasInterface(Hyperedges{"MySecondComponent"}, cnd.instantiateFrom(Hyperedges{"CommonInterface"}, "u")) << "\n";
     std::cout << cnd.hasInterface(Hyperedges{"MySecondComponent"}, cnd.instantiateFrom(Hyperedges{"CommonInterface"}, "v")) << "\n";
 
+    std::cout << "> Instantiate components and connect their interfaces\n";
+    std::cout << cnd.instantiateComponent(Hyperedges{"MyFirstComponent", "MySecondComponent"}) << "\n";
+
+    std::cout << "> Query their interfaces\n";
+    std::cout << cnd.interfacesOf(Hyperedges{"MyFirstComponent1","MySecondComponent1"}) << "\n";
+
+    std::cout << "> Connect interface y of A to interface u of B\n";
+    std::cout << cnd.connectInterface(cnd.interfacesOf(Hyperedges{"MyFirstComponent1"},"y"), cnd.interfacesOf(Hyperedges{"MySecondComponent1"},"u")) << "\n";
+
+    std::cout << "> Make the components part of a network\n";
+    std::cout << cnd.partOfNetwork(Hyperedges{"MyFirstComponent1", "MySecondComponent1"}, cnd.createNetwork("MyFirstNetwork","C")) << "\n";
+
+    // TODO: Make this a convenient function
+    std::cout << "> Export interfaces to network level\n";
+    std::cout << cnd.hasInterface(Hyperedges{"MyFirstNetwork"}, unite(cnd.interfacesOf(Hyperedges{"MyFirstComponent1"},"x"), cnd.interfacesOf(Hyperedges{"MySecondComponent1"},"v"))) << "\n";
+
     std::cout << "> Store component network using YAML" << std::endl;
     YAML::Node test;
     test = static_cast<Hypergraph*>(&cnd);

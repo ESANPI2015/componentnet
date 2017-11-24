@@ -47,9 +47,9 @@ class Network : public Domain::Graph
         void createMainConcepts();
 
         // Create classes
-        Hyperedges createComponent(const UniqueId& uid, const std::string& name="");
-        Hyperedges createInterface(const UniqueId& uid, const std::string& name="");
-        Hyperedges createNetwork(const UniqueId& uid, const std::string& name="");
+        Hyperedges createComponent(const UniqueId& uid, const std::string& name="Component");
+        Hyperedges createInterface(const UniqueId& uid, const std::string& name="Interface");
+        Hyperedges createNetwork(const UniqueId& uid, const std::string& name="Network");
         // Create individuals
         Hyperedges instantiateComponent(const Hyperedges& componentIds);
 
@@ -61,6 +61,8 @@ class Network : public Domain::Graph
         Hyperedges components(const std::string& name="", const std::string& className="");
         Hyperedges interfaces(const std::string& name="", const std::string& className="");
         Hyperedges networks(const std::string& name="", const std::string& className="");
+        // Query component interfaces
+        Hyperedges interfacesOf(const Hyperedges& componentIds, const std::string& name="");
 
         // Specify a component
         Hyperedges hasInterface(const Hyperedges& componentIds, const Hyperedges& interfaceIds);

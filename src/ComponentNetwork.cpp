@@ -41,17 +41,23 @@ void Network::createMainConcepts()
 
 Hyperedges Network::createComponent(const UniqueId& uid, const std::string& name)
 {
-    return isA(create(uid, name), Hyperedges{Network::ComponentId});
+    if(!isA(create(uid, name), Hyperedges{Network::ComponentId}).empty())
+        return Hyperedges{uid};
+    return Hyperedges();
 }
 
 Hyperedges Network::createInterface(const UniqueId& uid, const std::string& name)
 {
-    return isA(create(uid, name), Hyperedges{Network::InterfaceId});
+    if (!isA(create(uid, name), Hyperedges{Network::InterfaceId}).empty())
+        return Hyperedges{uid};
+    return Hyperedges();
 }
 
 Hyperedges Network::createNetwork(const UniqueId& uid, const std::string& name)
 {
-    return isA(create(uid, name), Hyperedges{Network::NetworkId});
+    if (!isA(create(uid, name), Hyperedges{Network::NetworkId}).empty())
+        return Hyperedges{uid};
+    return Hyperedges();
 }
 Hyperedges Network::componentClasses(const std::string& name)
 {
@@ -118,4 +124,11 @@ Hyperedges Network::partOfNetwork(const Hyperedges& componentIds, const Hyperedg
         return CommonConceptGraph::relateFrom(fromIds, toIds, Network::PartOfNetworkId);
     return Hyperedges();
 }
+Hyperedges Network::interfacesOf(const Hyperedges& componentIds, const std::string& name)
+{
+    Hyperedges children(childrenOf(componentIds,name));
+    Hyperedges ifs(interfaces(name));
+    return intersect(children, ifs);
+}
+
 }
