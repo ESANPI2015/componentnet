@@ -2,73 +2,46 @@
 
 namespace Domain {
 
-// UniqueIds
-const UniqueId Graph::DomainId = "DomainSpecific::Graph::Domain";
-const UniqueId Graph::PartOfDomainId = "DomainSpecific::Graph::PartOf";
-
-void Graph::createMainConcepts()
+Graph::Graph(const UniqueId& uid, const std::string& name)
 {
-    create(Graph::DomainId, "DOMAIN");
-    relate(Graph::PartOfDomainId, Hyperedges{Conceptgraph::IsConceptId, Conceptgraph::IsRelationId}, Hyperedges{Graph::DomainId}, "PART-OF");
-    subrelationOf(Hyperedges{Graph::PartOfDomainId}, Hyperedges{CommonConceptGraph::PartOfId});
+    Conceptgraph::create(uid, name);
+    domainId = uid;
 }
 
-Graph::Graph()
-{
-    createMainConcepts();
-}
-
-Graph::Graph(CommonConceptGraph& A)
+Graph::Graph(CommonConceptGraph& A, const UniqueId& uid, const std::string& name)
 : CommonConceptGraph(A)
 {
-    createMainConcepts();
+    Conceptgraph::create(uid, name);
+    domainId = uid;
 }
 
 Graph::~Graph()
 {
 }
 
-Hyperedges Graph::createDomain(const UniqueId uid, const std::string& name)
+Hyperedges Graph::create(const UniqueId& uid, const std::string& label)
 {
-    if (!isA(create(uid, name), Hyperedges{Graph::DomainId}).empty())
-        return Hyperedges{uid};
-    return Hyperedges();
+    Hyperedges uids = Conceptgraph::create(uid, label);
+    return addToDomain(uids);
 }
 
-Hyperedges Graph::findDomainBy(const std::string& name)
+Hyperedges Graph::addToDomain(const Hyperedges& uids)
 {
-    return subclassesOf(Hyperedges{Graph::DomainId}, name);
+    if (CommonConceptGraph::partOf(uids, Hyperedges{domainId}).empty())
+        return Hyperedges();
+    return uids;
 }
 
-Hyperedges Graph::partsOfDomain(const Hyperedges uids, const std::string& name)
+Hyperedges Graph::filterByDomain(const Hyperedges& uids, const std::string& name)
 {
-    // Get and filter domains
-    Hyperedges domains(findDomainBy());
-    domains = intersect(domains, uids);
-    // Get parts and filter by concept
-    Hyperedges parts(partsOf(domains, name));
-    return parts;
+    return intersect(partsOfDomain(name), uids);
 }
 
-Hyperedges Graph::conceptsOfDomain(const Hyperedges uids, const std::string& name)
+Hyperedges Graph::partsOfDomain(const std::string& name)
 {
-    // Get parts and filter by concept
-    Hyperedges parts(partsOfDomain(uids, name));
-    parts = intersect(parts, Conceptgraph::find(name));
-    return parts;
+    Hyperedges parts(partsOf(Hyperedges{domainId}, name));
+    Hyperedges subsOfParts(subclassesOf(parts, name));
+    Hyperedges instOfSubs(instancesOf(subsOfParts, name));
+    return unite(parts, unite(subsOfParts, instOfSubs));
 }
-
-Hyperedges Graph::relationsOfDomain(const Hyperedges uids, const std::string& name)
-{
-    // Get parts and filter by relation
-    Hyperedges parts(partsOfDomain(uids, name));
-    parts = intersect(parts, Conceptgraph::relations(name));
-    return parts;
-}
-
-Hyperedges Graph::partOfDomain(const Hyperedges& conceptOrRelationIds, const Hyperedges& domainIds)
-{
-    return relateFrom(conceptOrRelationIds, domainIds, Graph::PartOfDomainId);
-}
-
 }

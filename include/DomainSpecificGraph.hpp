@@ -9,54 +9,40 @@ namespace Domain {
     This subclass of the CommonConceptGraph class
     introduces the concept of DOMAIN
 
-    This DOMAIN can partition the space of CONCEPTS & RELATIONS into domain specific variants
+    A domain could be a container of concepts which are PARTS of the domain.
+    It can also be seen as an upper most superclass of all the concepts in the domain.
 
-    Main conept(s):
-    DOMAIN
-
-    Main relation(s):
-    CONCEPT <-- PART-OF --> DOMAIN
-    RELATION <-- PART-OF --> DOMAIN
+    The most sound thing would be:
+    * Make things part-of the domain
+    * When checking for membership, we have to check the parts as well as the subclasses & instances of these parts
 */
 
 class Graph;
 
 class Graph : public CommonConceptGraph
 {
-    public:
-        // Ids for identifiing main concepts
-        static const UniqueId DomainId;
-        // Ids for identifiing main relations
-        static const UniqueId PartOfDomainId;
+    private:
+        // The domainId to be used
+        UniqueId domainId;
 
+    public:
         // Constructor/Destructor
-        Graph();
-        Graph(CommonConceptGraph& A);
+        Graph(const UniqueId& uid="UnspecifiedDomainId", const std::string& name="UnspecifiedDomainName");
+        Graph(CommonConceptGraph& A, const UniqueId& uid="UnspecifiedDomainId", const std::string& name="UnspecifiedDomainName");
         ~Graph();
 
-        // Creates the main concepts
-        void createMainConcepts();
+        // Now we could override the create function.
+        // That means whenever a derived class calls create(uid, name) or create(uid) it will implicitly create a PART-OF relation
+        Hyperedges create(const UniqueId& uid, const std::string& label="");
 
-        // Factory functions
-        // Creates a new domain with a specific UID and label
-        Hyperedges createDomain(const UniqueId uid, const std::string& name="Domain");
+        // add given uids to domain
+        Hyperedges addToDomain(const Hyperedges& uids);
 
-        // Queries
-        // Returns all domains with a specific name
-        Hyperedges findDomainBy(const std::string& name="");
-        // Returns all things belonging to a specific domain
-        Hyperedges partsOfDomain(const Hyperedges uids, const std::string& name="");
-        // Returns all concepts belonging to a specific domain
-        Hyperedges conceptsOfDomain(const Hyperedges uids, const std::string& name="");
-        Hyperedges relationsOfDomain(const Hyperedges uids, const std::string& name="");
-        bool isPartOfDomain(const Hyperedges partIds, const Hyperedges domainIds)
-        {
-            return subtract(partIds, partsOfDomain(domainIds)).empty();
-        }
+        // Return all parts of the domain
+        Hyperedges partsOfDomain(const std::string& name="");
 
-        // Facts
-        // Adds concepts to domains
-        Hyperedges partOfDomain(const Hyperedges& conceptOrRelationIds, const Hyperedges& domainIds);
+        // Filter out all Hyperedges which are not part of domain
+        Hyperedges filterByDomain(const Hyperedges& uids, const std::string& name="");
 };
 
 }

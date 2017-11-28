@@ -1,9 +1,8 @@
 # Domain Specific Graphs
 
 Library &amp; tools based on concept graphs to
-* define domains which contain subsets of concepts and relations belonging to them
-* define the domain of components with interfaces
-* define the domain of component networks
+* define components and networks thereof
+* derive domain specific component networks
 
 Starting from the common concept graphs defined in the hypergraph library
 the domain concept is introduced (see DomainSpecificGraph class).
