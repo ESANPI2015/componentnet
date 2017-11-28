@@ -1,12 +1,12 @@
 #ifndef _COMPONENT_NETWORK_HPP
 #define _COMPONENT_NETWORK_HPP
 
-#include "DomainSpecificGraph.hpp"
+#include "CommonConceptGraph.hpp"
 
 namespace Component {
 
 /*
-    This subclass of the DomainSpecificGraph class
+    This subclass of the CommonConceptGraph class
     introduces the notion of COMPONENT, INTERFACE, CONNECTOR & NETWORK
 
     Main concept(s):
@@ -26,7 +26,7 @@ namespace Component {
 
 class Network;
 
-class Network : public Domain::Graph
+class Network : public CommonConceptGraph
 {
     public:
         // Ids for identifiing main concepts
@@ -40,7 +40,7 @@ class Network : public Domain::Graph
 
         // Constructor/Destructor
         Network();
-        Network(Domain::Graph& A);
+        Network(CommonConceptGraph& A);
         ~Network();
 
         // Creates the main concepts

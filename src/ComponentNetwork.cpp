@@ -15,8 +15,8 @@ Network::Network()
     createMainConcepts();
 }
 
-Network::Network(Domain::Graph& A)
-: Domain::Graph(A)
+Network::Network(CommonConceptGraph& A)
+: CommonConceptGraph(A)
 {
     createMainConcepts();
 }
