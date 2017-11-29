@@ -47,16 +47,17 @@ class Network : public CommonConceptGraph
         void createMainConcepts();
 
         // Create classes
-        Hyperedges createComponent(const UniqueId& uid, const std::string& name="Component");
-        Hyperedges createInterface(const UniqueId& uid, const std::string& name="Interface");
-        Hyperedges createNetwork(const UniqueId& uid, const std::string& name="Network");
+        // TODO: Provide a create(uid, label, suids) function somewhere else!
+        Hyperedges createComponent(const UniqueId& uid, const std::string& name="Component", const Hyperedges& suids=Hyperedges());
+        Hyperedges createInterface(const UniqueId& uid, const std::string& name="Interface", const Hyperedges& suids=Hyperedges());
+        Hyperedges createNetwork(const UniqueId& uid, const std::string& name="Network", const Hyperedges& suids=Hyperedges());
         // Create individuals
         Hyperedges instantiateComponent(const Hyperedges& componentIds);
 
         // Query classes
-        Hyperedges componentClasses(const std::string& name="");
-        Hyperedges interfaceClasses(const std::string& name="");
-        Hyperedges networkClasses(const std::string& name="");
+        Hyperedges componentClasses(const std::string& name="", const Hyperedges& suids=Hyperedges());
+        Hyperedges interfaceClasses(const std::string& name="", const Hyperedges& suids=Hyperedges());
+        Hyperedges networkClasses(const std::string& name="", const Hyperedges& suids=Hyperedges());
         // Query individuals
         Hyperedges components(const std::string& name="", const std::string& className="");
         Hyperedges interfaces(const std::string& name="", const std::string& className="");

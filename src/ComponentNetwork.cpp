@@ -39,37 +39,46 @@ void Network::createMainConcepts()
     isA(Hyperedges{Network::NetworkId},Hyperedges{Network::ComponentId});
 }
 
-Hyperedges Network::createComponent(const UniqueId& uid, const std::string& name)
+Hyperedges Network::createComponent(const UniqueId& uid, const std::string& name, const Hyperedges& suids)
 {
-    if(!isA(create(uid, name), Hyperedges{Network::ComponentId}).empty())
+    if(!isA(create(uid, name), intersect(unite(Hyperedges{Network::ComponentId}, suids), componentClasses())).empty())
         return Hyperedges{uid};
     return Hyperedges();
 }
 
-Hyperedges Network::createInterface(const UniqueId& uid, const std::string& name)
+Hyperedges Network::createInterface(const UniqueId& uid, const std::string& name, const Hyperedges& suids)
 {
-    if (!isA(create(uid, name), Hyperedges{Network::InterfaceId}).empty())
+    if (!isA(create(uid, name), intersect(unite(Hyperedges{Network::InterfaceId}, suids), interfaceClasses())).empty())
         return Hyperedges{uid};
     return Hyperedges();
 }
 
-Hyperedges Network::createNetwork(const UniqueId& uid, const std::string& name)
+Hyperedges Network::createNetwork(const UniqueId& uid, const std::string& name, const Hyperedges& suids)
 {
-    if (!isA(create(uid, name), Hyperedges{Network::NetworkId}).empty())
+    if (!isA(create(uid, name), intersect(unite(Hyperedges{Network::NetworkId}, suids), networkClasses())).empty())
         return Hyperedges{uid};
     return Hyperedges();
 }
-Hyperedges Network::componentClasses(const std::string& name)
+Hyperedges Network::componentClasses(const std::string& name, const Hyperedges& suids)
 {
-    return subclassesOf(Hyperedges{Network::ComponentId}, name);
+    Hyperedges all(subclassesOf(Hyperedges{Network::ComponentId}, name));
+    if (!suids.empty())
+        all = intersect(all, subclassesOf(suids, name));
+    return all;
 }
-Hyperedges Network::interfaceClasses(const std::string& name)
+Hyperedges Network::interfaceClasses(const std::string& name, const Hyperedges& suids)
 {
-    return subclassesOf(Hyperedges{Network::InterfaceId}, name);
+    Hyperedges all(subclassesOf(Hyperedges{Network::InterfaceId}, name));
+    if (!suids.empty())
+        all = intersect(all, subclassesOf(suids, name));
+    return all;
 }
-Hyperedges Network::networkClasses(const std::string& name)
+Hyperedges Network::networkClasses(const std::string& name, const Hyperedges& suids)
 {
-    return subclassesOf(Hyperedges{Network::NetworkId}, name);
+    Hyperedges all(subclassesOf(Hyperedges{Network::NetworkId}, name));
+    if (!suids.empty())
+        all = intersect(all, subclassesOf(suids, name));
+    return all;
 }
 
 Hyperedges Network::instantiateComponent(const Hyperedges& componentIds)
