@@ -27,10 +27,12 @@ add_definitions(${domaingraph_PKGCONFIG_CFLAGS_OTHER} -ggdb --pedantic -Wall -st
 set(SOURCES
     src/DomainSpecificGraph.cpp
     src/ComponentNetwork.cpp
+    src/HardwareComputationalNetwork.cpp
     )
 set(HEADERS
     include/DomainSpecificGraph.hpp
     include/ComponentNetwork.hpp
+    include/HardwareComputationalNetwork.hpp
     )
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/")
@@ -49,6 +51,11 @@ RUNTIME DESTINATION bin)
 add_executable(testComponentNetwork test/testComponentNetwork.cpp)
 target_link_libraries(testComponentNetwork domaingraph)
 install(TARGETS testComponentNetwork
+RUNTIME DESTINATION bin)
+
+add_executable(testHWNetwork test/testHWNetwork.cpp)
+target_link_libraries(testHWNetwork domaingraph)
+install(TARGETS testHWNetwork
 RUNTIME DESTINATION bin)
 
 # pkg-config, to be installed:
