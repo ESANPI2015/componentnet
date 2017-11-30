@@ -81,6 +81,10 @@ Hyperedges Network::networkClasses(const std::string& name, const Hyperedges& su
     return all;
 }
 
+Hyperedges Network::instantiateComponent(const Hyperedges& componentIds, const std::string& newName)
+{
+    return instantiateDeepFrom(componentIds, newName);
+}
 Hyperedges Network::instantiateComponent(const Hyperedges& componentIds)
 {
     return instantiateDeepFrom(componentIds);
