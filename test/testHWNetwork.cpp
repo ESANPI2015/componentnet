@@ -81,59 +81,67 @@ int main(void)
 
     std::cout << "> Create real world example\n";
     // Create classes
-    // NOTE: The following reads as "Every mdaq2 is a DEVICE"
-    //Hyperedges mdaqSC = hwnet.createDevice("mdaq2");
-    //Hyperedges pcSC = hwnet.createDevice("PC");
-    //Hyperedges spineSC = hwnet.createDevice("spine_board");
-    //Hyperedges convSC = hwnet.createDevice("LVDS2USB");
-    //Hyperedges lvdsSC = hwnet.createInterface("LVDS");
-    //Hyperedges usbSC = hwnet.createInterface("USB");
-    //Hyperedges ndlcomSC = hwnet.createBus("NDLCom");
-    //Hyperedges usbBusSC = hwnet.createBus("USB");
-    // Define bus domains
-    //hwnet.connects(usbBusSC, usbSC);
-    //hwnet.connects(ndlcomSC, lvdsSC);
+    Hyperedges mdaqSC = hwnet.createDevice("DFKI::iStruct::mdaq2","mdaq2");
+    Hyperedges pcSC = hwnet.createDevice("PC","PC");
+    Hyperedges spineSC = hwnet.createDevice("DFKI::iStruct::spine_board","spine_board");
+    Hyperedges convSC = hwnet.createDevice("DFKI::LVDS2USB", "lvds2usb");
+    Hyperedges lvdsSC = hwnet.createInterface("LVDS","lvds");
+    Hyperedges usbSC = hwnet.createInterface("USB","usb");
+    Hyperedges ndlcomSC = hwnet.createBus("DFKI::iStruct::NDLCom", "NDLCom");
+    Hyperedges usbBusSC = hwnet.createBus("USB::P2P", "usb");
 
     // Create interfaces
     // NOTE: The following reads as "Every mdaq2 HAS a LVDS1 and a LVDS2 interface of class LVDS"
-    //Hyperedges id1 = hwnet.instantiateFrom(lvdsSC, "LVDS1");
-    //Hyperedges id2 = hwnet.instantiateFrom(lvdsSC, "LVDS2");
-    //hwnet.has(mdaqSC, unite(id1,id2));
-    //id1 = hwnet.instantiateFrom(lvdsSC, "LVDS1");
-    //id2 = hwnet.instantiateFrom(lvdsSC, "LVDS2");
-    //hwnet.has(spineSC, unite(id1,id2));
-    //id1 = hwnet.instantiateFrom(lvdsSC, "LVDS1");
-    //id2 = hwnet.instantiateFrom(usbSC, "USB1");
-    //hwnet.has(convSC, unite(id1,id2));
-    //id2 = hwnet.instantiateFrom(usbSC, "/dev/ttyUSB0");
-    //hwnet.has(pcSC, id2);
+    Hyperedges id1 = hwnet.instantiateFrom(lvdsSC, "lvds1");
+    Hyperedges id2 = hwnet.instantiateFrom(lvdsSC, "lvds2");
+    hwnet.hasInterface(mdaqSC, unite(id1,id2));
+    id1 = hwnet.instantiateFrom(lvdsSC, "lvds1");
+    id2 = hwnet.instantiateFrom(lvdsSC, "lvds2");
+    hwnet.hasInterface(spineSC, unite(id1,id2));
+    id1 = hwnet.instantiateFrom(lvdsSC, "lvds1");
+    id2 = hwnet.instantiateFrom(usbSC, "usb1");
+    hwnet.hasInterface(convSC, unite(id1,id2));
+    id2 = hwnet.instantiateFrom(usbSC, "/dev/ttyUSB0");
+    hwnet.hasInterface(pcSC, id2);
+
+    // Define bus domains
+    //hwnet.connects(usbBusSC, usbSC);
+    //hwnet.connects(ndlcomSC, lvdsSC);
+    // TODO: The busses have one interface to connect all others. Is this the way to go? Or should we make a BUS a component AND an interface?
+    hwnet.hasInterface(ndlcomSC, hwnet.instantiateFrom(lvdsSC, "lvds"));
+    hwnet.hasInterface(usbBusSC, unite(hwnet.instantiateFrom(usbSC, "usb0"), hwnet.instantiateFrom(usbSC, "usb1")));
 
     // The hardware graph now contains the models of the devices we want to instantiate and connect in the following
     // We start with instantiating one device, the interfaces we want to connect
     // NOTE: The following reads as "There is a TEST BOARD of type mdaq2"
-    //Hyperedges mdaqId = hwnet.instantiateDevice(mdaqSC, "TEST BOARD");
-    //Hyperedges spineId = hwnet.instantiateDevice(spineSC);
-    //Hyperedges convId = hwnet.instantiateDevice(convSC);
-    //Hyperedges laptopId = hwnet.instantiateDevice(pcSC, "My Laptop");
+    Hyperedges mdaqId = hwnet.instantiateComponent(mdaqSC, "TEST BOARD");
+    Hyperedges spineId = hwnet.instantiateComponent(spineSC);
+    Hyperedges convId = hwnet.instantiateComponent(convSC);
+    Hyperedges laptopId = hwnet.instantiateComponent(pcSC, "My Laptop");
 
     // We should now have the devices and the needed interfaces. It is time to connect them
     // NOTE: The following reads as "There is a bus of type NDLCom which connects a LVDS1 of TEST BOARD and LVDS1 of spine_board"
     //hwnet.instantiateBus(ndlcomSC, unite(hwnet.interfaces(mdaqId, "LVDS1"),hwnet.interfaces(spineId,"LVDS1")));
     //hwnet.instantiateBus(ndlcomSC, unite(hwnet.interfaces(convId, "LVDS1"),hwnet.interfaces(spineId,"LVDS2")));
     //hwnet.instantiateBus(usbBusSC, unite(hwnet.interfaces(convId, "USB1"),hwnet.interfaces(laptopId,"/dev/ttyUSB0")));
+    // TODO: We need a convenience function to make connections over busses more easy
+    hwnet.connectInterface(hwnet.interfacesOf(hwnet.instantiateComponent(ndlcomSC)), hwnet.interfacesOf(unite(convId,unite(mdaqId,spineId)), "lvds1"));
+    hwnet.connectInterface(hwnet.interfacesOf(Hyperedges{"DFKI::iStruct::NDLCom1"}), hwnet.interfacesOf(spineId, "lvds2"));
+    hwnet.connectInterface(hwnet.interfacesOf(hwnet.instantiateComponent(usbBusSC),"usb0"), hwnet.interfacesOf(convId,"usb1"));
+    hwnet.connectInterface(hwnet.interfacesOf(Hyperedges{"USB::P2P1"},"usb1"), hwnet.interfacesOf(laptopId,"/dev/ttyUSB0"));
 
     // We could now make the specific instances and the network they form PART-OF some X. This X would then represent all occurences of this setting/network.
 
-    //std::cout << "> Store hwnet using YAML" << std::endl;
-
-    //test = static_cast<Hypergraph*>(&hwnet);
-    //fout.open("demo.yml");
-    //if(fout.good()) {
-    //    fout << test;
-    //} else {
-    //    std::cout << "FAILED\n";
-    //}
-    //fout.close();
+    // Store real world example
+    std::cout << "> Store hwnet using YAML" << std::endl;
+    test = static_cast<Hypergraph*>(&hwnet);
+    fout.open("demo.yml");
+    if(fout.good()) {
+        fout << test;
+    } else {
+        std::cout << "FAILED\n";
+    }
+    fout.close();
 
 
     std::cout << "*** TEST DONE ***\n";
