@@ -28,11 +28,13 @@ set(SOURCES
     src/DomainSpecificGraph.cpp
     src/ComponentNetwork.cpp
     src/HardwareComputationalNetwork.cpp
+    src/SoftwareGraph.cpp
     )
 set(HEADERS
     include/DomainSpecificGraph.hpp
     include/ComponentNetwork.hpp
     include/HardwareComputationalNetwork.hpp
+    include/SoftwareGraph.hpp
     )
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/")
