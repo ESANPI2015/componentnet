@@ -44,17 +44,17 @@ class Network: public Component::Network
 
         // Factory functions
         // NOTE: These create classes, not individuals
-        Hyperedges createDevice(const UniqueId& uid, const std::string& name="Device");
-        Hyperedges createProcessor(const UniqueId& uid, const std::string& name="Processor");
-        Hyperedges createInterface(const UniqueId& uid, const std::string& name="Interface");
-        Hyperedges createBus(const UniqueId& uid, const std::string& name="Bus");
+        Hyperedges createDevice(const UniqueId& uid, const std::string& name="Device", const Hyperedges& suids=Hyperedges());
+        Hyperedges createProcessor(const UniqueId& uid, const std::string& name="Processor", const Hyperedges& suids=Hyperedges());
+        Hyperedges createInterface(const UniqueId& uid, const std::string& name="Interface", const Hyperedges& suids=Hyperedges());
+        Hyperedges createBus(const UniqueId& uid, const std::string& name="Bus", const Hyperedges& suids=Hyperedges());
 
         // Queries
         // NOTE: These return the subclasses of the corresponding main concepts
-        Hyperedges deviceClasses(const std::string& name="");
-        Hyperedges processorClasses(const std::string& name="");
-        Hyperedges interfaceClasses(const std::string& name="");
-        Hyperedges busClasses(const std::string& name="");
+        Hyperedges deviceClasses(const std::string& name="", const Hyperedges& suids=Hyperedges());
+        Hyperedges processorClasses(const std::string& name="", const Hyperedges& suids=Hyperedges());
+        Hyperedges interfaceClasses(const std::string& name="", const Hyperedges& suids=Hyperedges());
+        Hyperedges busClasses(const std::string& name="", const Hyperedges& suids=Hyperedges());
         // NOTE: These return the individuals of all the corresponding classes
         Hyperedges devices(const std::string& name="", const std::string& className="");
         Hyperedges processors(const std::string& name="", const std::string& className="");

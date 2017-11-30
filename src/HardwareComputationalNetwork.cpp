@@ -18,7 +18,7 @@ void Network::createMainConcepts()
     createComponent(Network::DeviceId, "DEVICE");
     isA(Hyperedges{Network::DeviceId}, Hyperedges{Component::Network::NetworkId}); // Make devices also networks
     createComponent(Network::ProcessorId, "PROCESSOR", Hyperedges{Network::DeviceId});
-    createInterface(Network::InterfaceId, "INTERFACE");
+    Component::Network::createInterface(Network::InterfaceId, "INTERFACE");
     createComponent(Network::BusId, "BUS");
 }
 
@@ -38,44 +38,48 @@ Network::~Network()
 {
 }
 
-Hyperedges Network::processorClasses(const std::string& name)
+Hyperedges Network::processorClasses(const std::string& name, const Hyperedges& suids)
 {
-    return componentClasses(name, Hyperedges{Network::ProcessorId});
+    Hyperedges all(componentClasses(name, Hyperedges{Network::ProcessorId}));
+    return suids.empty() ? all : intersect(all, subclassesOf(suids, name));
 }
 
-Hyperedges Network::deviceClasses(const std::string& name)
+Hyperedges Network::deviceClasses(const std::string& name, const Hyperedges& suids)
 {
-    return componentClasses(name, Hyperedges{Network::DeviceId});
+    Hyperedges all(componentClasses(name, Hyperedges{Network::DeviceId}));
+    return suids.empty() ? all : intersect(all, subclassesOf(suids, name));
 }
 
-Hyperedges Network::interfaceClasses(const std::string& name)
+Hyperedges Network::interfaceClasses(const std::string& name, const Hyperedges& suids)
 {
-    return Component::Network::interfaceClasses(name, Hyperedges{Network::InterfaceId});
+    Hyperedges all(Component::Network::interfaceClasses(name, Hyperedges{Network::InterfaceId}));
+    return suids.empty() ? all : intersect(all, subclassesOf(suids, name));
 }
 
-Hyperedges Network::busClasses(const std::string& name)
+Hyperedges Network::busClasses(const std::string& name, const Hyperedges& suids)
 {
-    return componentClasses(name, Hyperedges{Network::BusId});
+    Hyperedges all(componentClasses(name, Hyperedges{Network::BusId}));
+    return suids.empty() ? all : intersect(all, subclassesOf(suids, name));
 }
 
-Hyperedges Network::createProcessor(const UniqueId& uid, const std::string& name)
+Hyperedges Network::createProcessor(const UniqueId& uid, const std::string& name, const Hyperedges& suids)
 {
-    return createComponent(uid, name, Hyperedges{Network::ProcessorId});
+    return createComponent(uid, name, suids.empty() ? Hyperedges{Network::ProcessorId} : intersect(processorClasses(), suids));
 }
 
-Hyperedges Network::createDevice(const UniqueId& uid, const std::string& name)
+Hyperedges Network::createDevice(const UniqueId& uid, const std::string& name, const Hyperedges& suids)
 {
-    return createComponent(uid, name, Hyperedges{Network::DeviceId});
+    return createComponent(uid, name, suids.empty() ? Hyperedges{Network::DeviceId} : intersect(deviceClasses(), suids));
 }
 
-Hyperedges Network::createInterface(const UniqueId& uid, const std::string& name)
+Hyperedges Network::createInterface(const UniqueId& uid, const std::string& name, const Hyperedges& suids)
 {
-    return Component::Network::createInterface(uid, name, Hyperedges{Network::InterfaceId});
+    return Component::Network::createInterface(uid, name, suids.empty() ? Hyperedges{Network::InterfaceId} : intersect(interfaceClasses(), suids));
 }
 
-Hyperedges Network::createBus(const UniqueId& uid, const std::string& name)
+Hyperedges Network::createBus(const UniqueId& uid, const std::string& name, const Hyperedges& suids)
 {
-    return createComponent(uid,name, Hyperedges{Network::BusId});
+    return createComponent(uid, name, suids.empty() ? Hyperedges{Network::BusId} : intersect(busClasses(), suids));
 }
 
 Hyperedges Network::devices(const std::string& name, const std::string& className)
