@@ -40,7 +40,7 @@ class Network : public CommonConceptGraph
 
         // Constructor/Destructor
         Network();
-        Network(CommonConceptGraph& A);
+        Network(const Hypergraph& A);
         ~Network();
 
         // Creates the main concepts

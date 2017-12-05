@@ -28,7 +28,7 @@ class Graph : public CommonConceptGraph
     public:
         // Constructor/Destructor
         Graph(const UniqueId& uid="UnspecifiedDomainId", const std::string& name="UnspecifiedDomainName");
-        Graph(CommonConceptGraph& A, const UniqueId& uid="UnspecifiedDomainId", const std::string& name="UnspecifiedDomainName");
+        Graph(const Hypergraph& A, const UniqueId& uid="UnspecifiedDomainId", const std::string& name="UnspecifiedDomainName");
         ~Graph();
 
         // Now we could override the create function.

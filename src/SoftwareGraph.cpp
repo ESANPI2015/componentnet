@@ -44,7 +44,7 @@ Graph::Graph()
     createMainConcepts();
 }
 
-Graph::Graph(Component::Network& A)
+Graph::Graph(const Hypergraph& A)
 : Component::Network(A)
 {
     createMainConcepts();

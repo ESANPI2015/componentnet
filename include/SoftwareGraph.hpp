@@ -64,7 +64,7 @@ class Graph : public Component::Network
 
         // Constructor/Destructor
         Graph();
-        Graph(Component::Network& A);
+        Graph(const Hypergraph& A);
         ~Graph();
 
         // Generates the dictionary

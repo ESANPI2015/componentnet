@@ -15,7 +15,7 @@ Network::Network()
     createMainConcepts();
 }
 
-Network::Network(CommonConceptGraph& A)
+Network::Network(const Hypergraph& A)
 : CommonConceptGraph(A)
 {
     createMainConcepts();

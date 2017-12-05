@@ -8,7 +8,7 @@ Graph::Graph(const UniqueId& uid, const std::string& name)
     domainId = uid;
 }
 
-Graph::Graph(CommonConceptGraph& A, const UniqueId& uid, const std::string& name)
+Graph::Graph(const Hypergraph& A, const UniqueId& uid, const std::string& name)
 : CommonConceptGraph(A)
 {
     Conceptgraph::create(uid, name);

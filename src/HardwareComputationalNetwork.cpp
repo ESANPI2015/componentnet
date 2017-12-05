@@ -28,7 +28,7 @@ Network::Network()
     createMainConcepts();
 }
 
-Network::Network(Component::Network& A)
+Network::Network(const Hypergraph& A)
 : Component::Network(A)
 {
     createMainConcepts();

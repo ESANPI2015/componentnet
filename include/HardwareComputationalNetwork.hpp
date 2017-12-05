@@ -36,7 +36,7 @@ class Network: public Component::Network
 
         // Constructor/Destructor
         Network();
-        Network(Component::Network& A);
+        Network(const Hypergraph& A);
         ~Network();
 
         // Creates the main concepts
