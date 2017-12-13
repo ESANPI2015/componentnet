@@ -95,6 +95,10 @@ class Graph : public Component::Network
         Hyperedges implementations(const std::string& name="", const std::string& className="");
         Hyperedges datatypes(const std::string& name="", const std::string& className="");
 
+        // TODO: Nice additional queries
+        // inputsOf()
+        // outputsOf()
+
         // Facts
         // NOTE: Only the multidimensionals are used here (more generic)
         // Algorithms & I/O/P
