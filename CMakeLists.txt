@@ -19,10 +19,12 @@ pkg_check_modules(domaingraph_PKGCONFIG REQUIRED
     hypergraph yaml-cpp
     )
 
+set(CMAKE_BUILD_TYPE RelWithDebInfo)
+set(CMAKE_CXX_STANDARD 11)
 include_directories(${domaingraph_PKGCONFIG_INCLUDE_DIRS})
 #message(${domaingraph_PKGCONFIG_INCLUDE_DIRS})
 link_directories(${domaingraph_PKGCONFIG_LIBRARY_DIRS})
-add_definitions(${domaingraph_PKGCONFIG_CFLAGS_OTHER} -ggdb --pedantic -Wall -std=c++11)
+add_definitions(${domaingraph_PKGCONFIG_CFLAGS_OTHER} --pedantic -Wall)
 
 set(SOURCES
     src/DomainSpecificGraph.cpp
