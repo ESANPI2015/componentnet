@@ -30,12 +30,10 @@ void Network::createMainConcepts()
     create(Network::InterfaceId, "INTERFACE");
     create(Network::NetworkId, "NETWORK");
 
-    relate(Network::HasAInterfaceId, Hyperedges{Network::ComponentId, Network::NetworkId}, Hyperedges{Network::InterfaceId}, "HAS-A");
-    subrelationOf(Hyperedges{Network::HasAInterfaceId}, Hyperedges{CommonConceptGraph::HasAId});
-    relate(Network::ConnectedToInterfaceId, Hyperedges{Network::InterfaceId}, Hyperedges{Network::InterfaceId}, "CONNECTED-TO");
-    subrelationOf(Hyperedges{Network::ConnectedToInterfaceId}, Hyperedges{CommonConceptGraph::ConnectsId});
-    relate(Network::PartOfNetworkId, Hyperedges{Network::ComponentId}, Hyperedges{Network::NetworkId}, "PART-OF");
-    subrelationOf(Hyperedges{Network::PartOfNetworkId}, Hyperedges{CommonConceptGraph::PartOfId});
+    subrelationFrom(Network::HasAInterfaceId, Hyperedges{Network::ComponentId, Network::NetworkId}, Hyperedges{Network::InterfaceId}, CommonConceptGraph::HasAId);
+    subrelationFrom(Network::ConnectedToInterfaceId, Hyperedges{Network::InterfaceId}, Hyperedges{Network::InterfaceId}, CommonConceptGraph::ConnectsId);
+    subrelationFrom(Network::PartOfNetworkId, Hyperedges{Network::ComponentId}, Hyperedges{Network::NetworkId}, CommonConceptGraph::PartOfId);
+
     isA(Hyperedges{Network::NetworkId},Hyperedges{Network::ComponentId});
 }
 
@@ -116,7 +114,7 @@ Hyperedges Network::hasInterface(const Hyperedges& componentIds, const Hyperedge
     Hyperedges fromIds(intersect(componentIds, unite(componentClasses(), components())));
     Hyperedges toIds(intersect(interfaceIds, interfaces()));
     if (fromIds.size() && toIds.size())
-        return CommonConceptGraph::relateFrom(fromIds, toIds, Network::HasAInterfaceId);
+        return CommonConceptGraph::factFrom(fromIds, toIds, Network::HasAInterfaceId);
     return Hyperedges();
 }
 Hyperedges Network::connectInterface(const Hyperedges& fromInterfaceIds, const Hyperedges& toInterfaceIds)
@@ -125,7 +123,7 @@ Hyperedges Network::connectInterface(const Hyperedges& fromInterfaceIds, const H
     Hyperedges fromIds(intersect(fromInterfaceIds, valid));
     Hyperedges toIds(intersect(toInterfaceIds, valid));
     if (fromIds.size() && toIds.size())
-        return CommonConceptGraph::relateFrom(fromIds, toIds, Network::ConnectedToInterfaceId);
+        return CommonConceptGraph::factFrom(fromIds, toIds, Network::ConnectedToInterfaceId);
     return Hyperedges();
 }
 
@@ -134,7 +132,7 @@ Hyperedges Network::partOfNetwork(const Hyperedges& componentIds, const Hyperedg
     Hyperedges fromIds(intersect(componentIds, components()));
     Hyperedges toIds(intersect(networkIds, unite(networks(), networkClasses())));
     if (fromIds.size() && toIds.size())
-        return CommonConceptGraph::relateFrom(fromIds, toIds, Network::PartOfNetworkId);
+        return CommonConceptGraph::factFrom(fromIds, toIds, Network::PartOfNetworkId);
     return Hyperedges();
 }
 Hyperedges Network::interfacesOf(const Hyperedges& componentIds, const std::string& name)

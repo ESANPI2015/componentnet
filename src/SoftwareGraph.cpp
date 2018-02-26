@@ -28,15 +28,14 @@ void Graph::createMainConcepts()
     // We could also just subclass implementation into implementation::C++ and implementation::VHDL
 
     // Relations
-    // TODO: Specifying new subrelations should be easier. Put a convenience function into CommonConceptGraph class!
-    relate(Graph::DependsOnId, Hyperedges{Graph::InputId}, Hyperedges{Graph::OutputId}, "DEPENDS-ON");
-    subrelationOf(Graph::DependsOnId, CommonConceptGraph::ConnectsId);
+    subrelationFrom(Graph::DependsOnId, Hyperedges{Graph::InputId}, Hyperedges{Graph::OutputId}, CommonConceptGraph::ConnectsId);
+    get(Graph::DependsOnId)->updateLabel("DEPENDS-ON");
 
-    relate(Graph::NeedsId, Hyperedges{Graph::AlgorithmId}, Hyperedges{Graph::InputId}, "NEEDS");
-    subrelationOf(Graph::NeedsId, CommonConceptGraph::HasAId);
+    subrelationFrom(Graph::NeedsId, Hyperedges{Graph::AlgorithmId}, Hyperedges{Graph::InputId}, CommonConceptGraph::HasAId);
+    get(Graph::NeedsId)->updateLabel("NEEDS");
 
-    relate(Graph::ProvidesId, Hyperedges{Graph::AlgorithmId}, Hyperedges{Graph::OutputId}, "PROVIDES");
-    subrelationOf(Graph::ProvidesId, CommonConceptGraph::HasAId);
+    subrelationFrom(Graph::ProvidesId, Hyperedges{Graph::AlgorithmId}, Hyperedges{Graph::OutputId}, CommonConceptGraph::HasAId);
+    get(Graph::ProvidesId)->updateLabel("PROVIDES");
 }
 
 Graph::Graph()
@@ -168,7 +167,7 @@ Hyperedges Graph::providesInterface(const Hyperedges& algorithmIds, const Hypere
     Hyperedges fromIds = unite(intersect(this->algorithms(), algorithmIds), intersect(algorithmClasses(), algorithmIds));
     Hyperedges toIds = intersect(this->outputs(), outputIds);
     if (fromIds.size() && toIds.size())
-        return relateFrom(fromIds, toIds, Graph::ProvidesId);
+        return factFrom(fromIds, toIds, Graph::ProvidesId);
     return Hyperedges();
 }
 
@@ -178,7 +177,7 @@ Hyperedges Graph::needsInterface(const Hyperedges& algorithmIds, const Hyperedge
     Hyperedges fromIds = unite(intersect(this->algorithms(), algorithmIds), intersect(algorithmClasses(), algorithmIds));
     Hyperedges toIds = intersect(this->inputs(), inputIds);
     if (fromIds.size() && toIds.size())
-        return relateFrom(fromIds, toIds, Graph::NeedsId);
+        return factFrom(fromIds, toIds, Graph::NeedsId);
     return Hyperedges();
 }
 
@@ -188,7 +187,7 @@ Hyperedges Graph::dependsOn(const Hyperedges& inputIds, const Hyperedges& output
     Hyperedges fromIds = intersect(this->inputs(), inputIds);
     Hyperedges toIds = intersect(this->outputs(), outputIds);
     if (fromIds.size() && toIds.size())
-        return relateFrom(fromIds, toIds, Graph::DependsOnId);
+        return factFrom(fromIds, toIds, Graph::DependsOnId);
     return Hyperedges();
 }
 
