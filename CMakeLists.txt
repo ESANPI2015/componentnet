@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-project(domaingraph)
+project(componentnet)
 
 include_directories(src)
 include_directories(include)
@@ -15,16 +15,16 @@ if(NOT TARGET hypergraph)
 endif(NOT TARGET hypergraph)
 
 find_package(PkgConfig)
-pkg_check_modules(domaingraph_PKGCONFIG REQUIRED
+pkg_check_modules(componentnet_PKGCONFIG REQUIRED
     hypergraph yaml-cpp
     )
 
 set(CMAKE_BUILD_TYPE RelWithDebInfo)
 set(CMAKE_CXX_STANDARD 11)
-include_directories(${domaingraph_PKGCONFIG_INCLUDE_DIRS})
-#message(${domaingraph_PKGCONFIG_INCLUDE_DIRS})
-link_directories(${domaingraph_PKGCONFIG_LIBRARY_DIRS})
-add_definitions(${domaingraph_PKGCONFIG_CFLAGS_OTHER} --pedantic -Wall)
+include_directories(${componentnet_PKGCONFIG_INCLUDE_DIRS})
+#message(${componentnet_PKGCONFIG_INCLUDE_DIRS})
+link_directories(${componentnet_PKGCONFIG_LIBRARY_DIRS})
+add_definitions(${componentnet_PKGCONFIG_CFLAGS_OTHER} --pedantic -Wall)
 
 set(SOURCES
     src/DomainSpecificGraph.cpp
@@ -42,23 +42,23 @@ set(HEADERS
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/")
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
-add_library(domaingraph STATIC ${SOURCES})
-target_link_libraries(domaingraph
-    ${domaingraph_PKGCONFIG_STATIC_LIBRARIES}
+add_library(componentnet STATIC ${SOURCES})
+target_link_libraries(componentnet
+    ${componentnet_PKGCONFIG_STATIC_LIBRARIES}
     )
 
 add_executable(testDomainGraph test/testDomainGraph.cpp)
-target_link_libraries(testDomainGraph domaingraph)
+target_link_libraries(testDomainGraph componentnet)
 install(TARGETS testDomainGraph
 RUNTIME DESTINATION bin)
 
 add_executable(testComponentNetwork test/testComponentNetwork.cpp)
-target_link_libraries(testComponentNetwork domaingraph)
+target_link_libraries(testComponentNetwork componentnet)
 install(TARGETS testComponentNetwork
 RUNTIME DESTINATION bin)
 
 add_executable(testHWNetwork test/testHWNetwork.cpp)
-target_link_libraries(testHWNetwork domaingraph)
+target_link_libraries(testHWNetwork componentnet)
 install(TARGETS testHWNetwork
 RUNTIME DESTINATION bin)
 
