@@ -1,5 +1,5 @@
 #include "DomainSpecificGraph.hpp"
-#include "HyperedgeYAML.hpp"
+#include "HypergraphYAML.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -37,12 +37,10 @@ int main(void)
     std::cout << dg.partsOfDomain() << "\n";
 
     std::cout << "> Store domain specific graph using YAML" << std::endl;
-    YAML::Node test;
-    test = static_cast<Hypergraph*>(&dg);
     std::ofstream fout;
     fout.open("dgraph.yml");
     if(fout.good()) {
-        fout << test;
+        fout << YAML::StringFrom(dg) << std::endl;
     } else {
         std::cout << "FAILED\n";
     }

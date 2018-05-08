@@ -1,5 +1,5 @@
 #include "HardwareComputationalNetwork.hpp"
-#include "HyperedgeYAML.hpp"
+#include "HypergraphYAML.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -64,13 +64,10 @@ int main(void)
 
     std::cout << "> Store hwnet using YAML" << std::endl;
 
-    YAML::Node test;
-    test = static_cast<Hypergraph*>(&hwnet);
-
     std::ofstream fout;
     fout.open("hwnet.yml");
     if(fout.good()) {
-        fout << test;
+        fout << YAML::StringFrom(hwnet) << std::endl;
     } else {
         std::cout << "FAILED\n";
     }
@@ -134,10 +131,9 @@ int main(void)
 
     // Store real world example
     std::cout << "> Store hwnet using YAML" << std::endl;
-    test = static_cast<Hypergraph*>(&hwnet);
     fout.open("demo.yml");
     if(fout.good()) {
-        fout << test;
+        fout << YAML::StringFrom(hwnet) << std::endl;
     } else {
         std::cout << "FAILED\n";
     }

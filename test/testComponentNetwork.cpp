@@ -1,5 +1,5 @@
 #include "ComponentNetwork.hpp"
-#include "HyperedgeYAML.hpp"
+#include "HypergraphYAML.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -40,12 +40,10 @@ int main(void)
     std::cout << cnd.hasInterface(Hyperedges{"MyFirstNetwork"}, unite(cnd.interfacesOf(Hyperedges{"MyFirstComponent1"},"x"), cnd.interfacesOf(Hyperedges{"MySecondComponent1"},"v"))) << "\n";
 
     std::cout << "> Store component network using YAML" << std::endl;
-    YAML::Node test;
-    test = static_cast<Hypergraph*>(&cnd);
     std::ofstream fout;
     fout.open("cnd.yml");
     if(fout.good()) {
-        fout << test;
+        fout << YAML::StringFrom(cnd) << std::endl;
     } else {
         std::cout << "FAILED\n";
     }
