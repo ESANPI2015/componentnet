@@ -83,9 +83,22 @@ Hyperedges Network::instantiateComponent(const Hyperedges& componentIds, const s
 {
     return instantiateDeepFrom(componentIds, newName);
 }
+
 Hyperedges Network::instantiateComponent(const Hyperedges& componentIds)
 {
     return instantiateDeepFrom(componentIds);
+}
+
+Hyperedges Network::instantiateInterfaceFor(const Hyperedges& componentIds, const Hyperedges& interfaceClassIds, const std::string& name)
+{
+    Hyperedges result;
+    for (const UniqueId& componentId : componentIds)
+    {
+        Hyperedges newIfs(instantiateDeepFrom(interfaceClassIds, name));
+        hasInterface(Hyperedges{componentId}, newIfs);
+        result = unite(result, newIfs);
+    }
+    return result;
 }
 
 Hyperedges Network::components(const std::string& name, const std::string& className)

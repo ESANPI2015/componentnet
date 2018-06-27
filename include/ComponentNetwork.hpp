@@ -54,6 +54,7 @@ class Network : public CommonConceptGraph
         // Create individuals
         Hyperedges instantiateComponent(const Hyperedges& componentIds);
         Hyperedges instantiateComponent(const Hyperedges& componentIds, const std::string& newName);
+        Hyperedges instantiateInterfaceFor(const Hyperedges& componentIds, const Hyperedges& interfaceClassIds, const std::string& name="");
 
         // Query classes
         Hyperedges componentClasses(const std::string& name="", const Hyperedges& suids=Hyperedges());
