@@ -148,11 +148,13 @@ Hyperedges Network::partOfNetwork(const Hyperedges& componentIds, const Hyperedg
         return CommonConceptGraph::factFrom(fromIds, toIds, Network::PartOfNetworkId);
     return Hyperedges();
 }
-Hyperedges Network::interfacesOf(const Hyperedges& componentIds, const std::string& name)
+Hyperedges Network::interfacesOf(const Hyperedges& componentIds, const std::string& name, const TraversalDirection dir)
 {
-    Hyperedges children(childrenOf(componentIds,name));
-    Hyperedges ifs(interfaces(name));
-    return intersect(children, ifs);
+    Hyperedges children(childrenOf(componentIds,name,dir));
+    if (dir == TraversalDirection::FORWARD)
+        return intersect(children, interfaces(name));
+    else
+        return intersect(children, unite(components(name), componentClasses(name)));
 }
 
 }

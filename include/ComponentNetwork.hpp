@@ -65,7 +65,7 @@ class Network : public CommonConceptGraph
         Hyperedges interfaces(const std::string& name="", const std::string& className="");
         Hyperedges networks(const std::string& name="", const std::string& className="");
         // Query component interfaces
-        Hyperedges interfacesOf(const Hyperedges& componentIds, const std::string& name="");
+        Hyperedges interfacesOf(const Hyperedges& componentIds, const std::string& name="", const TraversalDirection dir=FORWARD);
 
         // Specify a component
         Hyperedges hasInterface(const Hyperedges& componentIds, const Hyperedges& interfaceIds);
