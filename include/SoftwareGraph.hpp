@@ -87,6 +87,7 @@ class Graph : public Component::Network
         Hyperedges outputClasses(const std::string& name="", const Hyperedges& suids=Hyperedges());
         Hyperedges implementationClasses(const std::string& name="", const Hyperedges& suids=Hyperedges());
         Hyperedges datatypeClasses(const std::string& name="", const Hyperedges& suids=Hyperedges());
+
         // NOTE: Returns instances
         Hyperedges algorithms(const std::string& name="", const std::string& className="");
         Hyperedges interfaces(const std::string& name="", const std::string& className="");
@@ -98,6 +99,7 @@ class Graph : public Component::Network
         // TODO: Nice additional queries
         // inputsOf()
         // outputsOf()
+        // datatypesOf()
 
         // Facts
         // NOTE: Only the multidimensionals are used here (more generic)
