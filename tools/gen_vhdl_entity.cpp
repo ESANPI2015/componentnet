@@ -11,7 +11,7 @@ static struct option long_options[] = {
     {"help", no_argument, 0, 'h'},
     {"uid", required_argument, 0, 'u'},
     {"label", required_argument, 0, 'l'},
-    {"vhdl-type-uid", required_argument, 0, 'v'},
+    {"type-uid", required_argument, 0, 't'},
     {0,0,0,0}
 };
 
@@ -23,9 +23,14 @@ void usage (const char *myName)
     std::cout << "--help\t" << "Show usage\n";
     std::cout << "--uid=<uid>\t" << "Specify the algorithm to be used to generate code by UID\n";
     std::cout << "--label=<label>\t" << "Specify the algorithm(s) to be used to generate code by label\n";
-    std::cout << "--vhdl-type-uid=<uid>\t" << "Specify the datatype class which hosts VHDL compatible types\n";
+    std::cout << "--type-uid=<uid>\t" << "Specify the datatype class which hosts compatible types\n";
     std::cout << "\nExample:\n";
     std::cout << myName << "--label=MyAlgorithm initial_model.yml new_model.yml\n";
+}
+
+std::string genTypeFromLabel(const std::string& label)
+{
+    return label+"_type";
 }
 
 int main (int argc, char **argv)
@@ -43,7 +48,7 @@ int main (int argc, char **argv)
 
         switch (c)
         {
-            case 'v':
+            case 't':
                 vhdlDatatypeUid=std::string(optarg);
                 break;
             case 'u':
@@ -78,8 +83,14 @@ int main (int argc, char **argv)
     if (!uid.empty())
         algorithms = intersect(algorithms, Hyperedges{uid});
 
+    if (!algorithms.size())
+    {
+        std::cout << "No algorithm found.\n";
+        return 2;
+    }
+
     // Set our language
-    const UniqueId& vhdlImplementationUid("gen_vhdl_entity::Implementation::VHDL");
+    const UniqueId& vhdlImplementationUid("Software::Graph::Implementation::VHDL");
     swgraph.createImplementation(vhdlImplementationUid, "VHDLImplementation");
 
     // Find relevant datatypeClasses
@@ -113,13 +124,13 @@ int main (int argc, char **argv)
             std::string typeOfInput("UNDEFINED");
             if (!inputClassUids.size())
             {
-                result << "\t" << swgraph.get(inputId)->label() << " : in " << typeOfInput << ";\n";
+                result << "\t" << swgraph.get(inputId)->label() << " : in " << genTypeFromLabel(typeOfInput) << ";\n";
                 continue;
             }
             for (const UniqueId& classUid : inputClassUids)
             {
                 typeOfInput = swgraph.get(classUid)->label();
-                result << "\t" << swgraph.get(inputId)->label() << " : in " << typeOfInput << ";\n";
+                result << "\t" << swgraph.get(inputId)->label() << " : in " << genTypeFromLabel(typeOfInput) << ";\n";
             }
             // Put input classes to the interface classes we need later
             myInterfaceClassIds.insert(inputClassUids.begin(), inputClassUids.end());
@@ -134,13 +145,13 @@ int main (int argc, char **argv)
             std::string typeOfOutput("UNDEFINED");
             if (!outputClassUids.size())
             {
-                result << "\t" << swgraph.get(outputId)->label() << " : in " << typeOfOutput << ";\n";
+                result << "\t" << swgraph.get(outputId)->label() << " : out " << genTypeFromLabel(typeOfOutput) << ";\n";
                 continue;
             }
             for (const UniqueId& classUid : outputClassUids)
             {
                 typeOfOutput = swgraph.get(classUid)->label();
-                result << "\t" << swgraph.get(outputId)->label() << " : out " << typeOfOutput << ";\n";
+                result << "\t" << swgraph.get(outputId)->label() << " : out " << genTypeFromLabel(typeOfOutput) << ";\n";
             }
             // Put output classes to the interface classes we need later
             myInterfaceClassIds.insert(outputClassUids.begin(), outputClassUids.end());
@@ -171,13 +182,13 @@ int main (int argc, char **argv)
             Hyperedges typeUids(intersect(relevantTypeUids, swgraph.directSubclassesOf(Hyperedges{interfaceClassId},"",Hypergraph::TraversalDirection::INVERSE)));
             if (!typeUids.size())
             {
-                result << "\ttype " << interface->label() << " is " << datatypeName << ";\n";
+                result << "\ttype " << genTypeFromLabel(interface->label()) << " is " << datatypeName << ";\n";
                 continue;
             }
             for (const UniqueId& typeUid : typeUids)
             {
                 datatypeName = swgraph.get(typeUid)->label();
-                result << "\ttype " << interface->label() << " is " << datatypeName << ";\n";
+                result << "\ttype " << genTypeFromLabel(interface->label()) << " is " << datatypeName << ";\n";
             }
         }
         result << "end " << algorithm->label() << "_types;\n";
