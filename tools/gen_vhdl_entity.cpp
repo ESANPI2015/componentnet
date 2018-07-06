@@ -165,11 +165,25 @@ int main (int argc, char **argv)
         result << "end\n";
 
         // Handle architecture
+        // TODO: Handle parts: Instantiate entities and wire them
+
+        // Architecture for atomic entity
         result << "\n-- Architecture def --\n";
         result << "architecture BEHAVIOURAL of " << algorithm->label() << " is\n";
         result << "-- signals here --\n";
         result << "\nbegin\n";
         result << "-- processes here --\n";
+        result << "compute : process(clk)\n";
+        result << "\t-- variables here --\n";
+        result << "\tbegin\n";
+        result << "\t\tif rising_edge(clk) then\n";
+        result << "\t\t\tif (rst='1') then\n";
+        result << "\t\t\t\t-- init here --\n";
+        result << "\t\t\telse\n";
+        result << "\t\t\t\t-- computation here --\n";
+        result << "\t\t\tend if;\n";
+        result << "\t\tend if;\n";
+        result << "end process compute;\n";
         result << "end BEHAVIORAL;\n";
 
         // Handle the collected interface classes

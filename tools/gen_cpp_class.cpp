@@ -126,6 +126,11 @@ int main (int argc, char **argv)
         result << "#define __" << algorithm->label() << "_HEADER\n";
         result << "class " << algorithm->label() << " {\n";
         result << "\tpublic:\n";
+        result << "\n\t\t// Constructor to initialize class\n";
+        result << "\t\tvoid " << algorithm->label() << "()\n";
+        result << "\t\t{\n";
+        result << "\t\t\t// Write your init code here\n";
+        result << "\t\t}\n";
 
         // Handle the collected interface classes
         result << "\n\t\t// Generate interface types\n";
