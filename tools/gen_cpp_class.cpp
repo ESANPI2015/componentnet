@@ -33,6 +33,16 @@ std::string genTypeFromLabel(const std::string& label)
     return label+"_t";
 }
 
+std::string genPartIdentifier(const UniqueId& uid)
+{
+    return "component_"+uid;
+}
+
+std::string genInterfaceIdentifier(const std::string& label)
+{
+    return "interface_"+label;
+}
+
 // For each algorithm:
 // * Create interfaces & types
 // * Check parts
@@ -104,6 +114,10 @@ int main (int argc, char **argv)
     else
         relevantTypeUids = swgraph.datatypeClasses();
 
+    // Get some constants
+    Hyperedges allInputUids(swgraph.inputs());
+    Hyperedges allOutputUids(swgraph.outputs());
+
     // For each of these algorithms
     for (const UniqueId& algorithmId : algorithms)
     {
@@ -114,8 +128,8 @@ int main (int argc, char **argv)
         // Find interfaces
         Hyperedges interfaceUids(swgraph.interfacesOf(Hyperedges{algorithmId}));
         Hyperedges interfaceClassUids(swgraph.instancesOf(interfaceUids,"",Hypergraph::TraversalDirection::FORWARD));
-        Hyperedges inputUids(intersect(swgraph.inputs(), interfaceUids));
-        Hyperedges outputUids(intersect(swgraph.outputs(), interfaceUids));
+        Hyperedges inputUids(intersect(allInputUids, interfaceUids));
+        Hyperedges outputUids(intersect(allOutputUids, interfaceUids));
 
         // Find subcomponents
         Hyperedges parts(swgraph.componentsOf(Hyperedges{algorithmId}));
@@ -124,6 +138,7 @@ int main (int argc, char **argv)
         result << "// Algorithm to C++ generator\n";
         result << "#ifndef __" << algorithm->label() << "_HEADER\n";
         result << "#define __" << algorithm->label() << "_HEADER\n";
+        // TODO: We need includes!!!!
         result << "class " << algorithm->label() << " {\n";
         result << "\tpublic:\n";
         result << "\n\t\t// Constructor to initialize class\n";
@@ -151,6 +166,41 @@ int main (int argc, char **argv)
             }
         }
 
+        // Generate input arguments
+        result << "\n\t\t// Input variables\n";
+        for (const UniqueId& inputId : inputUids)
+        {
+            Hyperedges inputClassUids(swgraph.instancesOf(Hyperedges{inputId},"",Hypergraph::TraversalDirection::FORWARD));
+            std::string typeOfInput("UNDEFINED");
+            if (!inputClassUids.size())
+            {
+                result << "\t\t" << genTypeFromLabel(typeOfInput) << " " << genInterfaceIdentifier(swgraph.get(inputId)->label()) << ";\n";
+                continue;
+            }
+            for (const UniqueId& classUid : inputClassUids)
+            {
+                typeOfInput = swgraph.get(classUid)->label();
+                result << "\t\t" << genTypeFromLabel(typeOfInput) << " " << genInterfaceIdentifier(swgraph.get(inputId)->label()) << ";\n";
+            }
+        }
+        // Generate output arguments
+        result << "\n\t\t// Output variables\n";
+        for (const UniqueId& outputId : outputUids)
+        {
+            Hyperedges outputClassUids(swgraph.instancesOf(Hyperedges{outputId},"",Hypergraph::TraversalDirection::FORWARD));
+            std::string typeOfOutput("UNDEFINED");
+            if (!outputClassUids.size())
+            {
+                result << "\t\t" << genTypeFromLabel(typeOfOutput) << " " << genInterfaceIdentifier(swgraph.get(outputId)->label()) << ";\n";
+                continue;
+            }
+            for (const UniqueId& classUid : outputClassUids)
+            {
+                typeOfOutput = swgraph.get(classUid)->label();
+                result << "\t\t" << genTypeFromLabel(typeOfOutput) << " " << genInterfaceIdentifier(swgraph.get(outputId)->label()) << ";\n";
+            }
+        }
+
         // Instantiate parts (to not confuse C++, partId is also included)
         result << "\n\t\t// Instantiate parts\n";
         for (const UniqueId& partId : parts)
@@ -158,48 +208,15 @@ int main (int argc, char **argv)
             Hyperedges superclasses(swgraph.instancesOf(partId,"",Hypergraph::TraversalDirection::FORWARD));
             for (const UniqueId& superUid : superclasses)
             {
-                result << "\t\t" << swgraph.get(superUid)->label() << " " << swgraph.get(partId)->label() << partId << "\n";
+                result << "\t\t" << swgraph.get(superUid)->label() << " " << genPartIdentifier(partId) << "\n";
             }
         }
 
         // Generate main function signature
         result << "\n\t\t// Generate main function\n";
-        result << "\t\tbool operator () (\n";
-        // Generate input arguments
-        for (const UniqueId& inputId : inputUids)
-        {
-            Hyperedges inputClassUids(swgraph.instancesOf(Hyperedges{inputId},"",Hypergraph::TraversalDirection::FORWARD));
-            std::string typeOfInput("UNDEFINED");
-            if (!inputClassUids.size())
-            {
-                result << "\t\t\tconst " << genTypeFromLabel(typeOfInput) << "& " << swgraph.get(inputId)->label() << ",\n";
-                continue;
-            }
-            for (const UniqueId& classUid : inputClassUids)
-            {
-                typeOfInput = swgraph.get(classUid)->label();
-                result << "\t\t\tconst " << genTypeFromLabel(typeOfInput) << "& " << swgraph.get(inputId)->label() << ",\n";
-            }
-        }
-        // Generate output arguments (pass-by-reference)
-        for (const UniqueId& outputId : outputUids)
-        {
-            Hyperedges outputClassUids(swgraph.instancesOf(Hyperedges{outputId},"",Hypergraph::TraversalDirection::FORWARD));
-            std::string typeOfOutput("UNDEFINED");
-            if (!outputClassUids.size())
-            {
-                result << "\t\t\t" << genTypeFromLabel(typeOfOutput) << "& " << swgraph.get(outputId)->label() << ",\n";
-                continue;
-            }
-            for (const UniqueId& classUid : outputClassUids)
-            {
-                typeOfOutput = swgraph.get(classUid)->label();
-                result << "\t\t\t" << genTypeFromLabel(typeOfOutput) << "& " << swgraph.get(outputId)->label() << ",\n";
-            }
-        }
-        // Close argument list (with a pointer to a context) and start creation of body
-        result << "\t\t\tvoid *ctx)\n";
+        result << "\t\tbool operator () (void)\n";
         result << "\t\t{\n";
+        // Close argument list (with a pointer to a context) and start creation of body
         if (!parts.size())
         {
             // Generate a dummy
@@ -207,10 +224,57 @@ int main (int argc, char **argv)
             result << "\t\t\t// Return true if evaluation has been performed\n";
             result << "\t\t\treturn false;\n";
         } else {
-            // Since we have parts, we should call them.
-            // That means, that we have to traverse the network of parts starting at inputs and cumulating at the outputs
-            // THIS IS A BFS TRAVERSAL!
-            result << "\t\t\t// TODO: Would do BFS traversal starting from parts at inputs to parts generating output\n";
+            // I. Copy values from my inputs to the input vars of my parts (TODO: Follow aliasOf relations or get other owners)
+            result << "\t\t\t// Copy input values to inputs of internal parts\n";
+            for (const UniqueId& inputId : inputUids)
+            {
+                Hyperedges internalParts(intersect(parts, swgraph.interfacesOf(Hyperedges{inputId}, "", Hypergraph::TraversalDirection::INVERSE)));
+                for (const UniqueId& internalPartUid : internalParts)
+                {
+                    result << "\t\t\t";
+                    result << genPartIdentifier(internalPartUid) << "." << genInterfaceIdentifier(swgraph.get(inputId)->label())
+                           << " = this->" << genInterfaceIdentifier(swgraph.get(inputId)->label()) << ";\n";
+                }
+            }
+            result << "\t\t\t// Evaluate internal parts\n";
+            // II. Call every part with input vars, producing output vars
+            for (const UniqueId& partUid : parts)
+            {
+                result << "\t\t\t";
+                result << genPartIdentifier(partUid) << "();\n";
+            }
+            // III. For every edge: Copy output value to corresponding input value
+            result << "\t\t\t// Copy results from parts to inputs of connected parts\n";
+            for (const UniqueId& producerUid : parts)
+            {
+                Hyperedges producerOutputUids(intersect(allOutputUids, swgraph.interfacesOf(Hyperedges{producerUid})));
+                for (const UniqueId& producerOutputUid : producerOutputUids)
+                {
+                    Hyperedges consumerInputUids(swgraph.endpointsOf(Hyperedges{producerOutputUid},"",Hypergraph::TraversalDirection::INVERSE));
+                    for (const UniqueId& consumerInputUid : consumerInputUids)
+                    {
+                        Hyperedges consumerUids(intersect(parts, swgraph.interfacesOf(Hyperedges{consumerInputUid}, "", Hypergraph::TraversalDirection::INVERSE)));
+                        for (const UniqueId& consumerUid : consumerUids)
+                        {
+                            result << "\t\t\t";
+                            result << genPartIdentifier(consumerUid) << "." << genInterfaceIdentifier(swgraph.get(consumerInputUid)->label())
+                                   << " = " << genPartIdentifier(producerUid) << "." << genInterfaceIdentifier(swgraph.get(producerOutputUid)->label()) << ";\n";
+                        }
+                    }
+                }
+            }
+            // IV. Return output values (TODO: Follow aliasOf relations or get other owners)
+            result << "\t\t\t// Return the results from internal computation\n";
+            for (const UniqueId& outputId : outputUids)
+            {
+                Hyperedges internalParts(intersect(parts, swgraph.interfacesOf(Hyperedges{outputId}, "", Hypergraph::TraversalDirection::INVERSE)));
+                for (const UniqueId& internalPartUid : internalParts)
+                {
+                    result << "\t\t\t";
+                    result << "this->" << genInterfaceIdentifier(swgraph.get(outputId)->label()) 
+                           << " = " << genPartIdentifier(internalPartUid) << "." << genInterfaceIdentifier(swgraph.get(outputId)->label()) << ";\n";
+                }
+            }
         }
         result << "\t\t}\n";
 
