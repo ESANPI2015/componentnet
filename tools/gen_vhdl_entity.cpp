@@ -33,6 +33,26 @@ std::string genTypeFromLabel(const std::string& label)
     return label+"_type";
 }
 
+std::string genPartIdentifier(const UniqueId& partUid)
+{
+    return "component_"+partUid;
+}
+
+std::string genInterfaceIdentifier(const std::string& label)
+{
+    return "interface_"+label;
+}
+
+std::string genInputIdentifier(const std::string& label)
+{
+    return "input_"+label;
+}
+
+std::string genOutputIdentifier(const std::string& label)
+{
+    return "output_"+label;
+}
+
 int main (int argc, char **argv)
 {
     UniqueId uid, vhdlDatatypeUid;
@@ -100,6 +120,10 @@ int main (int argc, char **argv)
     else
         relevantTypeUids = swgraph.datatypeClasses();
 
+    // Get some constants
+    Hyperedges allInputUids(swgraph.inputs());
+    Hyperedges allOutputUids(swgraph.outputs());
+
     // For each of these algorithms
     for (const UniqueId& algorithmId : algorithms)
     {
@@ -121,16 +145,10 @@ int main (int argc, char **argv)
         {
             // This input is of a certain type we have to find
             Hyperedges inputClassUids(swgraph.instancesOf(inputId,"",Hypergraph::TraversalDirection::FORWARD));
-            std::string typeOfInput("UNDEFINED");
-            if (!inputClassUids.size())
-            {
-                result << "\t" << swgraph.get(inputId)->label() << " : in " << genTypeFromLabel(typeOfInput) << ";\n";
-                continue;
-            }
             for (const UniqueId& classUid : inputClassUids)
             {
-                typeOfInput = swgraph.get(classUid)->label();
-                result << "\t" << swgraph.get(inputId)->label() << " : in " << genTypeFromLabel(typeOfInput) << ";\n";
+                std::string typeOfInput(swgraph.get(classUid)->label());
+                result << "\t" << genInputIdentifier(swgraph.get(inputId)->label()) << " : in " << genTypeFromLabel(typeOfInput) << ";\n";
             }
             // Put input classes to the interface classes we need later
             myInterfaceClassIds.insert(inputClassUids.begin(), inputClassUids.end());
@@ -142,16 +160,10 @@ int main (int argc, char **argv)
         {
             // This output is of a certain type we have to find
             Hyperedges outputClassUids(swgraph.instancesOf(outputId,"",Hypergraph::TraversalDirection::FORWARD));
-            std::string typeOfOutput("UNDEFINED");
-            if (!outputClassUids.size())
-            {
-                result << "\t" << swgraph.get(outputId)->label() << " : out " << genTypeFromLabel(typeOfOutput) << ";\n";
-                continue;
-            }
             for (const UniqueId& classUid : outputClassUids)
             {
-                typeOfOutput = swgraph.get(classUid)->label();
-                result << "\t" << swgraph.get(outputId)->label() << " : out " << genTypeFromLabel(typeOfOutput) << ";\n";
+                std::string typeOfOutput(swgraph.get(classUid)->label());
+                result << "\t" << genOutputIdentifier(swgraph.get(outputId)->label()) << " : out " << genTypeFromLabel(typeOfOutput) << ";\n";
             }
             // Put output classes to the interface classes we need later
             myInterfaceClassIds.insert(outputClassUids.begin(), outputClassUids.end());
@@ -188,7 +200,120 @@ int main (int argc, char **argv)
             result << "end process compute;\n";
             result << "end BEHAVIORAL;\n";
         } else {
-            // TODO: Handle parts: Instantiate entities and wire them, thus creating signals!
+            // FIXME: Handle output to multiple inputs!!!! That means that we have to create ONE common signal per output and assign signals
+            // TODO:
+            // * For each component, create ONE signal per input and ONE signal per OUTPUT!!!!
+            result << "\n-- Architecture def --\n";
+            result << "architecture BEHAVIOURAL of " << algorithm->label() << " is\n";
+            result << "-- signals here --\n";
+            // I: Create signals for each component
+            result << "-- signals of parts --\n";
+            for (const UniqueId& partUid : parts)
+            {
+                Hyperedges partInputUids(intersect(allInputUids, swgraph.interfacesOf(Hyperedges{partUid})));
+                for (const UniqueId& partInputUid : partInputUids)
+                {
+                    Hyperedges interfaceClassUids(swgraph.instancesOf(partInputUid,"",Hypergraph::TraversalDirection::FORWARD));
+                    for (const UniqueId& classUid : interfaceClassUids)
+                    {
+                        result << "signal ";
+                        result << genPartIdentifier(partUid) << "_" << genInputIdentifier(swgraph.get(partInputUid)->label());
+                        result << " : " << genTypeFromLabel(swgraph.get(classUid)->label()) << ";\n";
+                    }
+                }
+                Hyperedges partOutputUids(intersect(allOutputUids, swgraph.interfacesOf(Hyperedges{partUid})));
+                for (const UniqueId& partOutputUid : partOutputUids)
+                {
+                    Hyperedges interfaceClassUids(swgraph.instancesOf(partOutputUid,"",Hypergraph::TraversalDirection::FORWARD));
+                    for (const UniqueId& classUid : interfaceClassUids)
+                    {
+                        result << "signal ";
+                        result << genPartIdentifier(partUid) << "_" << genOutputIdentifier(swgraph.get(partOutputUid)->label());
+                        result << " : " << genTypeFromLabel(swgraph.get(classUid)->label()) << ";\n";
+                    }
+                }
+            }
+            result << "\nbegin\n";
+            // II. Wire toplvl inputs to internal inputs
+            result << "-- assignment of toplvl inputs to internal inputs --\n";
+            for (const UniqueId& inputId : myInputIds)
+            {
+                Hyperedges partUids(intersect(parts, swgraph.interfacesOf(Hyperedges{inputId}, "", Hypergraph::TraversalDirection::INVERSE)));
+                for (const UniqueId& partUid : partUids)
+                {
+                    result << genPartIdentifier(partUid) << "_" << genInputIdentifier(swgraph.get(inputId)->label());
+                    result << " <= ";
+                    result << genInputIdentifier(swgraph.get(inputId)->label());
+                    result << ";\n";
+                }
+            }
+            // III. Wire internal outputs to toplvl outputs
+            result << "-- assignment of internal outputs to toplvl outputs --\n";
+            for (const UniqueId& outputId : myOutputIds)
+            {
+                Hyperedges partUids(intersect(parts, swgraph.interfacesOf(Hyperedges{outputId}, "", Hypergraph::TraversalDirection::INVERSE)));
+                for (const UniqueId& partUid : partUids)
+                {
+                    result << genOutputIdentifier(swgraph.get(outputId)->label());
+                    result << " <= ";
+                    result << genPartIdentifier(partUid) << "_" << genOutputIdentifier(swgraph.get(outputId)->label());
+                    result << ";\n";
+                }
+            }
+            // IV. Instantiate and wire parts
+            result << "-- part entity instantiation & wiring--\n";
+            for (const UniqueId& partUid : parts)
+            {
+                Hyperedges partInterfaceUids(swgraph.interfacesOf(Hyperedges{partUid}));
+                Hyperedges partInputUids(intersect(allInputUids, partInterfaceUids));
+                Hyperedges partOutputUids(intersect(allOutputUids, partInterfaceUids));
+                Hyperedges superclasses(swgraph.instancesOf(partUid,"",Hypergraph::TraversalDirection::FORWARD));
+                // V. Assign component input signals to other components output signals
+                result << "-- assignment of internal outputs to internal inputs --\n";
+                for (const UniqueId& partInputUid : partInputUids)
+                {
+                    Hyperedges partOutputUids(swgraph.endpointsOf(Hyperedges{partInputUid},"",Hypergraph::TraversalDirection::INVERSE));
+                    for (const UniqueId& partOutputUid : partOutputUids)
+                    {
+                        Hyperedges producerUids(intersect(parts, swgraph.interfacesOf(Hyperedges{partOutputUid}, "", Hypergraph::TraversalDirection::INVERSE)));
+                        for (const UniqueId& producerUid : producerUids)
+                        {
+                            result << genPartIdentifier(partUid) << "_" << genInputIdentifier(swgraph.get(partInputUid)->label());
+                            result << " <= ";
+                            result << genPartIdentifier(producerUid) << "_" << genOutputIdentifier(swgraph.get(partOutputUid)->label());
+                            result << ";\n";
+                        }
+                    }
+                }
+                result << "-- instantiate entity --\n";
+                for (const UniqueId& superUid : superclasses)
+                {
+                    result << genPartIdentifier(partUid) << ": entity work." << swgraph.get(superUid)->label() << "\n";
+                    result << "port map (\n";
+                    result << "\t-- inputs --\n";
+                    // VI. Wire to corresponding signals
+                    for (const UniqueId& partInputUid : partInputUids)
+                    {
+                            result << "\t";
+                            result << genInputIdentifier(swgraph.get(partInputUid)->label()) << " => ";
+                            result << genPartIdentifier(partUid) << "_" << genInputIdentifier(swgraph.get(partInputUid)->label());
+                            result << ",\n";
+                    }
+                    result << "\t-- outputs --\n";
+                    for (const UniqueId& partOutputUid : partOutputUids)
+                    {
+                            result << "\t";
+                            result << genOutputIdentifier(swgraph.get(partOutputUid)->label()) << " => ";
+                            result << genPartIdentifier(partUid) << "_" << genOutputIdentifier(swgraph.get(partOutputUid)->label());
+                            result << ",\n";
+                    }
+                    result << "\tclk => clk,\n";
+                    result << "\trst => rst\n";
+                    result << ");\n";
+                }
+            }
+            result << "-- processes here --\n";
+            result << "end BEHAVIORAL;\n";
         }
 
         // Handle the collected interface classes
@@ -197,16 +322,10 @@ int main (int argc, char **argv)
         for (const UniqueId& interfaceClassId : myInterfaceClassIds)
         {
             Hyperedge* interface(swgraph.get(interfaceClassId));
-            std::string datatypeName("UNKNOWN");
             Hyperedges typeUids(intersect(relevantTypeUids, swgraph.directSubclassesOf(Hyperedges{interfaceClassId},"",Hypergraph::TraversalDirection::INVERSE)));
-            if (!typeUids.size())
-            {
-                result << "\ttype " << genTypeFromLabel(interface->label()) << " is " << datatypeName << ";\n";
-                continue;
-            }
             for (const UniqueId& typeUid : typeUids)
             {
-                datatypeName = swgraph.get(typeUid)->label();
+                std::string datatypeName(swgraph.get(typeUid)->label());
                 result << "\ttype " << genTypeFromLabel(interface->label()) << " is " << datatypeName << ";\n";
             }
         }
