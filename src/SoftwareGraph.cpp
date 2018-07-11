@@ -187,7 +187,7 @@ Hyperedges Graph::dependsOn(const Hyperedges& inputIds, const Hyperedges& output
     Hyperedges fromIds = intersect(this->inputs(), inputIds);
     Hyperedges toIds = intersect(this->outputs(), outputIds);
     if (fromIds.size() && toIds.size())
-        return factFrom(fromIds, toIds, Graph::DependsOnId);
+        return factFrom(toIds, fromIds, Graph::DependsOnId); // NOTE: Keep direction of CommonConceptGraph::ConnectedToInterfaceId
     return Hyperedges();
 }
 
