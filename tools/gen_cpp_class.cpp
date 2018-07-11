@@ -47,7 +47,7 @@ std::string genInterfaceIdentifier(const std::string& label)
 // * Create interfaces & types
 // * Check parts
 //   - If no parts, create atomic class
-//   - if parts, call each one in topological order/in BFS order from inputs to outputs TODO
+//   - if parts, call each one but update inputs with connected outputs afterwards (synchronous update)
 int main (int argc, char **argv)
 {
     UniqueId uid, cppDatatypeUid;
@@ -250,7 +250,7 @@ int main (int argc, char **argv)
                 Hyperedges producerOutputUids(intersect(allOutputUids, swgraph.interfacesOf(Hyperedges{producerUid})));
                 for (const UniqueId& producerOutputUid : producerOutputUids)
                 {
-                    Hyperedges consumerInputUids(swgraph.endpointsOf(Hyperedges{producerOutputUid},"",Hypergraph::TraversalDirection::INVERSE));
+                    Hyperedges consumerInputUids(swgraph.endpointsOf(Hyperedges{producerOutputUid}));
                     for (const UniqueId& consumerInputUid : consumerInputUids)
                     {
                         Hyperedges consumerUids(intersect(parts, swgraph.interfacesOf(Hyperedges{consumerInputUid}, "", Hypergraph::TraversalDirection::INVERSE)));
