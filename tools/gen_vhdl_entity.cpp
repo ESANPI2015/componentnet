@@ -28,29 +28,60 @@ void usage (const char *myName)
     std::cout << myName << "--label=MyAlgorithm initial_model.yml new_model.yml\n";
 }
 
+std::string sanitizeString(const std::string& in)
+{
+    // Sanitation of strings to be VHDL compatible
+    std::string result(in);
+    std::size_t index(0);
+    while (true)
+    {
+        index = result.find(":", index);
+        if (index == std::string::npos) break;
+        result.replace(index, 1, "_");
+        index++;
+    }
+    index = 0;
+    while (true)
+    {
+        index = result.find(";", index);
+        if (index == std::string::npos) break;
+        result.replace(index, 1, "_");
+        index++;
+    }
+    index = 0;
+    while (true)
+    {
+        index = result.find(".", index);
+        if (index == std::string::npos) break;
+        result.replace(index, 1, "_");
+        index++;
+    }
+    return result;
+}
+
 std::string genTypeFromLabel(const std::string& label)
 {
-    return label+"_type";
+    return sanitizeString(label)+"_type";
 }
 
 std::string genPartIdentifier(const UniqueId& partUid)
 {
-    return "component_"+partUid;
+    return "component_"+sanitizeString(partUid);
 }
 
 std::string genInterfaceIdentifier(const std::string& label)
 {
-    return "interface_"+label;
+    return "interface_"+sanitizeString(label);
 }
 
 std::string genInputIdentifier(const std::string& label)
 {
-    return "input_"+label;
+    return "input_"+sanitizeString(label);
 }
 
 std::string genOutputIdentifier(const std::string& label)
 {
-    return "output_"+label;
+    return "output_"+sanitizeString(label);
 }
 
 int main (int argc, char **argv)
@@ -134,8 +165,8 @@ int main (int argc, char **argv)
         result << "-- Algorithm to VHDL entity generator --\n";
         result << "library IEEE;\n";
         result << "use IEEE.STD_LOGIC_1164.ALL;\n";
-        result << "\nuse work." << algorithm->label() << "_types.all;\n";
-        result << "\nentity " << algorithm->label() << " is\n";
+        result << "\nuse work." << sanitizeString(algorithm->label()) << "_types.all;\n";
+        result << "\nentity " << sanitizeString(algorithm->label()) << " is\n";
         result << "port(\n";
 
         // Handle Inputs (input instances which are interfaces of algorithmId
@@ -147,7 +178,7 @@ int main (int argc, char **argv)
             Hyperedges inputClassUids(swgraph.instancesOf(inputId,"",Hypergraph::TraversalDirection::FORWARD));
             for (const UniqueId& classUid : inputClassUids)
             {
-                std::string typeOfInput(swgraph.get(classUid)->label());
+                std::string typeOfInput(sanitizeString(swgraph.get(classUid)->label()));
                 result << "\t" << genInputIdentifier(swgraph.get(inputId)->label()) << " : in " << genTypeFromLabel(typeOfInput) << ";\n";
             }
             // Put input classes to the interface classes we need later
@@ -162,7 +193,7 @@ int main (int argc, char **argv)
             Hyperedges outputClassUids(swgraph.instancesOf(outputId,"",Hypergraph::TraversalDirection::FORWARD));
             for (const UniqueId& classUid : outputClassUids)
             {
-                std::string typeOfOutput(swgraph.get(classUid)->label());
+                std::string typeOfOutput(sanitizeString(swgraph.get(classUid)->label()));
                 result << "\t" << genOutputIdentifier(swgraph.get(outputId)->label()) << " : out " << genTypeFromLabel(typeOfOutput) << ";\n";
             }
             // Put output classes to the interface classes we need later
@@ -183,7 +214,7 @@ int main (int argc, char **argv)
         {
             // Architecture for atomic entity
             result << "\n-- Architecture def --\n";
-            result << "architecture BEHAVIOURAL of " << algorithm->label() << " is\n";
+            result << "architecture BEHAVIOURAL of " << sanitizeString(algorithm->label()) << " is\n";
             result << "-- signals here --\n";
             result << "\nbegin\n";
             result << "-- processes here --\n";
@@ -204,7 +235,7 @@ int main (int argc, char **argv)
             // TODO:
             // * For each component, create ONE signal per input and ONE signal per OUTPUT!!!!
             result << "\n-- Architecture def --\n";
-            result << "architecture BEHAVIOURAL of " << algorithm->label() << " is\n";
+            result << "architecture BEHAVIOURAL of " << sanitizeString(algorithm->label()) << " is\n";
             result << "-- signals here --\n";
             // I: Create signals for each component
             result << "-- signals of parts --\n";
@@ -288,7 +319,7 @@ int main (int argc, char **argv)
                 result << "-- instantiate entity --\n";
                 for (const UniqueId& superUid : superclasses)
                 {
-                    result << genPartIdentifier(partUid) << ": entity work." << swgraph.get(superUid)->label() << "\n";
+                    result << genPartIdentifier(partUid) << ": entity work." << sanitizeString(swgraph.get(superUid)->label()) << "\n";
                     result << "port map (\n";
                     result << "\t-- inputs --\n";
                     // VI. Wire to corresponding signals
@@ -318,18 +349,18 @@ int main (int argc, char **argv)
 
         // Handle the collected interface classes
         result << "\n-- Package def --\n";
-        result << "package " << algorithm->label() << "_types is\n";
+        result << "package " << sanitizeString(algorithm->label()) << "_types is\n";
         for (const UniqueId& interfaceClassId : myInterfaceClassIds)
         {
             Hyperedge* interface(swgraph.get(interfaceClassId));
             Hyperedges typeUids(intersect(relevantTypeUids, swgraph.directSubclassesOf(Hyperedges{interfaceClassId},"",Hypergraph::TraversalDirection::INVERSE)));
             for (const UniqueId& typeUid : typeUids)
             {
-                std::string datatypeName(swgraph.get(typeUid)->label());
+                std::string datatypeName(sanitizeString(swgraph.get(typeUid)->label()));
                 result << "\ttype " << genTypeFromLabel(interface->label()) << " is " << datatypeName << ";\n";
             }
         }
-        result << "end " << algorithm->label() << "_types;\n";
+        result << "end " << sanitizeString(algorithm->label()) << "_types;\n";
 
         // Create implementation for algorithm with this result
         const UniqueId& implId(vhdlImplementationUid+"::"+algorithm->label());
