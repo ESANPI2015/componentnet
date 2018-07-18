@@ -227,7 +227,10 @@ int main (int argc, char **argv)
         }
         result << "end " << sanitizeString(algorithm->label()) << "_types;\n";
 
-        result << "\nuse work." << sanitizeString(algorithm->label()) << "_types.all;\n";
+        // Reinsert library statement because the previous one only applies to package def
+        result << "library IEEE;\n";
+        result << "use IEEE.STD_LOGIC_1164.ALL;\n";
+        result << "use work." << sanitizeString(algorithm->label()) << "_types.all;\n";
         result << "\nentity " << sanitizeString(algorithm->label()) << " is\n";
         result << "port(\n";
 
