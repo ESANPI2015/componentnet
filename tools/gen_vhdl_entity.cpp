@@ -84,6 +84,29 @@ std::string genOutputIdentifier(const std::string& label)
     return "output_"+sanitizeString(label);
 }
 
+bool isVHDLSubType(const std::string& type)
+{
+    // Unfortunately, if we subtype built-in types, we have to use 'subtype' otherwise we need to use 'type'
+    // When we have an array, we have to use 'type'
+    if (type.find("array") != std::string::npos)
+        return false;
+    // When we have some built-in type but no array, we have to use 'subtype'
+    if (type.find("bit") != std::string::npos)
+        return true;
+    if (type.find("std_logic") != std::string::npos)
+        return true;
+    if (type.find("bit_vector") != std::string::npos)
+        return true;
+    if (type.find("std_logic_vector") != std::string::npos)
+        return true;
+    if (type.find("integer") != std::string::npos)
+        return true;
+    if (type.find("boolean") != std::string::npos)
+        return true;
+    // When we have no array and no built-in type, we have to use 'type' as well (enum)
+    return false;
+}
+
 int main (int argc, char **argv)
 {
     UniqueId uid, vhdlDatatypeUid;
@@ -154,6 +177,7 @@ int main (int argc, char **argv)
     // Get some constants
     Hyperedges allInputUids(swgraph.inputs());
     Hyperedges allOutputUids(swgraph.outputs());
+    Hyperedges allAlgorithmClasses(swgraph.algorithmClasses());
 
     // For each of these algorithms
     for (const UniqueId& algorithmId : algorithms)
@@ -162,17 +186,54 @@ int main (int argc, char **argv)
         std::stringstream result;
         Hyperedge*  algorithm(swgraph.get(algorithmId));
 
+        // Find interfaces
+        Hyperedges interfaceUids(swgraph.interfacesOf(Hyperedges{algorithmId}));
+        Hyperedges interfaceClassUids(swgraph.instancesOf(interfaceUids,"",Hypergraph::TraversalDirection::FORWARD));
+        Hyperedges inputUids(intersect(allInputUids, interfaceUids));
+        Hyperedges outputUids(intersect(allOutputUids, interfaceUids));
+
+        // Find my superclasses
+        Hyperedges mySuperclasses(intersect(allAlgorithmClasses, swgraph.directSubclassesOf(Hyperedges{algorithmId}, "", Hypergraph::TraversalDirection::FORWARD)));
+
+        // Find subcomponents
+        Hyperedges parts(swgraph.componentsOf(Hyperedges{algorithmId}));
+        Hyperedges superclasses(swgraph.instancesOf(parts,"",Hypergraph::TraversalDirection::FORWARD));
+
+        // In VHDL we have no intrinsic inhertance, so we have to inherit the interfaces manually by checking all superclass interfaces as well!
+        interfaceUids = unite(interfaceUids, swgraph.interfacesOf(mySuperclasses));
+        interfaceClassUids = unite(interfaceClassUids, swgraph.instancesOf(interfaceUids,"",Hypergraph::TraversalDirection::FORWARD));
+        inputUids = unite(inputUids, intersect(allInputUids, interfaceUids));
+        outputUids = unite(outputUids, intersect(allOutputUids, interfaceUids));
+
         result << "-- Algorithm to VHDL entity generator --\n";
         result << "library IEEE;\n";
         result << "use IEEE.STD_LOGIC_1164.ALL;\n";
+
+        // Handle the collected interface classes
+        result << "\n-- Package def --\n";
+        result << "package " << sanitizeString(algorithm->label()) << "_types is\n";
+        for (const UniqueId& interfaceClassId : interfaceClassUids)
+        {
+            Hyperedge* interface(swgraph.get(interfaceClassId));
+            Hyperedges typeUids(intersect(relevantTypeUids, swgraph.directSubclassesOf(Hyperedges{interfaceClassId},"",Hypergraph::TraversalDirection::INVERSE)));
+            for (const UniqueId& typeUid : typeUids)
+            {
+                std::string datatypeName(sanitizeString(swgraph.get(typeUid)->label()));
+                if (isVHDLSubType(datatypeName))
+                    result << "\tsubtype " << genTypeFromLabel(interface->label()) << " is " << datatypeName << ";\n";
+                else
+                    result << "\ttype " << genTypeFromLabel(interface->label()) << " is " << datatypeName << ";\n";
+            }
+        }
+        result << "end " << sanitizeString(algorithm->label()) << "_types;\n";
+
         result << "\nuse work." << sanitizeString(algorithm->label()) << "_types.all;\n";
         result << "\nentity " << sanitizeString(algorithm->label()) << " is\n";
         result << "port(\n";
 
         // Handle Inputs (input instances which are interfaces of algorithmId
-        Hyperedges myInputIds(intersect(swgraph.inputs(), swgraph.interfacesOf(Hyperedges{algorithmId})));
         result << "\n\t-- Inputs --\n";
-        for (const UniqueId& inputId : myInputIds)
+        for (const UniqueId& inputId : inputUids)
         {
             // This input is of a certain type we have to find
             Hyperedges inputClassUids(swgraph.instancesOf(inputId,"",Hypergraph::TraversalDirection::FORWARD));
@@ -181,13 +242,10 @@ int main (int argc, char **argv)
                 std::string typeOfInput(sanitizeString(swgraph.get(classUid)->label()));
                 result << "\t" << genInputIdentifier(swgraph.get(inputId)->label()) << " : in " << genTypeFromLabel(typeOfInput) << ";\n";
             }
-            // Put input classes to the interface classes we need later
-            myInterfaceClassIds.insert(inputClassUids.begin(), inputClassUids.end());
         }
         // Handle Outputs
-        Hyperedges myOutputIds(intersect(swgraph.outputs(), swgraph.interfacesOf(Hyperedges{algorithmId})));
         result << "\n\t-- Outputs --\n";
-        for (const UniqueId& outputId : myOutputIds)
+        for (const UniqueId& outputId : outputUids)
         {
             // This output is of a certain type we have to find
             Hyperedges outputClassUids(swgraph.instancesOf(outputId,"",Hypergraph::TraversalDirection::FORWARD));
@@ -196,8 +254,6 @@ int main (int argc, char **argv)
                 std::string typeOfOutput(sanitizeString(swgraph.get(classUid)->label()));
                 result << "\t" << genOutputIdentifier(swgraph.get(outputId)->label()) << " : out " << genTypeFromLabel(typeOfOutput) << ";\n";
             }
-            // Put output classes to the interface classes we need later
-            myInterfaceClassIds.insert(outputClassUids.begin(), outputClassUids.end());
         }
         result << "\n\t-- Standard Signals --\n";
         //result << "\tstart : in std_logic;\n";
@@ -205,10 +261,8 @@ int main (int argc, char **argv)
         result << "\tclk : in std_logic;\n";
         result << "\trst : in std_logic\n";
         result << ");\n";
-        result << "end\n";
+        result << "end;\n";
 
-        // Find subcomponents
-        Hyperedges parts(swgraph.componentsOf(Hyperedges{algorithmId}));
         // Handle architecture
         if (!parts.size())
         {
@@ -229,10 +283,8 @@ int main (int argc, char **argv)
             result << "\t\t\tend if;\n";
             result << "\t\tend if;\n";
             result << "end process compute;\n";
-            result << "end BEHAVIORAL;\n";
+            result << "end BEHAVIOURAL;\n";
         } else {
-            // FIXME: Handle output to multiple inputs!!!! That means that we have to create ONE common signal per output and assign signals
-            // TODO:
             // * For each component, create ONE signal per input and ONE signal per OUTPUT!!!!
             result << "\n-- Architecture def --\n";
             result << "architecture BEHAVIOURAL of " << sanitizeString(algorithm->label()) << " is\n";
@@ -267,7 +319,7 @@ int main (int argc, char **argv)
             result << "\nbegin\n";
             // II. Wire toplvl inputs to internal inputs
             result << "-- assignment of toplvl inputs to internal inputs --\n";
-            for (const UniqueId& inputId : myInputIds)
+            for (const UniqueId& inputId : inputUids)
             {
                 Hyperedges partUids(intersect(parts, swgraph.interfacesOf(Hyperedges{inputId}, "", Hypergraph::TraversalDirection::INVERSE)));
                 for (const UniqueId& partUid : partUids)
@@ -280,7 +332,7 @@ int main (int argc, char **argv)
             }
             // III. Wire internal outputs to toplvl outputs
             result << "-- assignment of internal outputs to toplvl outputs --\n";
-            for (const UniqueId& outputId : myOutputIds)
+            for (const UniqueId& outputId : outputUids)
             {
                 Hyperedges partUids(intersect(parts, swgraph.interfacesOf(Hyperedges{outputId}, "", Hypergraph::TraversalDirection::INVERSE)));
                 for (const UniqueId& partUid : partUids)
@@ -344,23 +396,8 @@ int main (int argc, char **argv)
                 }
             }
             result << "-- processes here --\n";
-            result << "end BEHAVIORAL;\n";
+            result << "end BEHAVIOURAL;\n";
         }
-
-        // Handle the collected interface classes
-        result << "\n-- Package def --\n";
-        result << "package " << sanitizeString(algorithm->label()) << "_types is\n";
-        for (const UniqueId& interfaceClassId : myInterfaceClassIds)
-        {
-            Hyperedge* interface(swgraph.get(interfaceClassId));
-            Hyperedges typeUids(intersect(relevantTypeUids, swgraph.directSubclassesOf(Hyperedges{interfaceClassId},"",Hypergraph::TraversalDirection::INVERSE)));
-            for (const UniqueId& typeUid : typeUids)
-            {
-                std::string datatypeName(sanitizeString(swgraph.get(typeUid)->label()));
-                result << "\ttype " << genTypeFromLabel(interface->label()) << " is " << datatypeName << ";\n";
-            }
-        }
-        result << "end " << sanitizeString(algorithm->label()) << "_types;\n";
 
         // Create implementation for algorithm with this result
         const UniqueId& implId(vhdlImplementationUid+"::"+algorithm->label());

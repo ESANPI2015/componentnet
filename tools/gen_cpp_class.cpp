@@ -158,6 +158,7 @@ int main (int argc, char **argv)
     // Get some constants
     Hyperedges allInputUids(swgraph.inputs());
     Hyperedges allOutputUids(swgraph.outputs());
+    Hyperedges allAlgorithmClasses(swgraph.algorithmClasses());
 
     // For each of these algorithms
     for (const UniqueId& algorithmId : algorithms)
@@ -172,6 +173,9 @@ int main (int argc, char **argv)
         Hyperedges inputUids(intersect(allInputUids, interfaceUids));
         Hyperedges outputUids(intersect(allOutputUids, interfaceUids));
 
+        // Find my superclasses
+        Hyperedges mySuperclasses(intersect(allAlgorithmClasses, swgraph.directSubclassesOf(Hyperedges{algorithmId}, "", Hypergraph::TraversalDirection::FORWARD)));
+
         // Find subcomponents
         Hyperedges parts(swgraph.componentsOf(Hyperedges{algorithmId}));
         Hyperedges superclasses(swgraph.instancesOf(parts,"",Hypergraph::TraversalDirection::FORWARD));
@@ -180,14 +184,30 @@ int main (int argc, char **argv)
         result << "// Algorithm to C++ generator\n";
         result << "#ifndef __" << sanitizeString(algorithm->label()) << "_HEADER\n";
         result << "#define __" << sanitizeString(algorithm->label()) << "_HEADER\n";
+        result << "#include <string>\n";
+        result << "// Include headers for inheritance\n";
+        for (const UniqueId& superclassUid : mySuperclasses)
+        {
+            result << "#include \"" << sanitizeString(swgraph.get(superclassUid)->label()) << ".hpp\"\n";
+        }
+        result << "// Include headers of parts\n";
         for (const UniqueId& superclassUid : superclasses)
         {
-            result << "#include <" << sanitizeString(swgraph.get(superclassUid)->label()) << ".hpp>\n";
+            result << "#include \"" << sanitizeString(swgraph.get(superclassUid)->label()) << ".hpp\"\n";
         }
-        result << "class " << sanitizeString(algorithm->label()) << " {\n";
+        result << "class " << sanitizeString(algorithm->label()) << " : "; 
+        Hyperedges::const_iterator it(mySuperclasses.begin());
+        while (it != mySuperclasses.end())
+        {
+            result << "public " << sanitizeString(swgraph.get(*it)->label());
+            it++;
+            if (it != mySuperclasses.end())
+                result << ", ";
+        }
+        result << "\n{\n";
         result << "\tpublic:\n";
         result << "\n\t\t// Constructor to initialize class\n";
-        result << "\t\tvoid " << sanitizeString(algorithm->label()) << "()\n";
+        result << "\t\t" << sanitizeString(algorithm->label()) << "(const std::string& param=\"" << algorithm->label() << "\")\n";
         result << "\t\t{\n";
         result << "\t\t\t// Write your init code here\n";
         result << "\t\t}\n";
@@ -241,7 +261,7 @@ int main (int argc, char **argv)
 
         // Generate main function signature
         result << "\n\t\t// Generate main function\n";
-        result << "\t\tbool operator () (void)\n";
+        result << "\t\tbool operator () (const std::string& param=\"" << algorithm->label() << "\")\n";
         result << "\t\t{\n";
         // Close argument list (with a pointer to a context) and start creation of body
         if (!parts.size())
@@ -268,7 +288,7 @@ int main (int argc, char **argv)
             for (const UniqueId& partUid : parts)
             {
                 result << "\t\t\t";
-                result << genPartIdentifier(partUid) << "();\n";
+                result << genPartIdentifier(partUid) << "(\"" << swgraph.get(partUid)->label() << "\");\n";
             }
             // III. For every edge: Copy output value to corresponding input value
             result << "\t\t\t// Copy results from parts to inputs of connected parts\n";
