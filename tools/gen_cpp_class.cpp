@@ -12,6 +12,8 @@ static struct option long_options[] = {
     {"uid", required_argument, 0, 'u'},
     {"label", required_argument, 0, 'l'},
     {"type-uid", required_argument, 0, 't'},
+    {"generate-files", no_argument, 0, 'g'},
+    {"overwrite", no_argument, 0, 'o'},
     {0,0,0,0}
 };
 
@@ -24,8 +26,10 @@ void usage (const char *myName)
     std::cout << "--uid=<uid>\t" << "Specify the algorithm to be used to generate code by UID\n";
     std::cout << "--label=<label>\t" << "Specify the algorithm(s) to be used to generate code by label\n";
     std::cout << "--type-uid=<uid>\t" << "Specify the datatype class which hosts compatible types\n";
+    std::cout << "--generate-files\t" << "If given, the generator will produce the file(s) needed for compilation\n";
+    std::cout << "--overwrite\t" << "If given, the generator will overwrite existing implementation(s) with the same uid\n";
     std::cout << "\nExample:\n";
-    std::cout << myName << "--label=MyAlgorithm initial_model.yml new_model.yml\n";
+    std::cout << myName << "--label=\"MyAlgorithm\" initial_model.yml new_model.yml\n";
 }
 
 std::string sanitizeString(const std::string& in)
@@ -89,10 +93,21 @@ std::string genOutputIdentifier(const std::string& label)
 // * Check parts
 //   - If no parts, create atomic class
 //   - if parts, call each one but update inputs with connected outputs afterwards (synchronous update)
+// FIXME: What we have is: an algorithmClass which has algorithmic instances as parts (or none)
+//        What we want is: an implementationClass which has implementation instances matching the algorithmic instances class!!!!
+// TODO: When we create the C++ interfaces ... why don't we add them as interfaces to the implementation class?
 int main (int argc, char **argv)
 {
+    std::ofstream fout;
+    bool generateFiles = false;
+    bool overwrite = false;
     UniqueId uid, cppDatatypeUid;
     std::string label;
+
+
+    // Say hello :)
+    std::cout << "C++ class generator for algorithms\n";
+
     // Parse command line
     int c;
     while (1)
@@ -104,6 +119,12 @@ int main (int argc, char **argv)
 
         switch (c)
         {
+            case 'o':
+                overwrite = true;
+                break;
+            case 'g':
+                generateFiles = true;
+                break;
             case 't':
                 cppDatatypeUid=std::string(optarg);
                 break;
@@ -159,6 +180,7 @@ int main (int argc, char **argv)
     Hyperedges allInputUids(swgraph.inputs());
     Hyperedges allOutputUids(swgraph.outputs());
     Hyperedges allAlgorithmClasses(swgraph.algorithmClasses());
+    Hyperedges allImplementationClasses(swgraph.implementationClasses("",Hyperedges{cppImplementationUid}));
 
     // For each of these algorithms
     for (const UniqueId& algorithmId : algorithms)
@@ -166,6 +188,23 @@ int main (int argc, char **argv)
         Hyperedges myInterfaceClassIds;
         std::stringstream result;
         Hyperedge*  algorithm(swgraph.get(algorithmId));
+
+        std::cout << "Generating code for " << algorithm->label() << "\n";
+
+        // Check early if implementation exists and overwrite is not desired
+        const UniqueId& implId(cppImplementationUid+"::"+algorithm->label());
+        bool implFound = (std::find(allImplementationClasses.begin(), allImplementationClasses.end(), implId) != allImplementationClasses.end());
+        if (implFound && !overwrite)
+        {
+            std::cout << "Implementation for " << algorithm->label() << "already exists. Skipping\n";
+            continue;
+        }
+        if (implFound && overwrite)
+        {
+            // TODO: delete class and all its parts
+            std::cout << "Overwrite mechanism not implemented yet :(\n";
+            continue;
+        }
 
         // Find interfaces
         Hyperedges interfaceUids(swgraph.interfacesOf(Hyperedges{algorithmId}));
@@ -250,12 +289,39 @@ int main (int argc, char **argv)
 
         // Instantiate parts (to not confuse C++, partId is also included)
         result << "\n\t\t// Instantiate parts\n";
+        Hyperedges partImplementations;
         for (const UniqueId& partId : parts)
         {
             Hyperedges partSuperclassUids(swgraph.instancesOf(partId,"",Hypergraph::TraversalDirection::FORWARD));
             for (const UniqueId& superUid : partSuperclassUids)
             {
-                result << "\t\t" << sanitizeString(swgraph.get(superUid)->label()) << " " << genPartIdentifier(partId) << ";\n";
+                Hyperedges partImplementationclassUids(intersect(allImplementationClasses, swgraph.directSubclassesOf(Hyperedges{superUid})));
+                if (!partImplementationclassUids.size())
+                {
+                    // TODO: we could add it to the list of algorithms to be generated? :)
+                    std::cout << "No implementation found for " << swgraph.get(superUid)->label() << ". Skipping\n";
+                    continue;
+                }
+                for (const UniqueId& implClassUid : partImplementationclassUids)
+                {
+                    // Instantiate part from implementation
+                    Hyperedges partImplementationUid(swgraph.instantiateComponent(Hyperedges{implClassUid}, genPartIdentifier(partId)));
+                    result << "\t\t" << sanitizeString(swgraph.get(superUid)->label()) << " " << genPartIdentifier(partId) << ";\n";
+                    partImplementations = unite(partImplementations, partImplementationUid);
+
+                    // If desired, we will output the implementation to file
+                    if (generateFiles)
+                    {
+                        std::cout << "Writing implementation of " << swgraph.get(superUid)->label() << " to file\n";
+                        fout.open(sanitizeString(swgraph.get(superUid)->label())+".hpp");
+                        if(fout.good()) {
+                            fout << swgraph.get(implClassUid)->label() << std::endl;
+                        } else {
+                            std::cout << "FAILED\n";
+                        }
+                        fout.close();
+                    }
+                }
             }
         }
 
@@ -329,14 +395,27 @@ int main (int argc, char **argv)
         result << "};\n";
         result << "#endif\n";
 
-        // Create implementation for algorithm with this result
-        const UniqueId& implId(cppImplementationUid+"::"+algorithm->label());
-        swgraph.createImplementation(implId, result.str(), Hyperedges{cppImplementationUid});
+        // Create implementation class (and register it for later use in allImplementationClasses)
+        allImplementationClasses = unite(allImplementationClasses, swgraph.createImplementation(implId, result.str(), Hyperedges{cppImplementationUid}));
         swgraph.isA(Hyperedges{implId}, Hyperedges{algorithmId});
+        // Make part implementations part of this implementation
+        swgraph.partOfNetwork(partImplementations, Hyperedges{implId});
+
+        // If desired, write implementation to file
+        if (generateFiles)
+        {
+            std::cout << "Writing implementation of " << algorithm->label() << " to file\n";
+            fout.open(sanitizeString(algorithm->label())+".hpp");
+            if(fout.good()) {
+                fout << swgraph.get(implId)->label() << std::endl;
+            } else {
+                std::cout << "FAILED\n";
+            }
+            fout.close();
+        }
     }
 
     // Store graph
-    std::ofstream fout;
     fout.open(fileNameOut);
     if(fout.good()) {
         fout << YAML::StringFrom(swgraph) << std::endl;
