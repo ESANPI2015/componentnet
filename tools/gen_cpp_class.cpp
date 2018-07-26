@@ -312,6 +312,9 @@ int main (int argc, char **argv)
                     // If desired, we will output the implementation to file
                     if (generateFiles)
                     {
+                        // Skip file creation if it already exists
+                        if (std::ifstream(sanitizeString(swgraph.get(superUid)->label())+".hpp"))
+                            continue;
                         std::cout << "Writing implementation of " << swgraph.get(superUid)->label() << " to file\n";
                         fout.open(sanitizeString(swgraph.get(superUid)->label())+".hpp");
                         if(fout.good()) {
