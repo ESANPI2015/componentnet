@@ -12,6 +12,8 @@ static struct option long_options[] = {
     {"uid", required_argument, 0, 'u'},
     {"label", required_argument, 0, 'l'},
     {"type-uid", required_argument, 0, 't'},
+    {"generate-files", no_argument, 0, 'g'},
+    {"overwrite", no_argument, 0, 'o'},
     {0,0,0,0}
 };
 
@@ -24,8 +26,10 @@ void usage (const char *myName)
     std::cout << "--uid=<uid>\t" << "Specify the algorithm to be used to generate code by UID\n";
     std::cout << "--label=<label>\t" << "Specify the algorithm(s) to be used to generate code by label\n";
     std::cout << "--type-uid=<uid>\t" << "Specify the datatype class which hosts compatible types\n";
+    std::cout << "--generate-files\t" << "If given, the generator will produce the file(s) needed for compilation\n";
+    std::cout << "--overwrite\t" << "If given, the generator will overwrite existing implementation(s) with the same uid\n";
     std::cout << "\nExample:\n";
-    std::cout << myName << "--label=MyAlgorithm initial_model.yml new_model.yml\n";
+    std::cout << myName << " --label=\"MyAlgorithm\" initial_model.yml new_model.yml\n";
 }
 
 std::string sanitizeString(const std::string& in)
@@ -109,8 +113,15 @@ bool isVHDLSubType(const std::string& type)
 
 int main (int argc, char **argv)
 {
+    std::ofstream fout;
+    bool generateFiles = false;
+    bool overwrite = false;
     UniqueId uid, vhdlDatatypeUid;
     std::string label;
+
+    // Say hello :)
+    std::cout << "VHDL entity generator for algorithms\n";
+
     // Parse command line
     int c;
     while (1)
@@ -122,6 +133,12 @@ int main (int argc, char **argv)
 
         switch (c)
         {
+            case 'o':
+                overwrite = true;
+                break;
+            case 'g':
+                generateFiles = true;
+                break;
             case 't':
                 vhdlDatatypeUid=std::string(optarg);
                 break;
@@ -178,6 +195,7 @@ int main (int argc, char **argv)
     Hyperedges allInputUids(swgraph.inputs());
     Hyperedges allOutputUids(swgraph.outputs());
     Hyperedges allAlgorithmClasses(swgraph.algorithmClasses());
+    Hyperedges allImplementationClasses(swgraph.implementationClasses("",Hyperedges{vhdlImplementationUid}));
 
     // For each of these algorithms
     for (const UniqueId& algorithmId : algorithms)
@@ -185,6 +203,22 @@ int main (int argc, char **argv)
         Hyperedges myInterfaceClassIds;
         std::stringstream result;
         Hyperedge*  algorithm(swgraph.get(algorithmId));
+        std::cout << "Generating code for " << algorithm->label() << "\n";
+
+        // Check early if implementation exists and overwrite is not desired
+        const UniqueId& implId(vhdlImplementationUid+"::"+algorithm->label());
+        bool implFound = (std::find(allImplementationClasses.begin(), allImplementationClasses.end(), implId) != allImplementationClasses.end());
+        if (implFound && !overwrite)
+        {
+            std::cout << "Implementation for " << algorithm->label() << "already exists. Skipping\n";
+            continue;
+        }
+        if (implFound && overwrite)
+        {
+            // TODO: delete class and all its parts
+            std::cout << "Overwrite mechanism not implemented yet :(\n";
+            continue;
+        }
 
         // Find interfaces
         Hyperedges interfaceUids(swgraph.interfacesOf(Hyperedges{algorithmId}));
@@ -199,7 +233,7 @@ int main (int argc, char **argv)
         Hyperedges parts(swgraph.componentsOf(Hyperedges{algorithmId}));
         Hyperedges superclasses(swgraph.instancesOf(parts,"",Hypergraph::TraversalDirection::FORWARD));
 
-        // In VHDL we have no intrinsic inhertance, so we have to inherit the interfaces manually by checking all superclass interfaces as well!
+        // In VHDL we have no intrinsic inheritance, so we have to inherit the interfaces manually by checking all superclass interfaces as well!
         interfaceUids = unite(interfaceUids, swgraph.interfacesOf(mySuperclasses));
         interfaceClassUids = unite(interfaceClassUids, swgraph.instancesOf(interfaceUids,"",Hypergraph::TraversalDirection::FORWARD));
         inputUids = unite(inputUids, intersect(allInputUids, interfaceUids));
@@ -267,6 +301,7 @@ int main (int argc, char **argv)
         result << "end;\n";
 
         // Handle architecture
+        Hyperedges partImplementations;
         if (!parts.size())
         {
             // Architecture for atomic entity
@@ -371,45 +406,87 @@ int main (int argc, char **argv)
                         }
                     }
                 }
-                result << "-- instantiate entity --\n";
+                result << "-- instantiate entity/-ies --\n";
                 for (const UniqueId& superUid : superclasses)
                 {
-                    result << genPartIdentifier(partUid) << ": entity work." << sanitizeString(swgraph.get(superUid)->label()) << "\n";
-                    result << "port map (\n";
-                    result << "\t-- inputs --\n";
-                    // VI. Wire to corresponding signals
-                    for (const UniqueId& partInputUid : partInputUids)
+                    Hyperedges partImplementationclassUids(intersect(allImplementationClasses, swgraph.directSubclassesOf(Hyperedges{superUid})));
+                    if (!partImplementationclassUids.size())
                     {
-                            result << "\t";
-                            result << genInputIdentifier(swgraph.get(partInputUid)->label()) << " => ";
-                            result << genPartIdentifier(partUid) << "_" << genInputIdentifier(swgraph.get(partInputUid)->label());
-                            result << ",\n";
+                        // TODO: we could add it to the list of algorithms to be generated? :)
+                        std::cout << "No implementation found for " << swgraph.get(superUid)->label() << ". Skipping\n";
+                        continue;
                     }
-                    result << "\t-- outputs --\n";
-                    for (const UniqueId& partOutputUid : partOutputUids)
+                    for (const UniqueId& implClassUid : partImplementationclassUids)
                     {
-                            result << "\t";
-                            result << genOutputIdentifier(swgraph.get(partOutputUid)->label()) << " => ";
-                            result << genPartIdentifier(partUid) << "_" << genOutputIdentifier(swgraph.get(partOutputUid)->label());
-                            result << ",\n";
+                        result << genPartIdentifier(partUid) << ": entity work." << sanitizeString(swgraph.get(superUid)->label()) << "\n";
+                        result << "port map (\n";
+                        result << "\t-- inputs --\n";
+                        // VI. Wire to corresponding signals
+                        for (const UniqueId& partInputUid : partInputUids)
+                        {
+                                result << "\t";
+                                result << genInputIdentifier(swgraph.get(partInputUid)->label()) << " => ";
+                                result << genPartIdentifier(partUid) << "_" << genInputIdentifier(swgraph.get(partInputUid)->label());
+                                result << ",\n";
+                        }
+                        result << "\t-- outputs --\n";
+                        for (const UniqueId& partOutputUid : partOutputUids)
+                        {
+                                result << "\t";
+                                result << genOutputIdentifier(swgraph.get(partOutputUid)->label()) << " => ";
+                                result << genPartIdentifier(partUid) << "_" << genOutputIdentifier(swgraph.get(partOutputUid)->label());
+                                result << ",\n";
+                        }
+                        result << "\tclk => clk,\n";
+                        result << "\trst => rst\n";
+                        result << ");\n";
+
+                        // instantiate implementation and register it to be made a part of the current implementation
+                        Hyperedges partImplementationUid(swgraph.instantiateComponent(Hyperedges{implClassUid}, genPartIdentifier(partUid)));
+                        partImplementations = unite(partImplementations, partImplementationUid);
+                        // If desired, we will output the implementation to file
+                        if (generateFiles)
+                        {
+                            // Skip file creation if it already exists
+                            if (std::ifstream(sanitizeString(swgraph.get(superUid)->label())+".vhdl"))
+                                continue;
+                            std::cout << "Writing implementation of " << swgraph.get(superUid)->label() << " to file\n";
+                            fout.open(sanitizeString(swgraph.get(superUid)->label())+".vhdl");
+                            if(fout.good()) {
+                                fout << swgraph.get(implClassUid)->label() << std::endl;
+                            } else {
+                                std::cout << "FAILED\n";
+                            }
+                            fout.close();
+                        }
                     }
-                    result << "\tclk => clk,\n";
-                    result << "\trst => rst\n";
-                    result << ");\n";
                 }
             }
             result << "-- processes here --\n";
             result << "end BEHAVIOURAL;\n";
         }
 
-        // Create implementation for algorithm with this result
-        const UniqueId& implId(vhdlImplementationUid+"::"+algorithm->label());
-        swgraph.createImplementation(implId, result.str(), Hyperedges{vhdlImplementationUid});
+        // Create implementation class (and register it for later use in allImplementationClasses)
+        allImplementationClasses = unite(allImplementationClasses, swgraph.createImplementation(implId, result.str(), Hyperedges{vhdlImplementationUid}));
         swgraph.isA(Hyperedges{implId}, Hyperedges{algorithmId});
+        // Make part implementations part of this implementation
+        swgraph.partOfNetwork(partImplementations, Hyperedges{implId});
+
+        // If desired, write implementation to file
+        if (generateFiles)
+        {
+            std::cout << "Writing implementation of " << algorithm->label() << " to file\n";
+            fout.open(sanitizeString(algorithm->label())+".vhdl");
+            if(fout.good()) {
+                fout << swgraph.get(implId)->label() << std::endl;
+            } else {
+                std::cout << "FAILED\n";
+            }
+            fout.close();
+        }
     }
 
     // Store graph
-    std::ofstream fout;
     fout.open(fileNameOut);
     if(fout.good()) {
         fout << YAML::StringFrom(swgraph) << std::endl;

@@ -29,7 +29,7 @@ void usage (const char *myName)
     std::cout << "--generate-files\t" << "If given, the generator will produce the file(s) needed for compilation\n";
     std::cout << "--overwrite\t" << "If given, the generator will overwrite existing implementation(s) with the same uid\n";
     std::cout << "\nExample:\n";
-    std::cout << myName << "--label=\"MyAlgorithm\" initial_model.yml new_model.yml\n";
+    std::cout << myName << " --label=\"MyAlgorithm\" initial_model.yml new_model.yml\n";
 }
 
 std::string sanitizeString(const std::string& in)
@@ -93,8 +93,8 @@ std::string genOutputIdentifier(const std::string& label)
 // * Check parts
 //   - If no parts, create atomic class
 //   - if parts, call each one but update inputs with connected outputs afterwards (synchronous update)
-// FIXME: What we have is: an algorithmClass which has algorithmic instances as parts (or none)
-//        What we want is: an implementationClass which has implementation instances matching the algorithmic instances class!!!!
+// * What we have is: an algorithmClass which has algorithmic instances as parts (or none)
+//   What we want is: an implementationClass which has implementation instances matching the algorithmic instances class!!!!
 // TODO: When we create the C++ interfaces ... why don't we add them as interfaces to the implementation class?
 int main (int argc, char **argv)
 {
