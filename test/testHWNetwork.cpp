@@ -122,10 +122,12 @@ int main(void)
     //hwnet.instantiateBus(ndlcomSC, unite(hwnet.interfaces(convId, "LVDS1"),hwnet.interfaces(spineId,"LVDS2")));
     //hwnet.instantiateBus(usbBusSC, unite(hwnet.interfaces(convId, "USB1"),hwnet.interfaces(laptopId,"/dev/ttyUSB0")));
     // TODO: We need a convenience function to make connections over busses more easy
-    hwnet.connectInterface(hwnet.interfacesOf(hwnet.instantiateComponent(ndlcomSC)), hwnet.interfacesOf(unite(convId,unite(mdaqId,spineId)), "lvds1"));
-    hwnet.connectInterface(hwnet.interfacesOf(Hyperedges{"DFKI::iStruct::NDLCom1"}), hwnet.interfacesOf(spineId, "lvds2"));
-    hwnet.connectInterface(hwnet.interfacesOf(hwnet.instantiateComponent(usbBusSC),"usb0"), hwnet.interfacesOf(convId,"usb1"));
-    hwnet.connectInterface(hwnet.interfacesOf(Hyperedges{"USB::P2P1"},"usb1"), hwnet.interfacesOf(laptopId,"/dev/ttyUSB0"));
+    Hyperedges ndlcomBus = hwnet.instantiateComponent(ndlcomSC);
+    Hyperedges usbBus = hwnet.instantiateComponent(usbBusSC);
+    hwnet.connectInterface(hwnet.interfacesOf(ndlcomBus), hwnet.interfacesOf(unite(convId,unite(mdaqId,spineId)), "lvds1"));
+    hwnet.connectInterface(hwnet.interfacesOf(ndlcomBus), hwnet.interfacesOf(spineId, "lvds2"));
+    hwnet.connectInterface(hwnet.interfacesOf(usbBus,"usb0"), hwnet.interfacesOf(convId,"usb1"));
+    hwnet.connectInterface(hwnet.interfacesOf(usbBus,"usb1"), hwnet.interfacesOf(laptopId,"/dev/ttyUSB0"));
 
     // We could now make the specific instances and the network they form PART-OF some X. This X would then represent all occurences of this setting/network.
 
