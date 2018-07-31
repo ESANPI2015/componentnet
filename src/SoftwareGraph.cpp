@@ -163,32 +163,50 @@ Hyperedges Graph::datatypes(const std::string& name, const std::string& classNam
 }
 Hyperedges Graph::providesInterface(const Hyperedges& algorithmIds, const Hyperedges& outputIds)
 {
+    Hyperedges result;
     // An algorithm class or instance can only have an output instance
     Hyperedges fromIds = unite(intersect(this->algorithms(), algorithmIds), intersect(algorithmClasses(), algorithmIds));
     Hyperedges toIds = intersect(this->outputs(), outputIds);
-    if (fromIds.size() && toIds.size())
-        return factFrom(fromIds, toIds, Graph::ProvidesId);
-    return Hyperedges();
+    for (const UniqueId& fromId : fromIds)
+    {
+        for (const UniqueId& toId : toIds)
+        {
+            result = unite(result, factFrom(Hyperedges{fromId}, Hyperedges{toId}, Graph::ProvidesId));
+        }
+    }
+    return result;
 }
 
 Hyperedges Graph::needsInterface(const Hyperedges& algorithmIds, const Hyperedges& inputIds)
 {
+    Hyperedges result;
     // An algorithm class or instance can only have an output instance
     Hyperedges fromIds = unite(intersect(this->algorithms(), algorithmIds), intersect(algorithmClasses(), algorithmIds));
     Hyperedges toIds = intersect(this->inputs(), inputIds);
-    if (fromIds.size() && toIds.size())
-        return factFrom(fromIds, toIds, Graph::NeedsId);
-    return Hyperedges();
+    for (const UniqueId& fromId : fromIds)
+    {
+        for (const UniqueId& toId : toIds)
+        {
+            result = unite(result, factFrom(Hyperedges{fromId}, Hyperedges{toId}, Graph::NeedsId));
+        }
+    }
+    return result;
 }
 
 Hyperedges Graph::dependsOn(const Hyperedges& inputIds, const Hyperedges& outputIds)
 {
+    Hyperedges result;
     // For now only input instances can depend on output instances
     Hyperedges fromIds = intersect(this->inputs(), inputIds);
     Hyperedges toIds = intersect(this->outputs(), outputIds);
-    if (fromIds.size() && toIds.size())
-        return factFrom(toIds, fromIds, Graph::DependsOnId); // NOTE: Keep direction of CommonConceptGraph::ConnectedToInterfaceId
-    return Hyperedges();
+    for (const UniqueId& fromId : fromIds)
+    {
+        for (const UniqueId& toId : toIds)
+        {
+            result = unite(result, factFrom(Hyperedges{toId}, Hyperedges{fromId}, Graph::DependsOnId));
+        }
+    }
+    return result;
 }
 
 }
