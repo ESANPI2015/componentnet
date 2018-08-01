@@ -8,6 +8,7 @@ const UniqueId Network::NetworkId              = "Component::Network::Network";
 const UniqueId Network::HasAInterfaceId        = "Component::Network::HasAInterface";
 const UniqueId Network::ConnectedToInterfaceId = "Component::Network::ConnectedToInterface";
 const UniqueId Network::PartOfNetworkId        = "Component::Network::PartOfNetwork";
+const UniqueId Network::AliasOfId              = "Component::Network::AliasOf";
 
         // Constructor/Destructor
 Network::Network()
@@ -33,6 +34,7 @@ void Network::createMainConcepts()
     subrelationFrom(Network::HasAInterfaceId, Hyperedges{Network::ComponentId}, Hyperedges{Network::InterfaceId}, CommonConceptGraph::HasAId);
     subrelationFrom(Network::ConnectedToInterfaceId, Hyperedges{Network::InterfaceId}, Hyperedges{Network::InterfaceId}, CommonConceptGraph::ConnectsId);
     subrelationFrom(Network::PartOfNetworkId, Hyperedges{Network::ComponentId}, Hyperedges{Network::NetworkId}, CommonConceptGraph::PartOfId);
+    relate(Network::AliasOfId, Hyperedges{Network::InterfaceId}, Hyperedges{Network::InterfaceId}, "ALIAS-OF");
 
     isA(Hyperedges{Network::NetworkId},Hyperedges{Network::ComponentId});
 }
@@ -122,6 +124,46 @@ Hyperedges Network::networks(const std::string& name, const std::string& classNa
     // ... and then the instances of them
     return instancesOf(classIds, name);
 }
+
+Hyperedges Network::aliasOf(const Hyperedges& aliasInterfaceUids, const Hyperedges& originalInterfaceUids)
+{
+    Hyperedges result;
+    Hyperedges valid(interfaces());
+    Hyperedges fromIds(intersect(aliasInterfaceUids, valid));
+    Hyperedges toIds(intersect(originalInterfaceUids, valid));
+    for (const UniqueId& fromId : fromIds)
+    {
+        for (const UniqueId& toId : toIds)
+        {
+            result = unite(result, factFrom(Hyperedges{fromId}, Hyperedges{toId}, Network::AliasOfId));
+        }
+    }
+    return result;
+}
+
+Hyperedges Network::instantiateAliasInterfaceFor(const Hyperedges& parentUids, const Hyperedges& interfaceUids, const std::string& label)
+{
+    Hyperedges result;
+    for (const UniqueId& parentUid : parentUids)
+    {
+        Hyperedges newInterfaceUids(instantiateAnother(interfaceUids, label));
+        hasInterface(Hyperedges{parentUid}, newInterfaceUids);
+        aliasOf(newInterfaceUids, interfaceUids);
+        result = unite(result, newInterfaceUids);
+    }
+    return result;
+}
+
+Hyperedges Network::originalInterfacesOf(const Hyperedges& uids, const std::string& label)
+{
+    // Get all uids <-- ALIAS-OF --> X,label and return the X
+    Hyperedges factUids(factsOf(Hyperedges{Network::AliasOfId}));
+    Hyperedges relsFromUids(relationsFrom(uids));
+    Hyperedges matches(intersect(factUids, relsFromUids));
+    return to(matches, label);
+}
+
+
 Hyperedges Network::hasInterface(const Hyperedges& componentIds, const Hyperedges& interfaceIds)
 {
     Hyperedges result;

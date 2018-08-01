@@ -19,6 +19,7 @@ namespace Component {
     INTERFACE <-- CONNECTED-TO --> INTERFACE
     COMPONENT <-- PART-OF --> NETWORK
     NETWORK   <-- IS-A --> COMPONENT
+    INTERFACE <-- ALIAS-OF --> INTERFACE  (used for renaming interfaces)
 
     Open questions:
     * Do we need CONNECTORS? In software these are just components themself ... In Hardware they nicely encode the concept of a BUS
@@ -37,6 +38,7 @@ class Network : public CommonConceptGraph
         static const UniqueId HasAInterfaceId;
         static const UniqueId ConnectedToInterfaceId;
         static const UniqueId PartOfNetworkId;
+        static const UniqueId AliasOfId;
 
         // Constructor/Destructor
         Network();
@@ -47,7 +49,6 @@ class Network : public CommonConceptGraph
         void createMainConcepts();
 
         // Create classes
-        // TODO: Provide a create(uid, label, suids) function somewhere else!
         Hyperedges createComponent(const UniqueId& uid, const std::string& name="Component", const Hyperedges& suids=Hyperedges());
         Hyperedges createInterface(const UniqueId& uid, const std::string& name="Interface", const Hyperedges& suids=Hyperedges());
         Hyperedges createNetwork(const UniqueId& uid, const std::string& name="Network", const Hyperedges& suids=Hyperedges());
@@ -66,6 +67,14 @@ class Network : public CommonConceptGraph
         Hyperedges networks(const std::string& name="", const std::string& className="");
         // Query component interfaces
         Hyperedges interfacesOf(const Hyperedges& componentIds, const std::string& name="", const TraversalDirection dir=FORWARD);
+
+        // Specify that an interface is an alias of another interface
+        Hyperedges aliasOf(const Hyperedges& aliasInterfaceUids, const Hyperedges& originalInterfaceUids);
+        // Create alias interfaces
+        Hyperedges instantiateAliasInterfaceFor(const Hyperedges& parentUids, const Hyperedges& interfaceUids, const std::string& label="");
+        // Query original interfaces of alias interfaces
+        Hyperedges originalInterfacesOf(const Hyperedges& aliasInterfaceUids, const std::string& label="");
+
 
         // Specify a component
         Hyperedges hasInterface(const Hyperedges& componentIds, const Hyperedges& interfaceIds);
