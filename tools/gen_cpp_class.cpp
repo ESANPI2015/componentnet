@@ -248,6 +248,22 @@ int main (int argc, char **argv)
         result << "\n\t\t// Constructor to initialize class\n";
         result << "\t\t" << sanitizeString(algorithm->label()) << "(const std::string& param=\"" << algorithm->label() << "\")\n";
         result << "\t\t{\n";
+        result << "\t\t\t// Initializing component interfaces\n";
+        for (const UniqueId& partUid : parts)
+        {
+            Hyperedges partInputUids(intersect(allInputUids, swgraph.interfacesOf(Hyperedges{partUid})));
+            for (const UniqueId& partInputUid : partInputUids)
+            {
+                Hyperedges interfaceValueUids(swgraph.valuesOf(Hyperedges{partInputUid}));
+                for (const UniqueId& interfaceValueUid : interfaceValueUids)
+                {
+                    result << "\t\t\t";
+                    result << genPartIdentifier(partUid) << "." << genInputIdentifier(swgraph.get(partInputUid)->label());
+                    result << " = " << swgraph.get(interfaceValueUid)->label();
+                    result << ";\n";
+                }
+            }
+        }
         result << "\t\t\t// Write your init code here\n";
         result << "\t\t}\n";
 
@@ -271,8 +287,10 @@ int main (int argc, char **argv)
             Hyperedges inputClassUids(swgraph.instancesOf(Hyperedges{inputId},"",Hypergraph::TraversalDirection::FORWARD));
             for (const UniqueId& classUid : inputClassUids)
             {
-                std::string typeOfInput(swgraph.get(classUid)->label());
-                result << "\t\t" << genTypeFromLabel(typeOfInput) << " " << genInputIdentifier(swgraph.get(inputId)->label()) << ";\n";
+                const std::string typeOfInput(swgraph.get(classUid)->label());
+                result << "\t\t";
+                result << genTypeFromLabel(typeOfInput) << " " << genInputIdentifier(swgraph.get(inputId)->label());
+                result << ";\n";
             }
         }
         // Generate output arguments
