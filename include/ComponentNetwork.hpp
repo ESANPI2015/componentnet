@@ -56,6 +56,8 @@ class Network : public CommonConceptGraph
         Hyperedges instantiateComponent(const Hyperedges& componentIds);
         Hyperedges instantiateComponent(const Hyperedges& componentIds, const std::string& newName);
         Hyperedges instantiateInterfaceFor(const Hyperedges& componentIds, const Hyperedges& interfaceClassIds, const std::string& name="");
+        // Create alias interfaces
+        Hyperedges instantiateAliasInterfaceFor(const Hyperedges& parentUids, const Hyperedges& interfaceUids, const std::string& label="");
 
         // Query classes
         Hyperedges componentClasses(const std::string& name="", const Hyperedges& suids=Hyperedges());
@@ -67,11 +69,6 @@ class Network : public CommonConceptGraph
         Hyperedges networks(const std::string& name="", const std::string& className="");
         // Query component interfaces
         Hyperedges interfacesOf(const Hyperedges& componentIds, const std::string& name="", const TraversalDirection dir=FORWARD);
-
-        // Specify that an interface is an alias of another interface
-        Hyperedges aliasOf(const Hyperedges& aliasInterfaceUids, const Hyperedges& originalInterfaceUids);
-        // Create alias interfaces
-        Hyperedges instantiateAliasInterfaceFor(const Hyperedges& parentUids, const Hyperedges& interfaceUids, const std::string& label="");
         // Query original interfaces of alias interfaces
         Hyperedges originalInterfacesOf(const Hyperedges& aliasInterfaceUids, const std::string& label="");
 
@@ -82,6 +79,8 @@ class Network : public CommonConceptGraph
         Hyperedges connectInterface(const Hyperedges& fromInterfaceIds, const Hyperedges& toInterfaceIds);
         // Specify network
         Hyperedges partOfNetwork(const Hyperedges& componentIds, const Hyperedges& networkIds);
+        // Specify that an interface is an alias of another interface
+        Hyperedges aliasOf(const Hyperedges& aliasInterfaceUids, const Hyperedges& originalInterfaceUids);
 };
 
 }
