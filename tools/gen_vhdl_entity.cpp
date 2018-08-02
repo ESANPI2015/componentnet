@@ -359,26 +359,34 @@ int main (int argc, char **argv)
             result << "-- assignment of toplvl inputs to internal inputs --\n";
             for (const UniqueId& inputId : inputUids)
             {
-                Hyperedges partUids(intersect(parts, swgraph.interfacesOf(Hyperedges{inputId}, "", Hypergraph::TraversalDirection::INVERSE)));
-                for (const UniqueId& partUid : partUids)
+                Hyperedges internalInputs(intersect(allInputUids, swgraph.originalInterfacesOf(Hyperedges{inputId})));
+                for (const UniqueId& internalInputId : internalInputs)
                 {
-                    result << genPartIdentifier(partUid) << "_" << genInputIdentifier(swgraph.get(inputId)->label());
-                    result << " <= ";
-                    result << genInputIdentifier(swgraph.get(inputId)->label());
-                    result << ";\n";
+                    Hyperedges partUids(intersect(parts, swgraph.interfacesOf(Hyperedges{internalInputId}, "", Hypergraph::TraversalDirection::INVERSE)));
+                    for (const UniqueId& partUid : partUids)
+                    {
+                        result << genPartIdentifier(partUid) << "_" << genInputIdentifier(swgraph.get(internalInputId)->label());
+                        result << " <= ";
+                        result << genInputIdentifier(swgraph.get(inputId)->label());
+                        result << ";\n";
+                    }
                 }
             }
             // III. Wire internal outputs to toplvl outputs
             result << "-- assignment of internal outputs to toplvl outputs --\n";
             for (const UniqueId& outputId : outputUids)
             {
-                Hyperedges partUids(intersect(parts, swgraph.interfacesOf(Hyperedges{outputId}, "", Hypergraph::TraversalDirection::INVERSE)));
-                for (const UniqueId& partUid : partUids)
+                Hyperedges internalOutputs(intersect(allOutputUids, swgraph.originalInterfacesOf(Hyperedges{outputId})));
+                for (const UniqueId& internalOutputId : internalOutputs)
                 {
-                    result << genOutputIdentifier(swgraph.get(outputId)->label());
-                    result << " <= ";
-                    result << genPartIdentifier(partUid) << "_" << genOutputIdentifier(swgraph.get(outputId)->label());
-                    result << ";\n";
+                    Hyperedges partUids(intersect(parts, swgraph.interfacesOf(Hyperedges{internalOutputId}, "", Hypergraph::TraversalDirection::INVERSE)));
+                    for (const UniqueId& partUid : partUids)
+                    {
+                        result << genOutputIdentifier(swgraph.get(outputId)->label());
+                        result << " <= ";
+                        result << genPartIdentifier(partUid) << "_" << genOutputIdentifier(swgraph.get(internalOutputId)->label());
+                        result << ";\n";
+                    }
                 }
             }
             // IV. Instantiate and wire parts

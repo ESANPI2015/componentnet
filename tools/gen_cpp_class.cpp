@@ -340,16 +340,20 @@ int main (int argc, char **argv)
             result << "\t\t\t// Return true if evaluation has been performed\n";
             result << "\t\t\treturn false;\n";
         } else {
-            // I. Copy values from my inputs to the input vars of my parts (TODO: Follow aliasOf relations or get other owners)
-            result << "\t\t\t// Copy input values to inputs of internal parts\n";
+            // I. Copy values from my inputs to the input vars of my parts
+            result << "\t\t\t// Pass input values to inputs of internal parts\n";
             for (const UniqueId& inputId : inputUids)
             {
-                Hyperedges internalParts(intersect(parts, swgraph.interfacesOf(Hyperedges{inputId}, "", Hypergraph::TraversalDirection::INVERSE)));
-                for (const UniqueId& internalPartUid : internalParts)
+                Hyperedges internalInputs(intersect(allInputUids, swgraph.originalInterfacesOf(Hyperedges{inputId})));
+                for (const UniqueId& internalInputId : internalInputs)
                 {
-                    result << "\t\t\t";
-                    result << genPartIdentifier(internalPartUid) << "." << genInputIdentifier(swgraph.get(inputId)->label())
-                           << " = this->" << genInputIdentifier(swgraph.get(inputId)->label()) << ";\n";
+                    Hyperedges internalParts(intersect(parts, swgraph.interfacesOf(Hyperedges{internalInputId}, "", Hypergraph::TraversalDirection::INVERSE)));
+                    for (const UniqueId& internalPartUid : internalParts)
+                    {
+                        result << "\t\t\t";
+                        result << genPartIdentifier(internalPartUid) << "." << genInputIdentifier(swgraph.get(internalInputId)->label())
+                               << " = this->" << genInputIdentifier(swgraph.get(inputId)->label()) << ";\n";
+                    }
                 }
             }
             result << "\t\t\t// Evaluate internal parts\n";
@@ -379,16 +383,20 @@ int main (int argc, char **argv)
                     }
                 }
             }
-            // IV. Return output values (TODO: Follow aliasOf relations or get other owners)
+            // IV. Return output values
             result << "\t\t\t// Return the results from internal computation\n";
             for (const UniqueId& outputId : outputUids)
             {
-                Hyperedges internalParts(intersect(parts, swgraph.interfacesOf(Hyperedges{outputId}, "", Hypergraph::TraversalDirection::INVERSE)));
-                for (const UniqueId& internalPartUid : internalParts)
+                Hyperedges internalOutputs(intersect(allOutputUids, swgraph.originalInterfacesOf(Hyperedges{outputId})));
+                for (const UniqueId& internalOutputId : internalOutputs)
                 {
-                    result << "\t\t\t";
-                    result << "this->" << genOutputIdentifier(swgraph.get(outputId)->label()) 
-                           << " = " << genPartIdentifier(internalPartUid) << "." << genOutputIdentifier(swgraph.get(outputId)->label()) << ";\n";
+                    Hyperedges internalParts(intersect(parts, swgraph.interfacesOf(Hyperedges{internalOutputId}, "", Hypergraph::TraversalDirection::INVERSE)));
+                    for (const UniqueId& internalPartUid : internalParts)
+                    {
+                        result << "\t\t\t";
+                        result << "this->" << genOutputIdentifier(swgraph.get(outputId)->label()) 
+                               << " = " << genPartIdentifier(internalPartUid) << "." << genOutputIdentifier(swgraph.get(internalOutputId)->label()) << ";\n";
+                    }
                 }
             }
         }
