@@ -77,7 +77,7 @@ class Graph : public Component::Network
         Hyperedges createInput(const UniqueId& uid, const std::string& name="Input", const Hyperedges& suids=Hyperedges());
         Hyperedges createOutput(const UniqueId& uid, const std::string& name="Output", const Hyperedges& suids=Hyperedges());
         Hyperedges createImplementation(const UniqueId& uid, const std::string& name="Implementation", const Hyperedges& suids=Hyperedges());
-        Hyperedges createDatatype(const UniqueId& uid, const std::string& name="DataType", const Hyperedges& suids=Hyperedges());
+        Hyperedges createDatatype(const UniqueId& uid, const std::string& name="DataType", const Hyperedges& suids=Hyperedges()); // TODO: Needed? Why dont we just subclass interface?
 
         // Queries
         // NOTE: Returns subclasses
