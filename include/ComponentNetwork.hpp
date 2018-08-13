@@ -7,7 +7,7 @@ namespace Component {
 
 /*
     This subclass of the CommonConceptGraph class
-    introduces the notion of COMPONENT, INTERFACE, CONNECTOR & NETWORK
+    introduces the notion of COMPONENT, INTERFACE & NETWORK
 
     Main concept(s):
     COMPONENT
@@ -24,6 +24,7 @@ namespace Component {
 
     Open questions:
     * Do we need CONNECTORS? In software these are just components themself ... In Hardware they nicely encode the concept of a BUS
+      For now, it is left as a design decision ... you would only use connector components if they have work to do, e.g. convert between interface types
 */
 
 class Network;

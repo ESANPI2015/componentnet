@@ -37,7 +37,6 @@ int main(void)
     std::cout << "> Make the components part of a network\n";
     std::cout << cnd.partOfNetwork(unite(instanceA, instanceB), cnd.createNetwork("MyFirstNetwork","C")) << "\n";
 
-    // TODO: Make this a convenient function
     std::cout << "> Export interfaces to network level\n";
     std::cout << cnd.hasInterface(Hyperedges{"MyFirstNetwork"}, unite(cnd.interfacesOf(instanceA,"x"), cnd.interfacesOf(instanceB,"v"))) << "\n";
 
