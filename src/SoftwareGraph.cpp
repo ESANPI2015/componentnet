@@ -9,7 +9,6 @@ const UniqueId Graph::InputId           = "Software::Graph::Input";
 const UniqueId Graph::OutputId          = "Software::Graph::Output";
 const UniqueId Graph::AlgorithmId       = "Software::Graph::Algorithm";
 const UniqueId Graph::ImplementationId  = "Software::Graph::Implementation";
-const UniqueId Graph::DatatypeId        = "Software::Graph::Datatype";
 // Relation Ids
 const UniqueId Graph::DependsOnId       = "Software::Graph::DependsOn";
 const UniqueId Graph::NeedsId           = "Software::Graph::Needs";
@@ -23,9 +22,6 @@ void Graph::createMainConcepts()
     Component::Network::createInterface(Graph::InputId, "INPUT", Hyperedges{Graph::InterfaceId});
     Component::Network::createInterface(Graph::OutputId, "OUTPUT", Hyperedges{Graph::InterfaceId});
     createComponent(Graph::ImplementationId, "IMPLEMENTATION", Hyperedges{Graph::AlgorithmId}); // Concrete algorithm (e.g. 3DSLAM.cpp)
-    Component::Network::createInterface(Graph::DatatypeId, "DATATYPE", Hyperedges{Graph::InterfaceId}); // Concrete interface (e.g. Eigen::Vector3f)
-    // TODO: Where do we put language? Would it be better to encode different languages using domains?
-    // We could also just subclass implementation into implementation::C++ and implementation::VHDL
 
     // Relations
     subrelationFrom(Graph::DependsOnId, Hyperedges{Graph::InputId}, Hyperedges{Graph::OutputId}, CommonConceptGraph::ConnectsId);
@@ -78,11 +74,6 @@ Hyperedges Graph::createImplementation(const UniqueId& uid, const std::string& n
     return createAlgorithm(uid, name, suids.empty() ? Hyperedges{Graph::ImplementationId} : intersect(implementationClasses(), suids));
 }
 
-Hyperedges Graph::createDatatype(const UniqueId& uid, const std::string& name, const Hyperedges& suids)
-{
-    return createInterface(uid, name, suids.empty() ? Hyperedges{Graph::DatatypeId} : intersect(datatypeClasses(), suids));
-}
-
 Hyperedges Graph::algorithmClasses(const std::string& name, const Hyperedges& suids)
 {
     Hyperedges all(componentClasses(name, Hyperedges{Graph::AlgorithmId}));
@@ -110,12 +101,6 @@ Hyperedges Graph::outputClasses(const std::string& name, const Hyperedges& suids
 Hyperedges Graph::implementationClasses(const std::string& name, const Hyperedges& suids)
 {
     Hyperedges all(algorithmClasses(name, Hyperedges{Graph::ImplementationId}));
-    return suids.empty() ? all : intersect(all, subclassesOf(suids, name));
-}
-
-Hyperedges Graph::datatypeClasses(const std::string& name, const Hyperedges& suids)
-{
-    Hyperedges all(interfaceClasses(name, Hyperedges{Graph::DatatypeId}));
     return suids.empty() ? all : intersect(all, subclassesOf(suids, name));
 }
 
@@ -151,13 +136,6 @@ Hyperedges Graph::implementations(const std::string& name, const std::string& cl
 {
     // Get all super classes
     Hyperedges classIds = implementationClasses(className);
-    // ... and then the instances of them
-    return instancesOf(classIds, name);
-}
-Hyperedges Graph::datatypes(const std::string& name, const std::string& className)
-{
-    // Get all super classes
-    Hyperedges classIds = datatypeClasses(className);
     // ... and then the instances of them
     return instancesOf(classIds, name);
 }

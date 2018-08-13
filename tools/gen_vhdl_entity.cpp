@@ -25,7 +25,7 @@ void usage (const char *myName)
     std::cout << "--help\t" << "Show usage\n";
     std::cout << "--uid=<uid>\t" << "Specify the algorithm to be used to generate code by UID\n";
     std::cout << "--label=<label>\t" << "Specify the algorithm(s) to be used to generate code by label\n";
-    std::cout << "--type-uid=<uid>\t" << "Specify the datatype class which hosts compatible types\n";
+    std::cout << "--type-uid=<uid>\t" << "Specify the interface class which hosts compatible types\n";
     std::cout << "--generate-files\t" << "If given, the generator will produce the file(s) needed for compilation\n";
     std::cout << "--overwrite\t" << "If given, the generator will overwrite existing implementation(s) with the same uid\n";
     std::cout << "\nExample:\n";
@@ -184,12 +184,12 @@ int main (int argc, char **argv)
     const UniqueId& vhdlImplementationUid("Software::Graph::Implementation::VHDL");
     swgraph.createImplementation(vhdlImplementationUid, "VHDLImplementation");
 
-    // Find relevant datatypeClasses
+    // Find relevant interface classes
     Hyperedges relevantTypeUids;
     if (!vhdlDatatypeUid.empty())
-        relevantTypeUids = swgraph.datatypeClasses("",Hyperedges{vhdlDatatypeUid});
+        relevantTypeUids = swgraph.interfaceClasses("",Hyperedges{vhdlDatatypeUid});
     else
-        relevantTypeUids = swgraph.datatypeClasses();
+        relevantTypeUids = swgraph.interfaceClasses();
 
     // Get some constants
     Hyperedges allInputUids(swgraph.inputs());

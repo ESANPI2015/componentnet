@@ -25,7 +25,7 @@ void usage (const char *myName)
     std::cout << "--help\t" << "Show usage\n";
     std::cout << "--uid=<uid>\t" << "Specify the algorithm to be used to generate code by UID\n";
     std::cout << "--label=<label>\t" << "Specify the algorithm(s) to be used to generate code by label\n";
-    std::cout << "--type-uid=<uid>\t" << "Specify the datatype class which hosts compatible types\n";
+    std::cout << "--type-uid=<uid>\t" << "Specify the interface super class which hosts compatible types\n";
     std::cout << "--generate-files\t" << "If given, the generator will produce the file(s) needed for compilation\n";
     std::cout << "--overwrite\t" << "If given, the generator will overwrite existing implementation(s) with the same uid\n";
     std::cout << "\nExample:\n";
@@ -172,9 +172,9 @@ int main (int argc, char **argv)
     // Find relevant datatypeClasses
     Hyperedges relevantTypeUids;
     if (!cppDatatypeUid.empty())
-        relevantTypeUids = swgraph.datatypeClasses("",Hyperedges{cppDatatypeUid});
+        relevantTypeUids = swgraph.interfaceClasses("",Hyperedges{cppDatatypeUid});
     else
-        relevantTypeUids = swgraph.datatypeClasses();
+        relevantTypeUids = swgraph.interfaceClasses();
 
     // Get some constants
     Hyperedges allInputUids(swgraph.inputs());
@@ -264,6 +264,7 @@ int main (int argc, char **argv)
                 }
             }
         }
+        // TODO: Handle outputs
         result << "\t\t\t// Write your init code here\n";
         result << "\t\t}\n";
 
@@ -281,6 +282,7 @@ int main (int argc, char **argv)
         }
 
         // Generate input arguments
+        // TODO: Instantiate specialized interfaces from abstract interfaces!!!!
         result << "\n\t\t// Input variables\n";
         for (const UniqueId& inputId : inputUids)
         {
@@ -294,6 +296,7 @@ int main (int argc, char **argv)
             }
         }
         // Generate output arguments
+        // TODO: Instantiate specialized interfaces from abstract interfaces!!!!
         result << "\n\t\t// Output variables\n";
         for (const UniqueId& outputId : outputUids)
         {

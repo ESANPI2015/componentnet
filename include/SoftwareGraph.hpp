@@ -13,7 +13,7 @@ namespace Software {
 
     It introduces these different concepts:
         ALGORITHM, INPUT, OUTPUT, INTERFACE (for logical specification and skeleton generation)
-        IMPLEMENTATION, DATATYPE (for storing already available implementations of algorithms in different languages)
+        IMPLEMENTATION (for storing already available implementations of algorithms in different languages)
     The domain is encoded as follows:
 
     (ALGORITHM -- has --> INTERFACE)                    optional, inferrable
@@ -24,12 +24,6 @@ namespace Software {
     INPUT -- dependsOn(connects) --> OUTPUT
 
     ALGORITHM <-- realizes(is-a) -- IMPLEMENTATION
-    INTERFACE <-- represents(is-a) -- DATATYPE
-
-    (IMPLEMENTATION -- uses --> DATATYPE)               questionable
-    (IMPLEMENTATION -- dependsOn --> IMPLEMENTATION)    optional, not needed yet
-    (IMPLEMENTATION -- needs --> INPUT)                 redundant
-    (IMPLEMENTATION -- provides --> OUTPUT)             redundant
 
     If some X is a ALGORITHM then there exists a path of IS-A relations from X to ALGORITHM
 
@@ -38,12 +32,12 @@ namespace Software {
         |---------- realizes -- disparity.c
         v
     DisparityMap -- needs --> left -- is-a --> Input
-      | |                       |---- is-a --> Image <-- represents -- uint8_t[MAX_X][MAX_Y]
+      | |                       |---- is-a --> Image <-- is-a -- uint8_t[MAX_X][MAX_Y]
       | |---------- needs --> right ...
       |------------ provides --> disparity ...
 
     NOTE: When merging with the concept of Finite State Machines, this whole thing would become an even whiter box :)
-    NOTE: To support different programming languages, you can create a domains.
+    NOTE: To support different programming languages, you can create e.g. specialized interfaces by subclassing.
 */
 
 class Graph : public Component::Network
@@ -55,7 +49,6 @@ class Graph : public Component::Network
         static const UniqueId InputId;
         static const UniqueId OutputId;
         static const UniqueId ImplementationId;
-        static const UniqueId DatatypeId;
 
         // Ids for identifiing main relations
         static const UniqueId NeedsId;
@@ -77,7 +70,6 @@ class Graph : public Component::Network
         Hyperedges createInput(const UniqueId& uid, const std::string& name="Input", const Hyperedges& suids=Hyperedges());
         Hyperedges createOutput(const UniqueId& uid, const std::string& name="Output", const Hyperedges& suids=Hyperedges());
         Hyperedges createImplementation(const UniqueId& uid, const std::string& name="Implementation", const Hyperedges& suids=Hyperedges());
-        Hyperedges createDatatype(const UniqueId& uid, const std::string& name="DataType", const Hyperedges& suids=Hyperedges()); // TODO: Needed? Why dont we just subclass interface?
 
         // Queries
         // NOTE: Returns subclasses
@@ -86,7 +78,6 @@ class Graph : public Component::Network
         Hyperedges inputClasses(const std::string& name="", const Hyperedges& suids=Hyperedges());
         Hyperedges outputClasses(const std::string& name="", const Hyperedges& suids=Hyperedges());
         Hyperedges implementationClasses(const std::string& name="", const Hyperedges& suids=Hyperedges());
-        Hyperedges datatypeClasses(const std::string& name="", const Hyperedges& suids=Hyperedges());
 
         // NOTE: Returns instances
         Hyperedges algorithms(const std::string& name="", const std::string& className="");
@@ -94,12 +85,10 @@ class Graph : public Component::Network
         Hyperedges inputs(const std::string& name="", const std::string& className="");
         Hyperedges outputs(const std::string& name="", const std::string& className="");
         Hyperedges implementations(const std::string& name="", const std::string& className="");
-        Hyperedges datatypes(const std::string& name="", const std::string& className="");
 
         // TODO: Nice additional queries
         // inputsOf()
         // outputsOf()
-        // datatypesOf()
 
         // Facts
         // NOTE: Only the multidimensionals are used here (more generic)
