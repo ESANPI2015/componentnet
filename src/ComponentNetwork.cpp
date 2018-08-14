@@ -63,6 +63,12 @@ Hyperedges Network::createNetwork(const UniqueId& uid, const std::string& name, 
         return Hyperedges{uid};
     return Hyperedges();
 }
+Hyperedges Network::createValue(const UniqueId& uid, const std::string& name, const Hyperedges& suids)
+{
+    if (!isA(create(uid, name), intersect(unite(Hyperedges{Network::ValueId}, suids), valueClasses())).empty())
+        return Hyperedges{uid};
+    return Hyperedges();
+}
 Hyperedges Network::componentClasses(const std::string& name, const Hyperedges& suids)
 {
     Hyperedges all(subclassesOf(Hyperedges{Network::ComponentId}, name));
@@ -80,6 +86,13 @@ Hyperedges Network::interfaceClasses(const std::string& name, const Hyperedges& 
 Hyperedges Network::networkClasses(const std::string& name, const Hyperedges& suids)
 {
     Hyperedges all(subclassesOf(Hyperedges{Network::NetworkId}, name));
+    if (!suids.empty())
+        all = intersect(all, subclassesOf(suids, name));
+    return all;
+}
+Hyperedges Network::valueClasses(const std::string& name, const Hyperedges& suids)
+{
+    Hyperedges all(subclassesOf(Hyperedges{Network::ValueId}, name));
     if (!suids.empty())
         all = intersect(all, subclassesOf(suids, name));
     return all;
@@ -128,6 +141,13 @@ Hyperedges Network::networks(const std::string& name, const std::string& classNa
     // ... and then the instances of them
     return instancesOf(classIds, name);
 }
+Hyperedges Network::values(const std::string& name, const std::string& className)
+{
+    // Get all super classes
+    Hyperedges classIds = valueClasses(className);
+    // ... and then the instances of them
+    return instancesOf(classIds, name);
+}
 
 Hyperedges Network::hasValue(const Hyperedges& interfaceIds, const Hyperedges& valueIds)
 {
@@ -152,12 +172,12 @@ Hyperedges Network::valuesOf(const Hyperedges& interfaceUids, const std::string&
     return to(matches, value);
 }
 
-Hyperedges Network::instantiateValueFor(const Hyperedges& interfaceUids, const std::string& value)
+Hyperedges Network::instantiateValueFor(const Hyperedges& interfaceUids, const Hyperedges& valueClassUids, const std::string& value)
 {
     Hyperedges result;
     for (const UniqueId& interfaceUid : interfaceUids)
     {
-        Hyperedges newValueUids(instantiateDeepFrom(Hyperedges{Network::ValueId}, value));
+        Hyperedges newValueUids(instantiateDeepFrom(valueClassUids, value));
         hasValue(Hyperedges{interfaceUid}, newValueUids);
         result = unite(result, newValueUids);
     }

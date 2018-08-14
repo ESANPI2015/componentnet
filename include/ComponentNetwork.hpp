@@ -56,6 +56,7 @@ class Network : public CommonConceptGraph
         Hyperedges createComponent(const UniqueId& uid, const std::string& name="Component", const Hyperedges& suids=Hyperedges());
         Hyperedges createInterface(const UniqueId& uid, const std::string& name="Interface", const Hyperedges& suids=Hyperedges());
         Hyperedges createNetwork(const UniqueId& uid, const std::string& name="Network", const Hyperedges& suids=Hyperedges());
+        Hyperedges createValue(const UniqueId& uid, const std::string& name="Value", const Hyperedges& suids=Hyperedges());
         // Create individuals
         Hyperedges instantiateComponent(const Hyperedges& componentIds);
         Hyperedges instantiateComponent(const Hyperedges& componentIds, const std::string& newName);
@@ -63,16 +64,18 @@ class Network : public CommonConceptGraph
         // Create alias interfaces
         Hyperedges instantiateAliasInterfaceFor(const Hyperedges& parentUids, const Hyperedges& interfaceUids, const std::string& label="");
         // Create a value for an interface
-        Hyperedges instantiateValueFor(const Hyperedges& interfaceUids, const std::string& value="");
+        Hyperedges instantiateValueFor(const Hyperedges& interfaceUids, const Hyperedges& valueClassUids, const std::string& value="");
 
         // Query classes
         Hyperedges componentClasses(const std::string& name="", const Hyperedges& suids=Hyperedges());
         Hyperedges interfaceClasses(const std::string& name="", const Hyperedges& suids=Hyperedges());
         Hyperedges networkClasses(const std::string& name="", const Hyperedges& suids=Hyperedges());
+        Hyperedges valueClasses(const std::string& name="", const Hyperedges& suids=Hyperedges());
         // Query individuals
         Hyperedges components(const std::string& name="", const std::string& className="");
         Hyperedges interfaces(const std::string& name="", const std::string& className="");
         Hyperedges networks(const std::string& name="", const std::string& className="");
+        Hyperedges values(const std::string& name="", const std::string& className="");
         // Query component interfaces
         Hyperedges interfacesOf(const Hyperedges& componentIds, const std::string& name="", const TraversalDirection dir=FORWARD);
         // Query original interfaces of alias interfaces
