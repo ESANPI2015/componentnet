@@ -65,7 +65,7 @@ std::string sanitizeString(const std::string& in)
 
 std::string genTypeFromLabel(const std::string& label)
 {
-    return sanitizeString(label)+"_t";
+    return sanitizeString(label);
 }
 
 std::string genPartIdentifier(const UniqueId& uid)
@@ -206,6 +206,10 @@ int main (int argc, char **argv)
             continue;
         }
 
+        // Create implementation class (and register it for later use in allImplementationClasses)
+        allImplementationClasses = unite(allImplementationClasses, swgraph.createImplementation(implId, "//In progress ...", Hyperedges{cppImplementationUid}));
+        swgraph.isA(Hyperedges{implId}, Hyperedges{algorithmId});
+
         // Find interfaces
         Hyperedges interfaceUids(swgraph.interfacesOf(Hyperedges{algorithmId}));
         Hyperedges interfaceClassUids(swgraph.instancesOf(interfaceUids,"",Hypergraph::TraversalDirection::FORWARD));
@@ -251,6 +255,7 @@ int main (int argc, char **argv)
         result << "\t\t\t// Initializing component interfaces\n";
         for (const UniqueId& partUid : parts)
         {
+            // TODO: Filter out relevant values (and instantiate them?)
             Hyperedges partInputUids(intersect(allInputUids, swgraph.interfacesOf(Hyperedges{partUid})));
             for (const UniqueId& partInputUid : partInputUids)
             {
@@ -263,49 +268,67 @@ int main (int argc, char **argv)
                     result << ";\n";
                 }
             }
+            Hyperedges partOutputUids(intersect(allOutputUids, swgraph.interfacesOf(Hyperedges{partUid})));
+            for (const UniqueId& partOutputUid : partOutputUids)
+            {
+                Hyperedges interfaceValueUids(swgraph.valuesOf(Hyperedges{partOutputUid}));
+                for (const UniqueId& interfaceValueUid : interfaceValueUids)
+                {
+                    result << "\t\t\t";
+                    result << genPartIdentifier(partUid) << "." << genOutputIdentifier(swgraph.get(partOutputUid)->label());
+                    result << " = " << swgraph.get(interfaceValueUid)->label();
+                    result << ";\n";
+                }
+            }
         }
-        // TODO: Handle outputs
+        // TODO: Initialize own interfaces?
         result << "\t\t\t// Write your init code here\n";
         result << "\t\t}\n";
 
-        // Handle the collected interface classes
-        result << "\n\t\t// Generate interface types\n";
-        for (const UniqueId& interfaceClassUid : interfaceClassUids)
+        // Generate type information
+        result << "\n\t\t// Type definitions\n";
+        for (const UniqueId& interfaceClassId : interfaceClassUids)
         {
-            Hyperedge* interface(swgraph.get(interfaceClassUid));
-            Hyperedges typeUids(intersect(relevantTypeUids, swgraph.directSubclassesOf(Hyperedges{interfaceClassUid},"",Hypergraph::TraversalDirection::INVERSE)));
+            Hyperedges typeUids(intersect(relevantTypeUids, swgraph.directSubclassesOf(Hyperedges{interfaceClassId},"",Hypergraph::TraversalDirection::INVERSE)));
             for (const UniqueId& typeUid : typeUids)
             {
-                std::string datatypeName(sanitizeString(swgraph.get(typeUid)->label()));
-                result << "\t\ttypedef " << datatypeName << " " << genTypeFromLabel(interface->label()) << ";\n";
+                result << "\t\ttypedef ";
+                result << genTypeFromLabel(swgraph.get(typeUid)->label()) << " " << genTypeFromLabel(swgraph.get(interfaceClassId)->label());
+                result << ";\n";
             }
         }
 
         // Generate input arguments
-        // TODO: Instantiate specialized interfaces from abstract interfaces!!!!
         result << "\n\t\t// Input variables\n";
         for (const UniqueId& inputId : inputUids)
         {
             Hyperedges inputClassUids(swgraph.instancesOf(Hyperedges{inputId},"",Hypergraph::TraversalDirection::FORWARD));
-            for (const UniqueId& classUid : inputClassUids)
+            for (const UniqueId& inputClassUid : inputClassUids)
             {
-                const std::string typeOfInput(swgraph.get(classUid)->label());
                 result << "\t\t";
-                result << genTypeFromLabel(typeOfInput) << " " << genInputIdentifier(swgraph.get(inputId)->label());
+                result << genTypeFromLabel(swgraph.get(inputClassUid)->label()) << " " << genInputIdentifier(swgraph.get(inputId)->label());
                 result << ";\n";
             }
+            // Instantiate specialized interface
+            Hyperedges typeUids(intersect(relevantTypeUids, swgraph.directSubclassesOf(inputClassUids,"",Hypergraph::TraversalDirection::INVERSE)));
+            Hyperedges specializedInterfaceUids(swgraph.instantiateInterfaceFor(Hyperedges{implId}, typeUids, genInputIdentifier(swgraph.get(inputId)->label())));
+            swgraph.needsInterface(Hyperedges{implId}, specializedInterfaceUids); 
         }
         // Generate output arguments
-        // TODO: Instantiate specialized interfaces from abstract interfaces!!!!
         result << "\n\t\t// Output variables\n";
         for (const UniqueId& outputId : outputUids)
         {
             Hyperedges outputClassUids(swgraph.instancesOf(Hyperedges{outputId},"",Hypergraph::TraversalDirection::FORWARD));
-            for (const UniqueId& classUid : outputClassUids)
+            for (const UniqueId& outputClassUid : outputClassUids)
             {
-                std::string typeOfOutput(swgraph.get(classUid)->label());
-                result << "\t\t" << genTypeFromLabel(typeOfOutput) << " " << genOutputIdentifier(swgraph.get(outputId)->label()) << ";\n";
+                result << "\t\t";
+                result << genTypeFromLabel(swgraph.get(outputClassUid)->label()) << " " << genOutputIdentifier(swgraph.get(outputId)->label());
+                result << ";\n";
             }
+            // Instantiate specialized interface
+            Hyperedges typeUids(intersect(relevantTypeUids, swgraph.directSubclassesOf(outputClassUids,"",Hypergraph::TraversalDirection::INVERSE)));
+            Hyperedges specializedInterfaceUids(swgraph.instantiateInterfaceFor(Hyperedges{implId}, typeUids, genOutputIdentifier(swgraph.get(outputId)->label())));
+            swgraph.providesInterface(Hyperedges{implId}, specializedInterfaceUids);
         }
 
         // Instantiate parts (to not confuse C++, partId is also included)
@@ -348,6 +371,8 @@ int main (int argc, char **argv)
                 }
             }
         }
+        // Make part implementations part of this implementation
+        swgraph.partOfNetwork(partImplementations, Hyperedges{implId});
 
         // Generate main function signature
         result << "\n\t\t// Generate main function\n";
@@ -427,11 +452,8 @@ int main (int argc, char **argv)
         result << "};\n";
         result << "#endif\n";
 
-        // Create implementation class (and register it for later use in allImplementationClasses)
-        allImplementationClasses = unite(allImplementationClasses, swgraph.createImplementation(implId, result.str(), Hyperedges{cppImplementationUid}));
-        swgraph.isA(Hyperedges{implId}, Hyperedges{algorithmId});
-        // Make part implementations part of this implementation
-        swgraph.partOfNetwork(partImplementations, Hyperedges{implId});
+        // Update label
+        swgraph.get(implId)->updateLabel(result.str());
 
         // If desired, write implementation to file
         if (generateFiles)

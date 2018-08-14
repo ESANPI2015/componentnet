@@ -25,7 +25,7 @@ void usage (const char *myName)
     std::cout << "--help\t" << "Show usage\n";
     std::cout << "--uid=<uid>\t" << "Specify the algorithm to be used to generate code by UID\n";
     std::cout << "--label=<label>\t" << "Specify the algorithm(s) to be used to generate code by label\n";
-    std::cout << "--type-uid=<uid>\t" << "Specify the interface class which hosts compatible types\n";
+    std::cout << "--type-uid=<uid>\t" << "Specify the interface super class which hosts compatible types\n";
     std::cout << "--generate-files\t" << "If given, the generator will produce the file(s) needed for compilation\n";
     std::cout << "--overwrite\t" << "If given, the generator will overwrite existing implementation(s) with the same uid\n";
     std::cout << "\nExample:\n";
@@ -65,7 +65,7 @@ std::string sanitizeString(const std::string& in)
 
 std::string genTypeFromLabel(const std::string& label)
 {
-    return sanitizeString(label)+"_type";
+    return sanitizeString(label);
 }
 
 std::string genPartIdentifier(const UniqueId& partUid)
@@ -219,6 +219,9 @@ int main (int argc, char **argv)
             std::cout << "Overwrite mechanism not implemented yet :(\n";
             continue;
         }
+        // Create implementation class (and register it for later use in allImplementationClasses)
+        allImplementationClasses = unite(allImplementationClasses, swgraph.createImplementation(implId, "-- In progress ...", Hyperedges{vhdlImplementationUid}));
+        swgraph.isA(Hyperedges{implId}, Hyperedges{algorithmId});
 
         // Find interfaces
         Hyperedges interfaceUids(swgraph.interfacesOf(Hyperedges{algorithmId}));
@@ -279,6 +282,10 @@ int main (int argc, char **argv)
                 std::string typeOfInput(sanitizeString(swgraph.get(classUid)->label()));
                 result << "\t" << genInputIdentifier(swgraph.get(inputId)->label()) << " : in " << genTypeFromLabel(typeOfInput) << ";\n";
             }
+            // Instantiate specialized interface
+            Hyperedges typeUids(intersect(relevantTypeUids, swgraph.directSubclassesOf(inputClassUids,"",Hypergraph::TraversalDirection::INVERSE)));
+            Hyperedges specializedInterfaceUids(swgraph.instantiateInterfaceFor(Hyperedges{implId}, typeUids, genInputIdentifier(swgraph.get(inputId)->label())));
+            swgraph.needsInterface(Hyperedges{implId}, specializedInterfaceUids); 
         }
         // Handle Outputs
         result << "\n\t-- Outputs --\n";
@@ -291,6 +298,10 @@ int main (int argc, char **argv)
                 std::string typeOfOutput(sanitizeString(swgraph.get(classUid)->label()));
                 result << "\t" << genOutputIdentifier(swgraph.get(outputId)->label()) << " : out " << genTypeFromLabel(typeOfOutput) << ";\n";
             }
+            // Instantiate specialized interface
+            Hyperedges typeUids(intersect(relevantTypeUids, swgraph.directSubclassesOf(outputClassUids,"",Hypergraph::TraversalDirection::INVERSE)));
+            Hyperedges specializedInterfaceUids(swgraph.instantiateInterfaceFor(Hyperedges{implId}, typeUids, genOutputIdentifier(swgraph.get(outputId)->label())));
+            swgraph.providesInterface(Hyperedges{implId}, specializedInterfaceUids);
         }
         result << "\n\t-- Standard Signals --\n";
         //result << "\tstart : in std_logic;\n";
@@ -301,7 +312,6 @@ int main (int argc, char **argv)
         result << "end;\n";
 
         // Handle architecture
-        Hyperedges partImplementations;
         if (!parts.size())
         {
             // Architecture for atomic entity
@@ -339,8 +349,17 @@ int main (int argc, char **argv)
                     {
                         result << "signal ";
                         result << genPartIdentifier(partUid) << "_" << genInputIdentifier(swgraph.get(partInputUid)->label());
-                        result << " : " << genTypeFromLabel(swgraph.get(classUid)->label()) << ";\n";
+                        result << " : " << genTypeFromLabel(swgraph.get(classUid)->label());
                     }
+                    Hyperedges interfaceValueUids(swgraph.valuesOf(Hyperedges{partInputUid}));
+                    if (interfaceValueUids.size())
+                    {
+                        for (const UniqueId& interfaceValueUid : interfaceValueUids)
+                        {
+                            result << " := " << swgraph.get(interfaceValueUid)->label();
+                        }
+                    }
+                    result << ";\n";
                 }
                 Hyperedges partOutputUids(intersect(allOutputUids, swgraph.interfacesOf(Hyperedges{partUid})));
                 for (const UniqueId& partOutputUid : partOutputUids)
@@ -350,8 +369,17 @@ int main (int argc, char **argv)
                     {
                         result << "signal ";
                         result << genPartIdentifier(partUid) << "_" << genOutputIdentifier(swgraph.get(partOutputUid)->label());
-                        result << " : " << genTypeFromLabel(swgraph.get(classUid)->label()) << ";\n";
+                        result << " : " << genTypeFromLabel(swgraph.get(classUid)->label());
                     }
+                    Hyperedges interfaceValueUids(swgraph.valuesOf(Hyperedges{partOutputUid}));
+                    if (interfaceValueUids.size())
+                    {
+                        for (const UniqueId& interfaceValueUid : interfaceValueUids)
+                        {
+                            result << " := " << swgraph.get(interfaceValueUid)->label();
+                        }
+                    }
+                    result << ";\n";
                 }
             }
             result << "\nbegin\n";
@@ -391,6 +419,7 @@ int main (int argc, char **argv)
             }
             // IV. Instantiate and wire parts
             result << "-- part entity instantiation & wiring--\n";
+            Hyperedges partImplementations;
             for (const UniqueId& partUid : parts)
             {
                 Hyperedges partInterfaceUids(swgraph.interfacesOf(Hyperedges{partUid}));
@@ -470,15 +499,15 @@ int main (int argc, char **argv)
                     }
                 }
             }
+            // Make part implementations part of this implementation
+            swgraph.partOfNetwork(partImplementations, Hyperedges{implId});
+
             result << "-- processes here --\n";
             result << "end BEHAVIOURAL;\n";
         }
 
-        // Create implementation class (and register it for later use in allImplementationClasses)
-        allImplementationClasses = unite(allImplementationClasses, swgraph.createImplementation(implId, result.str(), Hyperedges{vhdlImplementationUid}));
-        swgraph.isA(Hyperedges{implId}, Hyperedges{algorithmId});
-        // Make part implementations part of this implementation
-        swgraph.partOfNetwork(partImplementations, Hyperedges{implId});
+        // Update label
+        swgraph.get(implId)->updateLabel(result.str());
 
         // If desired, write implementation to file
         if (generateFiles)
