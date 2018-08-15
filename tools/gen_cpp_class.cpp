@@ -12,6 +12,7 @@ static struct option long_options[] = {
     {"uid", required_argument, 0, 'u'},
     {"label", required_argument, 0, 'l'},
     {"type-uid", required_argument, 0, 't'},
+    {"value-uid", required_argument, 0, 'v'},
     {"generate-files", no_argument, 0, 'g'},
     {"overwrite", no_argument, 0, 'o'},
     {0,0,0,0}
@@ -26,6 +27,7 @@ void usage (const char *myName)
     std::cout << "--uid=<uid>\t" << "Specify the algorithm to be used to generate code by UID\n";
     std::cout << "--label=<label>\t" << "Specify the algorithm(s) to be used to generate code by label\n";
     std::cout << "--type-uid=<uid>\t" << "Specify the interface super class which hosts compatible types\n";
+    std::cout << "--value-uid=<uid>\t" << "Specify the value super class which hosts compatible values\n";
     std::cout << "--generate-files\t" << "If given, the generator will produce the file(s) needed for compilation\n";
     std::cout << "--overwrite\t" << "If given, the generator will overwrite existing implementation(s) with the same uid\n";
     std::cout << "\nExample:\n";
@@ -95,13 +97,12 @@ std::string genOutputIdentifier(const std::string& label)
 //   - if parts, call each one but update inputs with connected outputs afterwards (synchronous update)
 // * What we have is: an algorithmClass which has algorithmic instances as parts (or none)
 //   What we want is: an implementationClass which has implementation instances matching the algorithmic instances class!!!!
-// TODO: When we create the C++ interfaces ... why don't we add them as interfaces to the implementation class?
 int main (int argc, char **argv)
 {
     std::ofstream fout;
     bool generateFiles = false;
     bool overwrite = false;
-    UniqueId uid, cppDatatypeUid;
+    UniqueId uid, cppDatatypeUid, cppValueUid;
     std::string label;
 
 
@@ -127,6 +128,9 @@ int main (int argc, char **argv)
                 break;
             case 't':
                 cppDatatypeUid=std::string(optarg);
+                break;
+            case 'v':
+                cppValueUid=std::string(optarg);
                 break;
             case 'u':
                 uid=std::string(optarg);
@@ -175,6 +179,13 @@ int main (int argc, char **argv)
         relevantTypeUids = swgraph.interfaceClasses("",Hyperedges{cppDatatypeUid});
     else
         relevantTypeUids = swgraph.interfaceClasses();
+
+    // Find relevant value classes
+    Hyperedges relevantValueUids;
+    if (!cppValueUid.empty())
+        relevantValueUids = swgraph.valueClasses("",Hyperedges{cppValueUid});
+    else
+        relevantValueUids = swgraph.valueClasses();
 
     // Get some constants
     Hyperedges allInputUids(swgraph.inputs());
@@ -255,12 +266,14 @@ int main (int argc, char **argv)
         result << "\t\t\t// Initializing component interfaces\n";
         for (const UniqueId& partUid : parts)
         {
-            // TODO: Filter out relevant values (and instantiate them?)
+            // TODO: Instantiate values. That means that we have to instantiate the PARTS first?!
             Hyperedges partInputUids(intersect(allInputUids, swgraph.interfacesOf(Hyperedges{partUid})));
             for (const UniqueId& partInputUid : partInputUids)
             {
                 Hyperedges interfaceValueUids(swgraph.valuesOf(Hyperedges{partInputUid}));
-                for (const UniqueId& interfaceValueUid : interfaceValueUids)
+                Hyperedges interfaceValueClassUids(swgraph.instancesOf(interfaceValueUids, "", Hypergraph::TraversalDirection::FORWARD));
+                Hyperedges specificValueClassUids(intersect(relevantValueUids, swgraph.directSubclassesOf(interfaceValueClassUids)));
+                for (const UniqueId& interfaceValueUid : specificValueClassUids)
                 {
                     result << "\t\t\t";
                     result << genPartIdentifier(partUid) << "." << genInputIdentifier(swgraph.get(partInputUid)->label());
@@ -272,7 +285,9 @@ int main (int argc, char **argv)
             for (const UniqueId& partOutputUid : partOutputUids)
             {
                 Hyperedges interfaceValueUids(swgraph.valuesOf(Hyperedges{partOutputUid}));
-                for (const UniqueId& interfaceValueUid : interfaceValueUids)
+                Hyperedges interfaceValueClassUids(swgraph.instancesOf(interfaceValueUids, "", Hypergraph::TraversalDirection::FORWARD));
+                Hyperedges specificValueClassUids(intersect(relevantValueUids, swgraph.directSubclassesOf(interfaceValueClassUids)));
+                for (const UniqueId& interfaceValueUid : specificValueClassUids)
                 {
                     result << "\t\t\t";
                     result << genPartIdentifier(partUid) << "." << genOutputIdentifier(swgraph.get(partOutputUid)->label());
@@ -281,7 +296,6 @@ int main (int argc, char **argv)
                 }
             }
         }
-        // TODO: Initialize own interfaces?
         result << "\t\t\t// Write your init code here\n";
         result << "\t\t}\n";
 
@@ -289,7 +303,7 @@ int main (int argc, char **argv)
         result << "\n\t\t// Type definitions\n";
         for (const UniqueId& interfaceClassId : interfaceClassUids)
         {
-            Hyperedges typeUids(intersect(relevantTypeUids, swgraph.directSubclassesOf(Hyperedges{interfaceClassId},"",Hypergraph::TraversalDirection::INVERSE)));
+            Hyperedges typeUids(intersect(relevantTypeUids, swgraph.directSubclassesOf(Hyperedges{interfaceClassId})));
             for (const UniqueId& typeUid : typeUids)
             {
                 result << "\t\ttypedef ";
@@ -310,7 +324,7 @@ int main (int argc, char **argv)
                 result << ";\n";
             }
             // Instantiate specialized interface
-            Hyperedges typeUids(intersect(relevantTypeUids, swgraph.directSubclassesOf(inputClassUids,"",Hypergraph::TraversalDirection::INVERSE)));
+            Hyperedges typeUids(intersect(relevantTypeUids, swgraph.directSubclassesOf(inputClassUids)));
             Hyperedges specializedInterfaceUids(swgraph.instantiateInterfaceFor(Hyperedges{implId}, typeUids, genInputIdentifier(swgraph.get(inputId)->label())));
             swgraph.needsInterface(Hyperedges{implId}, specializedInterfaceUids); 
         }
@@ -326,7 +340,7 @@ int main (int argc, char **argv)
                 result << ";\n";
             }
             // Instantiate specialized interface
-            Hyperedges typeUids(intersect(relevantTypeUids, swgraph.directSubclassesOf(outputClassUids,"",Hypergraph::TraversalDirection::INVERSE)));
+            Hyperedges typeUids(intersect(relevantTypeUids, swgraph.directSubclassesOf(outputClassUids)));
             Hyperedges specializedInterfaceUids(swgraph.instantiateInterfaceFor(Hyperedges{implId}, typeUids, genOutputIdentifier(swgraph.get(outputId)->label())));
             swgraph.providesInterface(Hyperedges{implId}, specializedInterfaceUids);
         }
@@ -342,7 +356,6 @@ int main (int argc, char **argv)
                 Hyperedges partImplementationclassUids(intersect(allImplementationClasses, swgraph.directSubclassesOf(Hyperedges{superUid})));
                 if (!partImplementationclassUids.size())
                 {
-                    // TODO: we could add it to the list of algorithms to be generated? :)
                     std::cout << "No implementation found for " << swgraph.get(superUid)->label() << ". Skipping\n";
                     continue;
                 }

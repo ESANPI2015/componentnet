@@ -12,6 +12,7 @@ static struct option long_options[] = {
     {"uid", required_argument, 0, 'u'},
     {"label", required_argument, 0, 'l'},
     {"type-uid", required_argument, 0, 't'},
+    {"value-uid", required_argument, 0, 'v'},
     {"generate-files", no_argument, 0, 'g'},
     {"overwrite", no_argument, 0, 'o'},
     {0,0,0,0}
@@ -26,6 +27,7 @@ void usage (const char *myName)
     std::cout << "--uid=<uid>\t" << "Specify the algorithm to be used to generate code by UID\n";
     std::cout << "--label=<label>\t" << "Specify the algorithm(s) to be used to generate code by label\n";
     std::cout << "--type-uid=<uid>\t" << "Specify the interface super class which hosts compatible types\n";
+    std::cout << "--value-uid=<uid>\t" << "Specify the value super class which hosts compatible values\n";
     std::cout << "--generate-files\t" << "If given, the generator will produce the file(s) needed for compilation\n";
     std::cout << "--overwrite\t" << "If given, the generator will overwrite existing implementation(s) with the same uid\n";
     std::cout << "\nExample:\n";
@@ -116,7 +118,7 @@ int main (int argc, char **argv)
     std::ofstream fout;
     bool generateFiles = false;
     bool overwrite = false;
-    UniqueId uid, vhdlDatatypeUid;
+    UniqueId uid, vhdlDatatypeUid, vhdlValueUid;
     std::string label;
 
     // Say hello :)
@@ -141,6 +143,9 @@ int main (int argc, char **argv)
                 break;
             case 't':
                 vhdlDatatypeUid=std::string(optarg);
+                break;
+            case 'v':
+                vhdlValueUid=std::string(optarg);
                 break;
             case 'u':
                 uid=std::string(optarg);
@@ -190,6 +195,13 @@ int main (int argc, char **argv)
         relevantTypeUids = swgraph.interfaceClasses("",Hyperedges{vhdlDatatypeUid});
     else
         relevantTypeUids = swgraph.interfaceClasses();
+
+    // Find relevant value classes
+    Hyperedges relevantValueUids;
+    if (!vhdlValueUid.empty())
+        relevantValueUids = swgraph.valueClasses("",Hyperedges{vhdlValueUid});
+    else
+        relevantValueUids = swgraph.valueClasses();
 
     // Get some constants
     Hyperedges allInputUids(swgraph.inputs());
@@ -252,7 +264,7 @@ int main (int argc, char **argv)
         for (const UniqueId& interfaceClassId : interfaceClassUids)
         {
             Hyperedge* interface(swgraph.get(interfaceClassId));
-            Hyperedges typeUids(intersect(relevantTypeUids, swgraph.directSubclassesOf(Hyperedges{interfaceClassId},"",Hypergraph::TraversalDirection::INVERSE)));
+            Hyperedges typeUids(intersect(relevantTypeUids, swgraph.directSubclassesOf(Hyperedges{interfaceClassId})));
             for (const UniqueId& typeUid : typeUids)
             {
                 std::string datatypeName(sanitizeString(swgraph.get(typeUid)->label()));
@@ -283,7 +295,7 @@ int main (int argc, char **argv)
                 result << "\t" << genInputIdentifier(swgraph.get(inputId)->label()) << " : in " << genTypeFromLabel(typeOfInput) << ";\n";
             }
             // Instantiate specialized interface
-            Hyperedges typeUids(intersect(relevantTypeUids, swgraph.directSubclassesOf(inputClassUids,"",Hypergraph::TraversalDirection::INVERSE)));
+            Hyperedges typeUids(intersect(relevantTypeUids, swgraph.directSubclassesOf(inputClassUids)));
             Hyperedges specializedInterfaceUids(swgraph.instantiateInterfaceFor(Hyperedges{implId}, typeUids, genInputIdentifier(swgraph.get(inputId)->label())));
             swgraph.needsInterface(Hyperedges{implId}, specializedInterfaceUids); 
         }
@@ -299,7 +311,7 @@ int main (int argc, char **argv)
                 result << "\t" << genOutputIdentifier(swgraph.get(outputId)->label()) << " : out " << genTypeFromLabel(typeOfOutput) << ";\n";
             }
             // Instantiate specialized interface
-            Hyperedges typeUids(intersect(relevantTypeUids, swgraph.directSubclassesOf(outputClassUids,"",Hypergraph::TraversalDirection::INVERSE)));
+            Hyperedges typeUids(intersect(relevantTypeUids, swgraph.directSubclassesOf(outputClassUids)));
             Hyperedges specializedInterfaceUids(swgraph.instantiateInterfaceFor(Hyperedges{implId}, typeUids, genOutputIdentifier(swgraph.get(outputId)->label())));
             swgraph.providesInterface(Hyperedges{implId}, specializedInterfaceUids);
         }
@@ -352,9 +364,11 @@ int main (int argc, char **argv)
                         result << " : " << genTypeFromLabel(swgraph.get(classUid)->label());
                     }
                     Hyperedges interfaceValueUids(swgraph.valuesOf(Hyperedges{partInputUid}));
-                    if (interfaceValueUids.size())
+                    Hyperedges interfaceValueClassUids(swgraph.instancesOf(interfaceValueUids, "", Hypergraph::TraversalDirection::FORWARD));
+                    Hyperedges specificValueClassUids(intersect(relevantValueUids, swgraph.directSubclassesOf(interfaceValueClassUids)));
+                    if (specificValueClassUids.size())
                     {
-                        for (const UniqueId& interfaceValueUid : interfaceValueUids)
+                        for (const UniqueId& interfaceValueUid : specificValueClassUids)
                         {
                             result << " := " << swgraph.get(interfaceValueUid)->label();
                         }
@@ -372,9 +386,11 @@ int main (int argc, char **argv)
                         result << " : " << genTypeFromLabel(swgraph.get(classUid)->label());
                     }
                     Hyperedges interfaceValueUids(swgraph.valuesOf(Hyperedges{partOutputUid}));
-                    if (interfaceValueUids.size())
+                    Hyperedges interfaceValueClassUids(swgraph.instancesOf(interfaceValueUids, "", Hypergraph::TraversalDirection::FORWARD));
+                    Hyperedges specificValueClassUids(intersect(relevantValueUids, swgraph.directSubclassesOf(interfaceValueClassUids)));
+                    if (specificValueClassUids.size())
                     {
-                        for (const UniqueId& interfaceValueUid : interfaceValueUids)
+                        for (const UniqueId& interfaceValueUid : specificValueClassUids)
                         {
                             result << " := " << swgraph.get(interfaceValueUid)->label();
                         }
