@@ -33,11 +33,13 @@ set(SOURCES
     src/ComponentNetwork.cpp
     src/HardwareComputationalNetwork.cpp
     src/SoftwareGraph.cpp
+    src/ResourceCostModel.cpp
     )
 set(HEADERS
     include/ComponentNetwork.hpp
     include/HardwareComputationalNetwork.hpp
     include/SoftwareGraph.hpp
+    include/ResourceCostModel.hpp
     )
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/")
@@ -56,6 +58,11 @@ RUNTIME DESTINATION bin)
 add_executable(testHWNetwork test/testHWNetwork.cpp)
 target_link_libraries(testHWNetwork componentnet)
 install(TARGETS testHWNetwork
+RUNTIME DESTINATION bin)
+
+add_executable(testMapping test/testMapping.cpp)
+target_link_libraries(testMapping componentnet)
+install(TARGETS testMapping
 RUNTIME DESTINATION bin)
 
 add_executable(gen_vhdl_entity tools/gen_vhdl_entity.cpp)
