@@ -30,13 +30,11 @@ link_directories(${componentnet_PKGCONFIG_LIBRARY_DIRS})
 add_definitions(${componentnet_PKGCONFIG_CFLAGS_OTHER} --pedantic -Wall)
 
 set(SOURCES
-    src/DomainSpecificGraph.cpp
     src/ComponentNetwork.cpp
     src/HardwareComputationalNetwork.cpp
     src/SoftwareGraph.cpp
     )
 set(HEADERS
-    include/DomainSpecificGraph.hpp
     include/ComponentNetwork.hpp
     include/HardwareComputationalNetwork.hpp
     include/SoftwareGraph.hpp
@@ -49,11 +47,6 @@ add_library(componentnet STATIC ${SOURCES})
 target_link_libraries(componentnet
     ${componentnet_PKGCONFIG_STATIC_LIBRARIES}
     )
-
-add_executable(testDomainGraph test/testDomainGraph.cpp)
-target_link_libraries(testDomainGraph componentnet)
-install(TARGETS testDomainGraph
-RUNTIME DESTINATION bin)
 
 add_executable(testComponentNetwork test/testComponentNetwork.cpp)
 target_link_libraries(testComponentNetwork componentnet)
