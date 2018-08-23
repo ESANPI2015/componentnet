@@ -51,15 +51,15 @@ class Network: public Component::Network
 
         // Queries
         // NOTE: These return the subclasses of the corresponding main concepts
-        Hyperedges deviceClasses(const std::string& name="", const Hyperedges& suids=Hyperedges());
-        Hyperedges processorClasses(const std::string& name="", const Hyperedges& suids=Hyperedges());
-        Hyperedges interfaceClasses(const std::string& name="", const Hyperedges& suids=Hyperedges());
-        Hyperedges busClasses(const std::string& name="", const Hyperedges& suids=Hyperedges());
+        Hyperedges deviceClasses(const std::string& name="", const Hyperedges& suids=Hyperedges()) const;
+        Hyperedges processorClasses(const std::string& name="", const Hyperedges& suids=Hyperedges()) const;
+        Hyperedges interfaceClasses(const std::string& name="", const Hyperedges& suids=Hyperedges()) const;
+        Hyperedges busClasses(const std::string& name="", const Hyperedges& suids=Hyperedges()) const;
         // NOTE: These return the individuals of all the corresponding classes
-        Hyperedges devices(const std::string& name="", const std::string& className="");
-        Hyperedges processors(const std::string& name="", const std::string& className="");
-        Hyperedges interfaces(const Hyperedges deviceIds, const std::string& name="", const std::string& className=""); //< If a deviceId is given, only its interfaces are returned
-        Hyperedges busses(const std::string& name="", const std::string& className="");
+        Hyperedges devices(const std::string& name="", const std::string& className="") const;
+        Hyperedges processors(const std::string& name="", const std::string& className="") const;
+        Hyperedges interfaces(const Hyperedges deviceIds, const std::string& name="", const std::string& className="") const; //< If a deviceId is given, only its interfaces are returned
+        Hyperedges busses(const std::string& name="", const std::string& className="") const;
 };
 
 }

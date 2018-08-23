@@ -69,28 +69,28 @@ Hyperedges Network::createValue(const UniqueId& uid, const std::string& name, co
         return Hyperedges{uid};
     return Hyperedges();
 }
-Hyperedges Network::componentClasses(const std::string& name, const Hyperedges& suids)
+Hyperedges Network::componentClasses(const std::string& name, const Hyperedges& suids) const
 {
     Hyperedges all(subclassesOf(Hyperedges{Network::ComponentId}, name));
     if (!suids.empty())
         all = intersect(all, subclassesOf(suids, name));
     return all;
 }
-Hyperedges Network::interfaceClasses(const std::string& name, const Hyperedges& suids)
+Hyperedges Network::interfaceClasses(const std::string& name, const Hyperedges& suids) const
 {
     Hyperedges all(subclassesOf(Hyperedges{Network::InterfaceId}, name));
     if (!suids.empty())
         all = intersect(all, subclassesOf(suids, name));
     return all;
 }
-Hyperedges Network::networkClasses(const std::string& name, const Hyperedges& suids)
+Hyperedges Network::networkClasses(const std::string& name, const Hyperedges& suids) const
 {
     Hyperedges all(subclassesOf(Hyperedges{Network::NetworkId}, name));
     if (!suids.empty())
         all = intersect(all, subclassesOf(suids, name));
     return all;
 }
-Hyperedges Network::valueClasses(const std::string& name, const Hyperedges& suids)
+Hyperedges Network::valueClasses(const std::string& name, const Hyperedges& suids) const
 {
     Hyperedges all(subclassesOf(Hyperedges{Network::ValueId}, name));
     if (!suids.empty())
@@ -120,28 +120,28 @@ Hyperedges Network::instantiateInterfaceFor(const Hyperedges& componentIds, cons
     return result;
 }
 
-Hyperedges Network::components(const std::string& name, const std::string& className)
+Hyperedges Network::components(const std::string& name, const std::string& className) const
 {
     // Get all super classes
     Hyperedges classIds = componentClasses(className);
     // ... and then the instances of them
     return instancesOf(classIds, name);
 }
-Hyperedges Network::interfaces(const std::string& name, const std::string& className)
+Hyperedges Network::interfaces(const std::string& name, const std::string& className) const
 {
     // Get all super classes
     Hyperedges classIds = interfaceClasses(className);
     // ... and then the instances of them
     return instancesOf(classIds, name);
 }
-Hyperedges Network::networks(const std::string& name, const std::string& className)
+Hyperedges Network::networks(const std::string& name, const std::string& className) const
 {
     // Get all super classes
     Hyperedges classIds = networkClasses(className);
     // ... and then the instances of them
     return instancesOf(classIds, name);
 }
-Hyperedges Network::values(const std::string& name, const std::string& className)
+Hyperedges Network::values(const std::string& name, const std::string& className) const
 {
     // Get all super classes
     Hyperedges classIds = valueClasses(className);
@@ -163,7 +163,7 @@ Hyperedges Network::hasValue(const Hyperedges& interfaceIds, const Hyperedges& v
     return result;
 }
 
-Hyperedges Network::valuesOf(const Hyperedges& interfaceUids, const std::string& value)
+Hyperedges Network::valuesOf(const Hyperedges& interfaceUids, const std::string& value) const
 {
     // Get all uids <-- HAS-A --> X,value and return the X
     Hyperedges factUids(factsOf(Hyperedges{Network::HasAValueId}));
@@ -213,7 +213,7 @@ Hyperedges Network::instantiateAliasInterfaceFor(const Hyperedges& parentUids, c
     return result;
 }
 
-Hyperedges Network::originalInterfacesOf(const Hyperedges& uids, const std::string& label)
+Hyperedges Network::originalInterfacesOf(const Hyperedges& uids, const std::string& label) const
 {
     // Get all uids <-- ALIAS-OF --> X,label and return the X
     Hyperedges factUids(factsOf(Hyperedges{Network::AliasOfId}));
@@ -268,7 +268,7 @@ Hyperedges Network::partOfNetwork(const Hyperedges& componentIds, const Hyperedg
     return result;
 }
 
-Hyperedges Network::interfacesOf(const Hyperedges& componentIds, const std::string& name, const TraversalDirection dir)
+Hyperedges Network::interfacesOf(const Hyperedges& componentIds, const std::string& name, const TraversalDirection dir) const
 {
     Hyperedges children(childrenOf(componentIds,name,dir));
     if (dir == TraversalDirection::FORWARD)

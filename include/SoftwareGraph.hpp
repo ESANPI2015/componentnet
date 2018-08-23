@@ -73,18 +73,18 @@ class Graph : public Component::Network
 
         // Queries
         // NOTE: Returns subclasses
-        Hyperedges algorithmClasses(const std::string& name="", const Hyperedges& suids=Hyperedges());
-        Hyperedges interfaceClasses(const std::string& name="", const Hyperedges& suids=Hyperedges());
-        Hyperedges inputClasses(const std::string& name="", const Hyperedges& suids=Hyperedges());
-        Hyperedges outputClasses(const std::string& name="", const Hyperedges& suids=Hyperedges());
-        Hyperedges implementationClasses(const std::string& name="", const Hyperedges& suids=Hyperedges());
+        Hyperedges algorithmClasses(const std::string& name="", const Hyperedges& suids=Hyperedges()) const;
+        Hyperedges interfaceClasses(const std::string& name="", const Hyperedges& suids=Hyperedges()) const;
+        Hyperedges inputClasses(const std::string& name="", const Hyperedges& suids=Hyperedges()) const;
+        Hyperedges outputClasses(const std::string& name="", const Hyperedges& suids=Hyperedges()) const;
+        Hyperedges implementationClasses(const std::string& name="", const Hyperedges& suids=Hyperedges()) const;
 
         // NOTE: Returns instances
-        Hyperedges algorithms(const std::string& name="", const std::string& className="");
-        Hyperedges interfaces(const std::string& name="", const std::string& className="");
-        Hyperedges inputs(const std::string& name="", const std::string& className="");
-        Hyperedges outputs(const std::string& name="", const std::string& className="");
-        Hyperedges implementations(const std::string& name="", const std::string& className="");
+        Hyperedges algorithms(const std::string& name="", const std::string& className="") const;
+        Hyperedges interfaces(const std::string& name="", const std::string& className="") const;
+        Hyperedges inputs(const std::string& name="", const std::string& className="") const;
+        Hyperedges outputs(const std::string& name="", const std::string& className="") const;
+        Hyperedges implementations(const std::string& name="", const std::string& className="") const;
 
         // TODO: Nice additional queries
         // inputsOf()

@@ -74,65 +74,65 @@ Hyperedges Graph::createImplementation(const UniqueId& uid, const std::string& n
     return createAlgorithm(uid, name, suids.empty() ? Hyperedges{Graph::ImplementationId} : intersect(implementationClasses(), suids));
 }
 
-Hyperedges Graph::algorithmClasses(const std::string& name, const Hyperedges& suids)
+Hyperedges Graph::algorithmClasses(const std::string& name, const Hyperedges& suids) const
 {
     Hyperedges all(componentClasses(name, Hyperedges{Graph::AlgorithmId}));
     return suids.empty() ? all : intersect(all, subclassesOf(suids, name));
 }
 
-Hyperedges Graph::interfaceClasses(const std::string& name, const Hyperedges& suids)
+Hyperedges Graph::interfaceClasses(const std::string& name, const Hyperedges& suids) const
 {
     Hyperedges all(Component::Network::interfaceClasses(name, Hyperedges{Graph::InterfaceId}));
     return suids.empty() ? all : intersect(all, subclassesOf(suids, name));
 }
 
-Hyperedges Graph::inputClasses(const std::string& name, const Hyperedges& suids)
+Hyperedges Graph::inputClasses(const std::string& name, const Hyperedges& suids) const
 {
     Hyperedges all(interfaceClasses(name, Hyperedges{Graph::InputId}));
     return suids.empty() ? all : intersect(all, subclassesOf(suids, name));
 }
 
-Hyperedges Graph::outputClasses(const std::string& name, const Hyperedges& suids)
+Hyperedges Graph::outputClasses(const std::string& name, const Hyperedges& suids) const
 {
     Hyperedges all(interfaceClasses(name, Hyperedges{Graph::OutputId}));
     return suids.empty() ? all : intersect(all, subclassesOf(suids, name));
 }
 
-Hyperedges Graph::implementationClasses(const std::string& name, const Hyperedges& suids)
+Hyperedges Graph::implementationClasses(const std::string& name, const Hyperedges& suids) const
 {
     Hyperedges all(algorithmClasses(name, Hyperedges{Graph::ImplementationId}));
     return suids.empty() ? all : intersect(all, subclassesOf(suids, name));
 }
 
-Hyperedges Graph::algorithms(const std::string& name, const std::string& className)
+Hyperedges Graph::algorithms(const std::string& name, const std::string& className) const
 {
     // Get all super classes
     Hyperedges classIds = algorithmClasses(className);
     // ... and then the instances of them
     return instancesOf(classIds, name);
 }
-Hyperedges Graph::interfaces(const std::string& name, const std::string& className)
+Hyperedges Graph::interfaces(const std::string& name, const std::string& className) const
 {
     // Get all super classes
     Hyperedges classIds = interfaceClasses(className);
     // ... and then the instances of them
     return instancesOf(classIds, name);
 }
-Hyperedges Graph::inputs(const std::string& name, const std::string& className)
+Hyperedges Graph::inputs(const std::string& name, const std::string& className) const
 {
     // Get all super classes
     Hyperedges classIds = inputClasses(className);
     // ... and then the instances of them
     return instancesOf(classIds, name);
 }
-Hyperedges Graph::outputs(const std::string& name, const std::string& className)
+Hyperedges Graph::outputs(const std::string& name, const std::string& className) const
 {
     // Get all super classes
     Hyperedges classIds = outputClasses(className);
     // ... and then the instances of them
     return instancesOf(classIds, name);
 }
-Hyperedges Graph::implementations(const std::string& name, const std::string& className)
+Hyperedges Graph::implementations(const std::string& name, const std::string& className) const
 {
     // Get all super classes
     Hyperedges classIds = implementationClasses(className);
