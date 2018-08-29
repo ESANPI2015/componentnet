@@ -1,6 +1,9 @@
 #include "ComponentNetwork.hpp"
 #include "ResourceCostModel.hpp"
 
+#include "SoftwareGraph.hpp"
+#include "HardwareComputationalNetwork.hpp"
+
 #include <iostream>
 #include <limits>
 
@@ -73,15 +76,20 @@ int main (void)
     std::cout << "Map components of type A to components of type B using the resource cost model\n";
 
     // Define mapping functions
-    auto matchFunc = [] (const ResourceCost::Model& RM, const UniqueId& a, const UniqueId& b) -> bool {
+    auto partitionFunc = [] (const ResourceCost::Model& RM, const UniqueId& a) -> int {
         Hyperedges consumerUids(RM.consumers());
         Hyperedges producerUids(RM.providers());
         consumerUids = subtract(consumerUids, Hyperedges{"Component::Class::A", ResourceCost::Model::ConsumerUid});
         producerUids = subtract(producerUids, Hyperedges{"Component::Class::B", ResourceCost::Model::ProviderUid});
-        if (std::find(consumerUids.begin(), consumerUids.end(), a) == consumerUids.end())
-            return false;
-        if (std::find(producerUids.begin(), producerUids.end(), b) == producerUids.end())
-            return false;
+        if (std::find(consumerUids.begin(), consumerUids.end(), a) != consumerUids.end())
+            return 1;
+        if (std::find(producerUids.begin(), producerUids.end(), a) != producerUids.end())
+            return -1;
+        return 0;
+    };
+
+    auto matchFunc = [] (const ResourceCost::Model& RM, const UniqueId& a, const UniqueId& b) -> bool {
+        // We are sure that the partition function did it's job :)
         return true;
     };
 
@@ -94,15 +102,15 @@ int main (void)
     };
 
     auto mapFunc = [] (CommonConceptGraph& g, const UniqueId& a, const UniqueId& b) -> void {
-        ResourceCost::Model RM(g); //expensive, but since we change g, we cannot use ResourceCost::Model above
+        ResourceCost::Model& RM = static_cast<ResourceCost::Model&>(g); // Because we now, that we operate on a ResourceCost::Model, the static cast is safe :)
         Hyperedges resourceUids(RM.resourcesOf(Hyperedges{b}));
         Hyperedges resourceCostUids(RM.costsOf(Hyperedges{a}, Hyperedges{b}));
         if (resourceUids.empty() || resourceCostUids.empty())
             return;
         // Update the resources
         const float resourcesLeft(std::stof(RM.read(*resourceUids.begin()).label()) - std::stof(RM.read(*resourceCostUids.begin()).label()));
-        g.get(*resourceUids.begin())->updateLabel(std::to_string(resourcesLeft));
-        g.factFrom(Hyperedges{a}, Hyperedges{b}, "Component::Relation::MappedTo");
+        RM.get(*resourceUids.begin())->updateLabel(std::to_string(resourcesLeft));
+        RM.factFrom(Hyperedges{a}, Hyperedges{b}, "Component::Relation::MappedTo");
     };
 
     std::cout << "Graph before map()\n";
@@ -115,7 +123,7 @@ int main (void)
         }
     }
 
-    ResourceCost::Model rm2(rm.map(matchFunc, costFunc, mapFunc));
+    ResourceCost::Model rm2(rm.map(partitionFunc, matchFunc, costFunc, mapFunc));
 
     std::cout << "Graph after map()\n";
     for (const UniqueId& conceptUid : rm2.find())
@@ -124,6 +132,209 @@ int main (void)
         for (const UniqueId& relUid : rm2.relationsTo(Hyperedges{conceptUid}))
         {
             std::cout << "\t" << *rm2.get(relUid) << std::endl;
+        }
+    }
+
+    std::cout << "\n\nSetting up a software and a hardware graph and perform a nested mapping\n";
+
+    Software::Graph sw;
+
+    std::cout << "Setup Software Model\n";
+
+    sw.createAlgorithm("Algorithm::A", "A");
+    sw.instantiateInterfaceFor(Hyperedges{"Algorithm::A"}, Hyperedges{Software::Graph::OutputId}, "out");
+    sw.instantiateInterfaceFor(Hyperedges{"Algorithm::A"}, Hyperedges{Software::Graph::InputId}, "in");
+    sw.instantiateComponent(Hyperedges{"Algorithm::A"}, "a");
+    sw.instantiateComponent(Hyperedges{"Algorithm::A"}, "b");
+    sw.instantiateComponent(Hyperedges{"Algorithm::A"}, "c");
+    // Create a loop
+    sw.dependsOn(sw.interfacesOf(sw.components("a"), "in"), sw.interfacesOf(sw.components("c"), "out"));
+    sw.dependsOn(sw.interfacesOf(sw.components("b"), "in"), sw.interfacesOf(sw.components("a"), "out"));
+    sw.dependsOn(sw.interfacesOf(sw.components("c"), "in"), sw.interfacesOf(sw.components("b"), "out"));
+
+    std::cout << "Setup Hardware Model\n";
+
+    Hardware::Computational::Network hw(sw); // NOTE: To avoid uid conflicts, import model from sw already here
+
+    hw.createProcessor("Processor::X", "X");
+    hw.instantiateInterfaceFor(Hyperedges{"Processor::X"}, Hyperedges{Hardware::Computational::Network::InterfaceId}, "usb0");
+    hw.instantiateInterfaceFor(Hyperedges{"Processor::X"}, Hyperedges{Hardware::Computational::Network::InterfaceId}, "usb1");
+    hw.instantiateComponent(Hyperedges{"Processor::X"}, "x");
+    hw.instantiateComponent(Hyperedges{"Processor::X"}, "y");
+    hw.instantiateComponent(Hyperedges{"Processor::X"}, "z");
+    // Create chain
+    hw.connectInterface(hw.interfacesOf(hw.processors("x"), "usb1"), hw.interfacesOf(hw.processors("y"), "usb0"));
+    hw.connectInterface(hw.interfacesOf(hw.processors("y"), "usb1"), hw.interfacesOf(hw.processors("z"), "usb0"));
+
+    std::cout << "Setup Resource Cost Model\n";
+
+    ResourceCost::Model sw2hw(hw); // NOTE: Now we have everything from SW and HW and RCM
+
+    // Define resources and costs
+    sw2hw.isConsumer(Hyperedges{"Algorithm::A", Software::Graph::InterfaceId});
+    sw2hw.isProvider(Hyperedges{"Processor::X", Hardware::Computational::Network::InterfaceId});
+
+    sw2hw.defineResource("Resource::Memory", "Memory");
+    sw2hw.instantiateResourceFor(sw2hw.find("x"), sw2hw.find("Memory"), 32.f);
+    sw2hw.instantiateResourceFor(sw2hw.find("y"), sw2hw.find("Memory"), 64.f);
+    sw2hw.instantiateResourceFor(sw2hw.find("z"), sw2hw.find("Memory"), 128.f);
+
+    // TODO: What do interfaces cost? Maybe something like 'bandwidth'?
+
+    // One statement to rule them all :)
+    sw2hw.costs(sw2hw.instancesOf(Hyperedges{"Algorithm::A"}), sw2hw.instancesOf(Hyperedges{"Processor::X"}), sw2hw.instantiateResource(sw2hw.find("Memory"), 32.f));
+    // Define mapping relation
+    sw2hw.relate("Software::Component::MappedTo::Hardware::Component", Hyperedges{Software::Graph::AlgorithmId}, Hyperedges{Hardware::Computational::Network::ProcessorId}, "MAPPED-TO");
+    sw2hw.relate("Software::Interface::MappedTo::Hardware::Interface", Hyperedges{Software::Graph::InterfaceId}, Hyperedges{Hardware::Computational::Network::InterfaceId}, "MAPPED-TO");
+
+    std::cout << "Graph before map()\n";
+    for (const UniqueId& conceptUid : sw2hw.find())
+    {
+        std::cout << *sw2hw.get(conceptUid) << std::endl;
+        for (const UniqueId& relUid : sw2hw.relationsTo(Hyperedges{conceptUid}))
+        {
+            std::cout << "\t" << *sw2hw.get(relUid) << std::endl;
+        }
+    }
+
+    // Define mapping functions
+    auto partitionSwHw = [] (const ResourceCost::Model& rcm, const UniqueId& a) -> int {
+        Hyperedges consumerUids(rcm.consumers()); // get all consumer instances
+        if (std::find(consumerUids.begin(), consumerUids.end(), a) != consumerUids.end())
+            return 1;
+        Hyperedges producerUids(rcm.providers()); // get all provider instances
+        if (std::find(producerUids.begin(), producerUids.end(), a) != producerUids.end())
+            return -1;
+        return 0;
+    };
+
+    auto matchSwHw = [] (const Component::Network& rcm, const UniqueId& a, const UniqueId& b) -> bool {
+        // We trust, that a is a consumer and b is a provider
+        // First we check if a is an algorithm and b is a processor
+        Hyperedges swUids(rcm.instancesOf(rcm.subclassesOf(Hyperedges{Software::Graph::AlgorithmId})));
+        Hyperedges hwUids(rcm.instancesOf(rcm.subclassesOf(Hyperedges{Hardware::Computational::Network::ProcessorId})));
+        if ((std::find(swUids.begin(), swUids.end(), a) != swUids.end())
+            && (std::find(hwUids.begin(), hwUids.end(), b) != hwUids.end()))
+        {
+            // Lets check if all connected sw components of a are mapped to neighbours of b or not mapped at all.
+            Hyperedges swNeighbourUids(rcm.interfacesOf(rcm.endpointsOf(rcm.interfacesOf(Hyperedges{a}),"", Hypergraph::TraversalDirection::BOTH),"",Hypergraph::TraversalDirection::INVERSE));
+            Hyperedges hwNeighbourUids(rcm.interfacesOf(rcm.endpointsOf(rcm.interfacesOf(Hyperedges{b}),"", Hypergraph::TraversalDirection::BOTH),"",Hypergraph::TraversalDirection::INVERSE));
+            hwNeighbourUids = unite(hwNeighbourUids, Hyperedges{b}); // NOTE: We can map also to the same target!
+            Hyperedges hwTargetUids(rcm.to(intersect(rcm.relationsFrom(swNeighbourUids),rcm.factsOf("Software::Component::MappedTo::Hardware::Component"))));
+            // Condition check: hwTargetUids must be a true subset of hwNeighbourUids. That means that the intersection must be equal to hwTargetUids.
+            if (intersect(hwTargetUids, hwNeighbourUids).size() != hwTargetUids.size())
+                return false;
+            return true;
+        }
+        // Second, we check if a is an software interface and b is an hardware interface
+        Hyperedges swInterfaceUids(rcm.interfacesOf(swUids));
+        Hyperedges hwInterfaceUids(rcm.interfacesOf(hwUids));
+        if ((std::find(swInterfaceUids.begin(), swInterfaceUids.end(), a) != swInterfaceUids.end())
+            && (std::find(hwInterfaceUids.begin(), hwInterfaceUids.end(), b) != hwInterfaceUids.end()))
+        {
+            // Lets check if the owner of a is mapped to the owner of b
+            Hyperedges swOwnerUids(rcm.interfacesOf(Hyperedges{a},"",Hypergraph::TraversalDirection::INVERSE));
+            Hyperedges hwOwnerUids(rcm.interfacesOf(Hyperedges{b},"",Hypergraph::TraversalDirection::INVERSE));
+            Hyperedges hwTargetUids(rcm.to(intersect(rcm.relationsFrom(swOwnerUids),rcm.factsOf("Software::Component::MappedTo::Hardware::Component"))));
+            // Condition check: hwTargetUids must be a true subset of hwOwnerUids and not empty. That means that the intersection must be equal to hwTargetUids.
+            if (hwTargetUids.empty() || (intersect(hwTargetUids, hwOwnerUids).size() != hwTargetUids.size()))
+            {
+                return false;
+            }
+            // Lets check if all endpoints of a are mapped to endpoints of b or not mapped at all.
+            Hyperedges swNeighbourInterfaceUids(rcm.endpointsOf(Hyperedges{a},"",Hypergraph::TraversalDirection::BOTH));
+            Hyperedges hwNeighbourInterfaceUids(rcm.endpointsOf(Hyperedges{b},"",Hypergraph::TraversalDirection::BOTH));
+            //hwNeighbourInterfaceUids = unite(hwNeighbourInterfaceUids, Hyperedges{b}); // NOTE: We can map also to the same target!
+            Hyperedges hwTargetInterfaceUids(rcm.to(intersect(rcm.relationsFrom(swNeighbourInterfaceUids),rcm.factsOf("Software::Interface::MappedTo::Hardware::Interface"))));
+            if (intersect(hwTargetInterfaceUids, hwNeighbourInterfaceUids).size() != hwTargetInterfaceUids.size())
+            {
+                return false;
+            }
+            // Lets check if the owners of the endpoints of a are mapped to the owners of the endpoints of b
+            Hyperedges swNeighbourOwnerUids(rcm.interfacesOf(swNeighbourInterfaceUids,"",Hypergraph::TraversalDirection::INVERSE));
+            Hyperedges hwNeighbourOwnerUids(rcm.interfacesOf(hwNeighbourInterfaceUids,"",Hypergraph::TraversalDirection::INVERSE));
+            Hyperedges hwNeighbourTargetUids(rcm.to(intersect(rcm.relationsFrom(swNeighbourOwnerUids),rcm.factsOf("Software::Component::MappedTo::Hardware::Component"))));
+            // Condition check: hwNeighbourTargetUids must be a true subset of hwNeighbourOwnerUids and not empty. That means that the intersection must be equal to hwNeighbourTargetUids.
+            if (hwNeighbourTargetUids.empty() || (intersect(hwNeighbourTargetUids, hwNeighbourOwnerUids).size() != hwNeighbourTargetUids.size()))
+            {
+                return false;
+            }
+            return true;
+        }
+        // In all other cases, we do not have a match
+        return false;
+    };
+
+    auto costSwHw = [] (const ResourceCost::Model& rcm, const UniqueId& a, const UniqueId& b) -> float {
+        float minimum(std::numeric_limits<float>::infinity());
+        Hyperedges resourceUids(rcm.resourcesOf(Hyperedges{b}));
+        Hyperedges resourceCostUids(rcm.costsOf(Hyperedges{a}, Hyperedges{b}));
+        for (const UniqueId& resourceUid : resourceUids)
+        {
+            Hyperedges resourceClassUids(rcm.instancesOf(Hyperedges{resourceUid}, "", Hypergraph::TraversalDirection::FORWARD));
+            for (const UniqueId& resourceCostUid : resourceCostUids)
+            {
+                Hyperedges resourceCostClassUids(rcm.instancesOf(Hyperedges{resourceCostUid}, "", Hypergraph::TraversalDirection::FORWARD));
+                // Only costs of the same class can be handled
+                if (intersect(resourceClassUids, resourceCostClassUids).empty())
+                    continue;
+                const float r(std::stof(rcm.read(resourceUid).label()));
+                const float c(std::stof(rcm.read(resourceCostUid).label()));
+                // Calculate new minimum
+                //minimum = std::min(minimum, (r - c) / r); NOTE: We cannot do this! because r changes afterwards!!! We would have to distinguish between maximum resources and available resources
+                minimum = std::min(minimum, (r - c));
+            }
+        }
+        return minimum;
+    };
+
+    auto mapSwHw = [] (CommonConceptGraph& g, const UniqueId& a, const UniqueId& b) -> void {
+        ResourceCost::Model& rcm = static_cast< ResourceCost::Model& >(g);
+        // I. Update all resources
+        Hyperedges resourceUids(rcm.resourcesOf(Hyperedges{b}));
+        Hyperedges resourceCostUids(rcm.costsOf(Hyperedges{a}, Hyperedges{b}));
+        for (const UniqueId& resourceUid : resourceUids)
+        {
+            Hyperedges resourceClassUids(rcm.instancesOf(Hyperedges{resourceUid}, "", Hypergraph::TraversalDirection::FORWARD));
+            for (const UniqueId& resourceCostUid : resourceCostUids)
+            {
+                Hyperedges resourceCostClassUids(rcm.instancesOf(Hyperedges{resourceCostUid}, "", Hypergraph::TraversalDirection::FORWARD));
+                // Only costs of the same class can be handled
+                if (intersect(resourceClassUids, resourceCostClassUids).empty())
+                    continue;
+                const float r(std::stof(rcm.read(resourceUid).label()));
+                const float c(std::stof(rcm.read(resourceCostUid).label()));
+                // Update resources
+                rcm.get(resourceUid)->updateLabel(std::to_string(r - c));
+            }
+        }
+        // II. Map a to b
+        // a) software algorithm -> hardware processor
+        Hyperedges swUids(rcm.instancesOf(rcm.subclassesOf(Hyperedges{Software::Graph::AlgorithmId})));
+        if (std::find(swUids.begin(), swUids.end(), a) != swUids.end())
+        {
+            rcm.factFrom(Hyperedges{a}, Hyperedges{b}, "Software::Component::MappedTo::Hardware::Component");
+            return;
+        }
+        // b) software interface -> hardware interface
+        Hyperedges swInterfaceUids(rcm.instancesOf(rcm.subclassesOf(Hyperedges{Software::Graph::InterfaceId})));
+        if (std::find(swInterfaceUids.begin(), swInterfaceUids.end(), a) != swInterfaceUids.end())
+        {
+            rcm.factFrom(Hyperedges{a}, Hyperedges{b}, "Software::Interface::MappedTo::Hardware::Interface");
+            return;
+        }
+    };
+
+    // Finally, call map!
+    ResourceCost::Model sw2hw2(sw2hw.map(partitionSwHw, matchSwHw, costSwHw, mapSwHw));
+
+    std::cout << "Graph after map()\n";
+    for (const UniqueId& conceptUid : sw2hw2.find())
+    {
+        std::cout << sw2hw2.read(conceptUid) << std::endl;
+        for (const UniqueId& relUid : sw2hw2.relationsTo(Hyperedges{conceptUid}))
+        {
+            std::cout << "\t" << sw2hw2.read(relUid) << std::endl;
         }
     }
 

@@ -70,9 +70,11 @@ class Model: public CommonConceptGraph
         Hyperedges instantiateResourceFor(const Hyperedges& someUids, const Hyperedges& resourceUids, const float amount=0.f);
         // Make something a consumer
         Hyperedges isConsumer(const Hyperedges& consumerUids);
+        Hyperedges consumerClasses(const std::string& name="", const Hyperedges& suids=Hyperedges{ConsumerUid}) const;
         Hyperedges consumers(const std::string& name="") const;
         // Make something a provider
         Hyperedges isProvider(const Hyperedges& providerUids);
+        Hyperedges providerClasses(const std::string& name="", const Hyperedges& suids=Hyperedges{ProviderUid}) const;
         Hyperedges providers(const std::string& name="") const;
         // Given two entity sets, define the costs
         // NOTE: The amount of resources has to be encoded by a resource instance

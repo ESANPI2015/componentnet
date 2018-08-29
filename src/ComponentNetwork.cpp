@@ -72,30 +72,22 @@ Hyperedges Network::createValue(const UniqueId& uid, const std::string& name, co
 Hyperedges Network::componentClasses(const std::string& name, const Hyperedges& suids) const
 {
     Hyperedges all(subclassesOf(Hyperedges{Network::ComponentId}, name));
-    if (!suids.empty())
-        all = intersect(all, subclassesOf(suids, name));
-    return all;
+    return intersect(all, subclassesOf(suids, name));
 }
 Hyperedges Network::interfaceClasses(const std::string& name, const Hyperedges& suids) const
 {
     Hyperedges all(subclassesOf(Hyperedges{Network::InterfaceId}, name));
-    if (!suids.empty())
-        all = intersect(all, subclassesOf(suids, name));
-    return all;
+    return intersect(all, subclassesOf(suids, name));
 }
 Hyperedges Network::networkClasses(const std::string& name, const Hyperedges& suids) const
 {
     Hyperedges all(subclassesOf(Hyperedges{Network::NetworkId}, name));
-    if (!suids.empty())
-        all = intersect(all, subclassesOf(suids, name));
-    return all;
+    return intersect(all, subclassesOf(suids, name));
 }
 Hyperedges Network::valueClasses(const std::string& name, const Hyperedges& suids) const
 {
     Hyperedges all(subclassesOf(Hyperedges{Network::ValueId}, name));
-    if (!suids.empty())
-        all = intersect(all, subclassesOf(suids, name));
-    return all;
+    return intersect(all, subclassesOf(suids, name));
 }
 
 Hyperedges Network::instantiateComponent(const Hyperedges& componentIds, const std::string& newName)

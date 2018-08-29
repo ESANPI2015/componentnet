@@ -53,10 +53,10 @@ class Network : public CommonConceptGraph
         void createMainConcepts();
 
         // Create classes
-        Hyperedges createComponent(const UniqueId& uid, const std::string& name="Component", const Hyperedges& suids=Hyperedges());
-        Hyperedges createInterface(const UniqueId& uid, const std::string& name="Interface", const Hyperedges& suids=Hyperedges());
-        Hyperedges createNetwork(const UniqueId& uid, const std::string& name="Network", const Hyperedges& suids=Hyperedges());
-        Hyperedges createValue(const UniqueId& uid, const std::string& name="Value", const Hyperedges& suids=Hyperedges());
+        Hyperedges createComponent(const UniqueId& uid, const std::string& name="Component", const Hyperedges& suids=Hyperedges{ComponentId});
+        Hyperedges createInterface(const UniqueId& uid, const std::string& name="Interface", const Hyperedges& suids=Hyperedges{InterfaceId});
+        Hyperedges createNetwork(const UniqueId& uid, const std::string& name="Network", const Hyperedges& suids=Hyperedges{NetworkId});
+        Hyperedges createValue(const UniqueId& uid, const std::string& name="Value", const Hyperedges& suids=Hyperedges{ValueId});
         // Create individuals
         Hyperedges instantiateComponent(const Hyperedges& componentIds);
         Hyperedges instantiateComponent(const Hyperedges& componentIds, const std::string& newName);
@@ -67,10 +67,10 @@ class Network : public CommonConceptGraph
         Hyperedges instantiateValueFor(const Hyperedges& interfaceUids, const Hyperedges& valueClassUids, const std::string& value="");
 
         // Query classes
-        Hyperedges componentClasses(const std::string& name="", const Hyperedges& suids=Hyperedges()) const;
-        Hyperedges interfaceClasses(const std::string& name="", const Hyperedges& suids=Hyperedges()) const;
-        Hyperedges networkClasses(const std::string& name="", const Hyperedges& suids=Hyperedges()) const;
-        Hyperedges valueClasses(const std::string& name="", const Hyperedges& suids=Hyperedges()) const;
+        Hyperedges componentClasses(const std::string& name="", const Hyperedges& suids=Hyperedges{ComponentId}) const;
+        Hyperedges interfaceClasses(const std::string& name="", const Hyperedges& suids=Hyperedges{InterfaceId}) const;
+        Hyperedges networkClasses(const std::string& name="", const Hyperedges& suids=Hyperedges{NetworkId}) const;
+        Hyperedges valueClasses(const std::string& name="", const Hyperedges& suids=Hyperedges{ValueId}) const;
         // Query individuals
         Hyperedges components(const std::string& name="", const std::string& className="") const;
         Hyperedges interfaces(const std::string& name="", const std::string& className="") const;

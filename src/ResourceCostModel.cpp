@@ -63,12 +63,15 @@ Hyperedges Model::isConsumer(const Hyperedges& consumerUids)
     return isA(consumerUids, Hyperedges{Model::ConsumerUid});
 }
 
+Hyperedges Model::consumerClasses(const std::string& name, const Hyperedges& suids) const
+{
+    Hyperedges all(subclassesOf(Hyperedges{Model::ConsumerUid}, name));
+    return intersect(all, subclassesOf(suids, name));
+}
+
 Hyperedges Model::consumers(const std::string& name) const
 {
-    // TODO: This is a little bit problematic because some instances might not be found where the class is incorrectly named but the instance is correctly named
-    Hyperedges allConsumerClassUids(subclassesOf(Hyperedges{Model::ConsumerUid}, name));
-    Hyperedges allConsumerInstanceUids(instancesOf(allConsumerClassUids, name));
-    return unite(allConsumerClassUids, allConsumerInstanceUids);
+    return instancesOf(consumerClasses(), name);
 }
 
 Hyperedges Model::isProvider(const Hyperedges& providerUids)
@@ -76,12 +79,15 @@ Hyperedges Model::isProvider(const Hyperedges& providerUids)
     return isA(providerUids, Hyperedges{Model::ProviderUid});
 }
 
+Hyperedges Model::providerClasses(const std::string& name, const Hyperedges& suids) const
+{
+    Hyperedges all(subclassesOf(Hyperedges{Model::ProviderUid}, name));
+    return intersect(all, subclassesOf(suids, name));
+}
+
 Hyperedges Model::providers(const std::string& name) const
 {
-    // TODO: This is a little bit problematic because some instances might not be found where the class is incorrectly named but the instance is correctly named
-    Hyperedges allProviderClassUids(subclassesOf(Hyperedges{Model::ProviderUid}, name));
-    Hyperedges allProviderInstanceUids(instancesOf(allProviderClassUids, name));
-    return unite(allProviderClassUids, allProviderInstanceUids);
+    return instancesOf(providerClasses(), name);
 }
 
 Hyperedges Model::costs(const Hyperedges& consumerUids, const Hyperedges& providerUids, const Hyperedges& resourceInstanceUids)
