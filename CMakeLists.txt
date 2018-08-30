@@ -75,6 +75,11 @@ target_link_libraries(gen_cpp_class componentnet)
 install(TARGETS gen_cpp_class
 RUNTIME DESTINATION bin)
 
+add_executable(sw2hw_map tools/sw2hw_map.cpp)
+target_link_libraries(sw2hw_map componentnet)
+install(TARGETS sw2hw_map
+RUNTIME DESTINATION bin)
+
 # pkg-config, to be installed:
 configure_file(${PROJECT_NAME}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
 install(FILES ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc DESTINATION lib/pkgconfig)

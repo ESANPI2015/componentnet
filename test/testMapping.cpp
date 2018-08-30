@@ -3,7 +3,9 @@
 
 #include "SoftwareGraph.hpp"
 #include "HardwareComputationalNetwork.hpp"
+#include "HypergraphYAML.hpp"
 
+#include <fstream>
 #include <iostream>
 #include <limits>
 
@@ -287,6 +289,15 @@ int main (void)
             return;
         }
     };
+
+    std::ofstream fout;
+    fout.open("rcm_spec.yml");
+    if(fout.good()) {
+        fout << YAML::StringFrom(sw2hw) << std::endl;
+    } else {
+        std::cout << "FAILED\n";
+    }
+    fout.close();
 
     // Finally, call map!
     ResourceCost::Model sw2hw2(sw2hw.map(ResourceCost::Model::partitionFunc, matchSwHw, costSwHw, mapSwHw));
