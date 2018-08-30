@@ -75,41 +75,10 @@ int main (void)
 
     std::cout << "Map components of type A to components of type B using the resource cost model\n";
 
-    // Define mapping functions
-    auto partitionFunc = [] (const ResourceCost::Model& RM, const UniqueId& a) -> int {
-        Hyperedges consumerUids(RM.consumers());
-        Hyperedges producerUids(RM.providers());
-        consumerUids = subtract(consumerUids, Hyperedges{"Component::Class::A", ResourceCost::Model::ConsumerUid});
-        producerUids = subtract(producerUids, Hyperedges{"Component::Class::B", ResourceCost::Model::ProviderUid});
-        if (std::find(consumerUids.begin(), consumerUids.end(), a) != consumerUids.end())
-            return 1;
-        if (std::find(producerUids.begin(), producerUids.end(), a) != producerUids.end())
-            return -1;
-        return 0;
-    };
-
-    auto matchFunc = [] (const ResourceCost::Model& RM, const UniqueId& a, const UniqueId& b) -> bool {
-        // We are sure that the partition function did it's job :)
-        return true;
-    };
-
-    auto costFunc = [] (const ResourceCost::Model& RM, const UniqueId& a, const UniqueId& b) -> float {
-        Hyperedges resourceUids(RM.resourcesOf(Hyperedges{b}));
-        Hyperedges resourceCostUids(RM.costsOf(Hyperedges{a}, Hyperedges{b}));
-        if (resourceUids.empty() || resourceCostUids.empty())
-            return std::numeric_limits<float>::infinity();
-        return std::stof(RM.read(*resourceUids.begin()).label()) - std::stof(RM.read(*resourceCostUids.begin()).label());
-    };
-
     auto mapFunc = [] (CommonConceptGraph& g, const UniqueId& a, const UniqueId& b) -> void {
         ResourceCost::Model& RM = static_cast<ResourceCost::Model&>(g); // Because we now, that we operate on a ResourceCost::Model, the static cast is safe :)
-        Hyperedges resourceUids(RM.resourcesOf(Hyperedges{b}));
-        Hyperedges resourceCostUids(RM.costsOf(Hyperedges{a}, Hyperedges{b}));
-        if (resourceUids.empty() || resourceCostUids.empty())
-            return;
         // Update the resources
-        const float resourcesLeft(std::stof(RM.read(*resourceUids.begin()).label()) - std::stof(RM.read(*resourceCostUids.begin()).label()));
-        RM.get(*resourceUids.begin())->updateLabel(std::to_string(resourcesLeft));
+        ResourceCost::Model::mapFunc(g,a,b);
         RM.factFrom(Hyperedges{a}, Hyperedges{b}, "Component::Relation::MappedTo");
     };
 
@@ -123,7 +92,7 @@ int main (void)
         }
     }
 
-    ResourceCost::Model rm2(rm.map(partitionFunc, matchFunc, costFunc, mapFunc));
+    ResourceCost::Model rm2(rm.map(ResourceCost::Model::partitionFunc, ResourceCost::Model::matchFunc, ResourceCost::Model::costFunc, mapFunc));
 
     std::cout << "Graph after map()\n";
     for (const UniqueId& conceptUid : rm2.find())
@@ -198,16 +167,6 @@ int main (void)
     }
 
     // Define mapping functions
-    auto partitionSwHw = [] (const ResourceCost::Model& rcm, const UniqueId& a) -> int {
-        Hyperedges consumerUids(rcm.consumers()); // get all consumer instances
-        if (std::find(consumerUids.begin(), consumerUids.end(), a) != consumerUids.end())
-            return 1;
-        Hyperedges producerUids(rcm.providers()); // get all provider instances
-        if (std::find(producerUids.begin(), producerUids.end(), a) != producerUids.end())
-            return -1;
-        return 0;
-    };
-
     auto matchSwHw = [] (const Component::Network& rcm, const UniqueId& a, const UniqueId& b) -> bool {
         // We trust, that a is a consumer and b is a provider
         // First we check if a is an algorithm and b is a processor
@@ -278,11 +237,13 @@ int main (void)
                 // Only costs of the same class can be handled
                 if (intersect(resourceClassUids, resourceCostClassUids).empty())
                     continue;
-                const float r(std::stof(rcm.read(resourceUid).label()));
+                const std::string rLabel(rcm.read(resourceUid).label());
+                const float maxR(std::stof(rLabel.substr(0,rLabel.find("|"))));
+                const std::size_t lastPipePos(rLabel.rfind("|"));
+                const float r(lastPipePos != std::string::npos ? std::stof(rLabel.substr(rLabel.rfind("|")+1)) : maxR);
                 const float c(std::stof(rcm.read(resourceCostUid).label()));
                 // Calculate new minimum
-                //minimum = std::min(minimum, (r - c) / r); NOTE: We cannot do this! because r changes afterwards!!! We would have to distinguish between maximum resources and available resources
-                minimum = std::min(minimum, (r - c));
+                minimum = std::min(minimum, (r - c) / maxR);
             }
         }
         return minimum;
@@ -302,10 +263,12 @@ int main (void)
                 // Only costs of the same class can be handled
                 if (intersect(resourceClassUids, resourceCostClassUids).empty())
                     continue;
-                const float r(std::stof(rcm.read(resourceUid).label()));
+                const std::string rLabel(rcm.read(resourceUid).label());
+                const std::size_t lastPipePos(rLabel.rfind("|"));
+                const float r(lastPipePos != std::string::npos ? std::stof(rLabel.substr(rLabel.rfind("|")+1)) : std::stof(rLabel));
                 const float c(std::stof(rcm.read(resourceCostUid).label()));
-                // Update resources
-                rcm.get(resourceUid)->updateLabel(std::to_string(r - c));
+                // Update resources by appending it! (so we always find initial and current resources
+                rcm.get(resourceUid)->updateLabel(std::to_string(r)+"|"+std::to_string(r - c));
             }
         }
         // II. Map a to b
@@ -326,7 +289,7 @@ int main (void)
     };
 
     // Finally, call map!
-    ResourceCost::Model sw2hw2(sw2hw.map(partitionSwHw, matchSwHw, costSwHw, mapSwHw));
+    ResourceCost::Model sw2hw2(sw2hw.map(ResourceCost::Model::partitionFunc, matchSwHw, costSwHw, mapSwHw));
 
     std::cout << "Graph after map()\n";
     for (const UniqueId& conceptUid : sw2hw2.find())

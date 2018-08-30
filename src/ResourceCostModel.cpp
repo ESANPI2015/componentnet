@@ -124,4 +124,69 @@ Hyperedges Model::costsOf(const Hyperedges& consumerUids, const Hyperedges& prov
     return intersect(validResourceInstanceUids, to(matches));
 }
 
+int Model::partitionFunc (const ResourceCost::Model& rcm, const UniqueId& uid)
+{
+    Hyperedges consumerUids(rcm.consumers()); // get all consumer instances
+    if (std::find(consumerUids.begin(), consumerUids.end(), uid) != consumerUids.end())
+        return 1;
+    Hyperedges providerUids(rcm.providers()); // get all provider instances
+    if (std::find(providerUids.begin(), providerUids.end(), uid) != providerUids.end())
+        return -1;
+    return 0;
+}
+
+bool Model::matchFunc (const ResourceCost::Model& rcm, const UniqueId& consumerUid, const UniqueId& providerUid)
+{
+    // We can match all consumers to all providers
+    return true;
+}
+
+float Model::costFunc (const ResourceCost::Model& rcm, const UniqueId& consumerUid, const UniqueId& providerUid)
+{
+    float minimum(std::numeric_limits<float>::infinity());
+    Hyperedges resourceUids(rcm.resourcesOf(Hyperedges{providerUid}));
+    Hyperedges resourceCostUids(rcm.costsOf(Hyperedges{consumerUid}, Hyperedges{providerUid}));
+    for (const UniqueId& resourceUid : resourceUids)
+    {
+        Hyperedges resourceClassUids(rcm.instancesOf(Hyperedges{resourceUid}, "", Hypergraph::TraversalDirection::FORWARD));
+        for (const UniqueId& resourceCostUid : resourceCostUids)
+        {
+            Hyperedges resourceCostClassUids(rcm.instancesOf(Hyperedges{resourceCostUid}, "", Hypergraph::TraversalDirection::FORWARD));
+            // Only costs of the same class can be handled
+            if (intersect(resourceClassUids, resourceCostClassUids).empty())
+                continue;
+            const float r(std::stof(rcm.read(resourceUid).label()));
+            const float c(std::stof(rcm.read(resourceCostUid).label()));
+            // Calculate new minimum
+            minimum = std::min(minimum, (r - c));
+        }
+    }
+    return minimum;
+}
+
+void Model::mapFunc (CommonConceptGraph& ccg, const UniqueId& consumerUid, const UniqueId& providerUid) 
+{
+    ResourceCost::Model& rcm = static_cast< ResourceCost::Model& >(ccg);
+    // Update all resources
+    Hyperedges resourceUids(rcm.resourcesOf(Hyperedges{providerUid}));
+    Hyperedges resourceCostUids(rcm.costsOf(Hyperedges{consumerUid}, Hyperedges{providerUid}));
+    for (const UniqueId& resourceUid : resourceUids)
+    {
+        Hyperedges resourceClassUids(rcm.instancesOf(Hyperedges{resourceUid}, "", Hypergraph::TraversalDirection::FORWARD));
+        for (const UniqueId& resourceCostUid : resourceCostUids)
+        {
+            Hyperedges resourceCostClassUids(rcm.instancesOf(Hyperedges{resourceCostUid}, "", Hypergraph::TraversalDirection::FORWARD));
+            // Only costs of the same class can be handled
+            if (intersect(resourceClassUids, resourceCostClassUids).empty())
+                continue;
+            const float r(std::stof(rcm.read(resourceUid).label()));
+            const float c(std::stof(rcm.read(resourceCostUid).label()));
+            // Update resources
+            rcm.get(resourceUid)->updateLabel(std::to_string(r - c));
+        }
+    }
+    // Now we should map consumer to provider.
+    // e.g. make consumer PART-OF provider?
+}
+
 }

@@ -85,7 +85,10 @@ class Model: public CommonConceptGraph
         Hyperedges costsOf(const Hyperedges& consumerUids, const Hyperedges& providerUids, const Hyperedges& resourceUids = Hyperedges{ResourceUid}) const;
 
         // Advanced functions
-        // TODO: Create a special version of the map() function defined in CommonConceptGraph using the resource model
+        static int partitionFunc (const ResourceCost::Model& rcm, const UniqueId& uid);
+        static bool matchFunc (const ResourceCost::Model& rcm, const UniqueId& consumerUid, const UniqueId& providerUid);
+        static float costFunc (const ResourceCost::Model& rcm, const UniqueId& consumerUid, const UniqueId& providerUid);
+        static void mapFunc (CommonConceptGraph& ccg, const UniqueId& consumerUid, const UniqueId& providerUid); 
 };
 
 }
