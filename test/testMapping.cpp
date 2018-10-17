@@ -112,12 +112,12 @@ int main (void)
 
     std::cout << "Setup Software Model\n";
 
-    sw.createAlgorithm("Algorithm::A", "A");
-    sw.instantiateInterfaceFor(Hyperedges{"Algorithm::A"}, Hyperedges{Software::Graph::OutputId}, "out");
-    sw.instantiateInterfaceFor(Hyperedges{"Algorithm::A"}, Hyperedges{Software::Graph::InputId}, "in");
-    sw.instantiateComponent(Hyperedges{"Algorithm::A"}, "a");
-    sw.instantiateComponent(Hyperedges{"Algorithm::A"}, "b");
-    sw.instantiateComponent(Hyperedges{"Algorithm::A"}, "c");
+    sw.createImplementation("Implementation::A", "A");
+    sw.instantiateInterfaceFor(Hyperedges{"Implementation::A"}, Hyperedges{Software::Graph::OutputId}, "out");
+    sw.instantiateInterfaceFor(Hyperedges{"Implementation::A"}, Hyperedges{Software::Graph::InputId}, "in");
+    sw.instantiateComponent(Hyperedges{"Implementation::A"}, "a");
+    sw.instantiateComponent(Hyperedges{"Implementation::A"}, "b");
+    sw.instantiateComponent(Hyperedges{"Implementation::A"}, "c");
     // Create a loop
     sw.dependsOn(sw.interfacesOf(sw.components("a"), "in"), sw.interfacesOf(sw.components("c"), "out"));
     sw.dependsOn(sw.interfacesOf(sw.components("b"), "in"), sw.interfacesOf(sw.components("a"), "out"));
@@ -142,7 +142,7 @@ int main (void)
     ResourceCost::Model sw2hw(hw); // NOTE: Now we have everything from SW and HW and RCM
 
     // Define resources and costs
-    sw2hw.isConsumer(Hyperedges{"Algorithm::A", Software::Graph::InterfaceId});
+    sw2hw.isConsumer(Hyperedges{"Implementation::A", Software::Graph::InterfaceId});
     sw2hw.isProvider(Hyperedges{"Processor::X", Hardware::Computational::Network::InterfaceId});
 
     sw2hw.defineResource("Resource::Memory", "Memory");
@@ -153,9 +153,9 @@ int main (void)
     // TODO: What do interfaces cost? Maybe something like 'bandwidth'?
 
     // One statement to rule them all :)
-    sw2hw.costs(sw2hw.instancesOf(Hyperedges{"Algorithm::A"}), sw2hw.instancesOf(Hyperedges{"Processor::X"}), sw2hw.instantiateResource(sw2hw.find("Memory"), 32.f));
+    sw2hw.costs(sw2hw.instancesOf(Hyperedges{"Implementation::A"}), sw2hw.instancesOf(Hyperedges{"Processor::X"}), sw2hw.instantiateResource(sw2hw.find("Memory"), 32.f));
     // Define mapping relation
-    sw2hw.relate("Software::Component::MappedTo::Hardware::Component", Hyperedges{Software::Graph::AlgorithmId}, Hyperedges{Hardware::Computational::Network::ProcessorId}, "MAPPED-TO");
+    sw2hw.relate("Software::Component::MappedTo::Hardware::Component", Hyperedges{Software::Graph::ImplementationId}, Hyperedges{Hardware::Computational::Network::ProcessorId}, "MAPPED-TO");
     sw2hw.relate("Software::Interface::MappedTo::Hardware::Interface", Hyperedges{Software::Graph::InterfaceId}, Hyperedges{Hardware::Computational::Network::InterfaceId}, "MAPPED-TO");
 
     std::cout << "Graph before map()\n";
@@ -171,8 +171,8 @@ int main (void)
     // Define mapping functions
     auto matchSwHw = [] (const Component::Network& rcm, const UniqueId& a, const UniqueId& b) -> bool {
         // We trust, that a is a consumer and b is a provider
-        // First we check if a is an algorithm and b is a processor
-        Hyperedges swUids(rcm.instancesOf(rcm.subclassesOf(Hyperedges{Software::Graph::AlgorithmId})));
+        // First we check if a is an implementation and b is a processor
+        Hyperedges swUids(rcm.instancesOf(rcm.subclassesOf(Hyperedges{Software::Graph::ImplementationId})));
         Hyperedges hwUids(rcm.instancesOf(rcm.subclassesOf(Hyperedges{Hardware::Computational::Network::ProcessorId})));
         if ((std::find(swUids.begin(), swUids.end(), a) != swUids.end())
             && (std::find(hwUids.begin(), hwUids.end(), b) != hwUids.end()))
@@ -274,8 +274,8 @@ int main (void)
             }
         }
         // II. Map a to b
-        // a) software algorithm -> hardware processor
-        Hyperedges swUids(rcm.instancesOf(rcm.subclassesOf(Hyperedges{Software::Graph::AlgorithmId})));
+        // a) software implementation -> hardware processor
+        Hyperedges swUids(rcm.instancesOf(rcm.subclassesOf(Hyperedges{Software::Graph::ImplementationId})));
         if (std::find(swUids.begin(), swUids.end(), a) != swUids.end())
         {
             rcm.factFrom(Hyperedges{a}, Hyperedges{b}, "Software::Component::MappedTo::Hardware::Component");

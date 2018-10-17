@@ -9,6 +9,10 @@
 #include <cassert>
 #include <getopt.h>
 
+/*
+    This program maps a network of IMPLEMENTATION INSTANCES to a network of PROCESSOR INSTANCES
+*/
+
 static struct option long_options[] = {
     {"help", no_argument, 0, 'h'},
     {0,0,0,0}
@@ -30,8 +34,8 @@ static UniqueId sw2hwInterfaceRelationUid = "Software::Interface::MappedTo::Hard
 bool matchFunc (const Component::Network& rcm, const UniqueId& a, const UniqueId& b)
 {
     // We trust, that a is a consumer and b is a provider
-    // First we check if a is an algorithm and b is a processor
-    Hyperedges swUids(rcm.instancesOf(rcm.subclassesOf(Hyperedges{Software::Graph::AlgorithmId})));
+    // First we check if a is an implementation and b is a processor
+    Hyperedges swUids(rcm.instancesOf(rcm.subclassesOf(Hyperedges{Software::Graph::ImplementationId})));
     Hyperedges hwUids(rcm.instancesOf(rcm.subclassesOf(Hyperedges{Hardware::Computational::Network::ProcessorId})));
     if ((std::find(swUids.begin(), swUids.end(), a) != swUids.end())
         && (std::find(hwUids.begin(), hwUids.end(), b) != hwUids.end()))
@@ -134,8 +138,8 @@ void mapFunc (CommonConceptGraph& g, const UniqueId& a, const UniqueId& b)
         }
     }
     // II. Map a to b
-    // a) software algorithm -> hardware processor
-    Hyperedges swUids(rcm.instancesOf(rcm.subclassesOf(Hyperedges{Software::Graph::AlgorithmId})));
+    // a) software implementation -> hardware processor
+    Hyperedges swUids(rcm.instancesOf(rcm.subclassesOf(Hyperedges{Software::Graph::ImplementationId})));
     if (std::find(swUids.begin(), swUids.end(), a) != swUids.end())
     {
         rcm.factFrom(Hyperedges{a}, Hyperedges{b}, sw2hwRelationUid);
@@ -186,15 +190,15 @@ int main (int argc, char **argv)
     ResourceCost::Model rcm(YAML::LoadFile(rcmFileName).as<Hypergraph>());
 
     // Make sure that both relations exist
-    rcm.relate(sw2hwRelationUid, Hyperedges{Software::Graph::AlgorithmId}, Hyperedges{Hardware::Computational::Network::ProcessorId}, "EXECUTED-ON");
+    rcm.relate(sw2hwRelationUid, Hyperedges{Software::Graph::ImplementationId}, Hyperedges{Hardware::Computational::Network::ProcessorId}, "EXECUTED-ON");
     rcm.relate(sw2hwInterfaceRelationUid, Hyperedges{Software::Graph::InterfaceId}, Hyperedges{Hardware::Computational::Network::InterfaceId}, "REACHABLE-THROUGH");
 
     // Print out some statistics
     Software::Graph sw(rcm);
     Hardware::Computational::Network hw(rcm);
-    const unsigned int algs(sw.algorithms().size());
+    const unsigned int impls(sw.implementations().size());
     const unsigned int procs(hw.processors().size());
-    const unsigned int swIfs(sw.interfacesOf(sw.algorithms()).size());
+    const unsigned int swIfs(sw.interfacesOf(sw.implementations()).size());
     const unsigned int hwIfs(hw.interfacesOf(hw.processors()).size());
     const unsigned int nConsumers(rcm.consumers().size());
     const unsigned int nProviders(rcm.providers().size());
@@ -208,9 +212,9 @@ int main (int argc, char **argv)
         std::cout << "No consumers found\n";
         return 3;
     }
-    if (algs < 1)
+    if (impls < 1)
     {
-        std::cout << "No algorithms found\n";
+        std::cout << "No implementations found\n";
         return 4;
     }
     if (procs < 1)
@@ -219,7 +223,7 @@ int main (int argc, char **argv)
         return 5;
     }
 
-    std::cout << "#ALGORITHMS:\t\t" << algs << "\n";
+    std::cout << "#IMPLEMENTATIONS:\t\t" << impls << "\n";
     std::cout << "#SW INTERFACES:\t\t" << swIfs << "\n";
     std::cout << "#PROCESSORS:\t\t" << procs << "\n";
     std::cout << "#HW INTERFACES:\t\t" << hwIfs << "\n";
@@ -229,9 +233,9 @@ int main (int argc, char **argv)
     ResourceCost::Model result(rcm.map(ResourceCost::Model::partitionFuncLeft, ResourceCost::Model::partitionFuncRight, matchFunc, costFunc, mapFunc));
 
     // Print mapping results
-    for (const UniqueId& swUid : sw.algorithms())
+    for (const UniqueId& swUid : sw.implementations())
     {
-        std::cout << "Algorithm " << result.read(swUid).label();
+        std::cout << "Implementation " << result.read(swUid).label();
         Hyperedges hwTargetUids(result.to(intersect(result.relationsFrom(Hyperedges{swUid}),result.factsOf(sw2hwRelationUid))));
         for (const UniqueId& hwUid : hwTargetUids)
         {
