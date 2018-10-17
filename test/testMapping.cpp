@@ -94,7 +94,7 @@ int main (void)
         }
     }
 
-    ResourceCost::Model rm2(rm.map(ResourceCost::Model::partitionFunc, ResourceCost::Model::matchFunc, ResourceCost::Model::costFunc, mapFunc));
+    ResourceCost::Model rm2(rm.map(ResourceCost::Model::partitionFuncLeft, ResourceCost::Model::partitionFuncRight, ResourceCost::Model::matchFunc, ResourceCost::Model::costFunc, mapFunc));
 
     std::cout << "Graph after map()\n";
     for (const UniqueId& conceptUid : rm2.find())
@@ -300,7 +300,7 @@ int main (void)
     fout.close();
 
     // Finally, call map!
-    ResourceCost::Model sw2hw2(sw2hw.map(ResourceCost::Model::partitionFunc, matchSwHw, costSwHw, mapSwHw));
+    ResourceCost::Model sw2hw2(sw2hw.map(ResourceCost::Model::partitionFuncLeft, ResourceCost::Model::partitionFuncRight, matchSwHw, costSwHw, mapSwHw));
 
     std::cout << "Graph after map()\n";
     for (const UniqueId& conceptUid : sw2hw2.find())

@@ -85,7 +85,8 @@ class Model: public CommonConceptGraph
         Hyperedges costsOf(const Hyperedges& consumerUids, const Hyperedges& providerUids, const Hyperedges& resourceUids = Hyperedges{ResourceUid}) const;
 
         // Advanced functions
-        static int partitionFunc (const ResourceCost::Model& rcm, const UniqueId& uid);
+        static Hyperedges partitionFuncLeft (const ResourceCost::Model& rcm);
+        static Hyperedges partitionFuncRight (const ResourceCost::Model& rcm);
         static bool matchFunc (const ResourceCost::Model& rcm, const UniqueId& consumerUid, const UniqueId& providerUid);
         static float costFunc (const ResourceCost::Model& rcm, const UniqueId& consumerUid, const UniqueId& providerUid);
         static void mapFunc (CommonConceptGraph& ccg, const UniqueId& consumerUid, const UniqueId& providerUid); 

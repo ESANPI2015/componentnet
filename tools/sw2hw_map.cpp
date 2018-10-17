@@ -226,7 +226,7 @@ int main (int argc, char **argv)
     std::cout << "#CONSUMERS:\t\t" << nConsumers << "\n";
     std::cout << "#PROVIDERS:\t\t" << nProviders << "\n";
 
-    ResourceCost::Model result(rcm.map(ResourceCost::Model::partitionFunc, matchFunc, costFunc, mapFunc));
+    ResourceCost::Model result(rcm.map(ResourceCost::Model::partitionFuncLeft, ResourceCost::Model::partitionFuncRight, matchFunc, costFunc, mapFunc));
 
     // Print mapping results
     for (const UniqueId& swUid : sw.algorithms())

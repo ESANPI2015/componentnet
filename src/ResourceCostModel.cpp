@@ -124,15 +124,15 @@ Hyperedges Model::costsOf(const Hyperedges& consumerUids, const Hyperedges& prov
     return intersect(validResourceInstanceUids, to(matches));
 }
 
-int Model::partitionFunc (const ResourceCost::Model& rcm, const UniqueId& uid)
+Hyperedges Model::partitionFuncLeft (const ResourceCost::Model& rcm)
 {
     Hyperedges consumerUids(rcm.consumers()); // get all consumer instances
-    if (std::find(consumerUids.begin(), consumerUids.end(), uid) != consumerUids.end())
-        return 1;
+    return consumerUids;
+}
+Hyperedges Model::partitionFuncRight (const ResourceCost::Model& rcm)
+{
     Hyperedges providerUids(rcm.providers()); // get all provider instances
-    if (std::find(providerUids.begin(), providerUids.end(), uid) != providerUids.end())
-        return -1;
-    return 0;
+    return providerUids;
 }
 
 bool Model::matchFunc (const ResourceCost::Model& rcm, const UniqueId& consumerUid, const UniqueId& providerUid)
