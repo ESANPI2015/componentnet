@@ -20,11 +20,12 @@ static struct option long_options[] = {
 void usage (const char *myName)
 {
     std::cout << "Usage:\n";
-    std::cout << myName << " <sw_spec> <output>\n\n";
+    std::cout << myName << " <sw_spec> <output_prefix>\n\n";
     std::cout << "Options:\n";
     std::cout << "--help\t" << "Show usage\n";
     std::cout << "\nExample:\n";
-    std::cout << myName << " algorithm_net.yml implementation_net.yml\n";
+    std::cout << myName << " algorithm_net.yml implementation_net\n";
+    std::cout << "The prefix implementation_net will produce as many implementation_netX.yml files as there are possibilities\n";
 }
 
 int main (int argc, char **argv)
@@ -47,19 +48,19 @@ int main (int argc, char **argv)
                 break;
             default:
                 std::cout << "W00t?!\n";
-                return 1;
+                return -1;
         }
     }
 
     if ((argc - optind) < 2)
     {
         usage(argv[0]);
-        return 1;
+        return -1;
     }
 
     // Set vars
     const std::string fileNameIn(argv[optind]);
-    const std::string fileNameOut(argv[optind+1]);
+    const std::string fileNameOutPrefix(argv[optind+1]);
     Software::Graph sw(YAML::LoadFile(fileNameIn).as<Hypergraph>());
 
     // In order to find our implementations later on in different results, we define a new relation
@@ -69,7 +70,6 @@ int main (int argc, char **argv)
     std::cout << "Searching for possible implementation nets ...\n";
     std::vector< Software::Graph > results;
     results.push_back(sw);
-
 
     // Cycle through all algorithm instances
     Hyperedges algUids(sw.algorithms());
@@ -82,33 +82,25 @@ int main (int argc, char **argv)
 
         // For each possible implementation (except of the first one) we have a new possibility
         std::vector< Software::Graph > newResults;
-        for (Software::Graph& current : results)
+        for (const Software::Graph& current : results)
         {
-            bool first = true;
             for (const UniqueId& implClassUid : implClassUids)
             {
-                // instantiate
-                if (first)
-                {
-                    current.factFrom(Hyperedges{algUid}, current.instantiateComponent(Hyperedges{implClassUid}, current.read(algUid).label()), realizedByUid);
-                } else {
-                    // create a new possiblity if needed
-                    Software::Graph newResult(current);
-                    newResult.factFrom(Hyperedges{algUid}, newResult.instantiateComponent(Hyperedges{implClassUid}, newResult.read(algUid).label()), realizedByUid);
-                    newResults.push_back(newResult);
-                }
+                // Store a copy of the current graph before modification
+                Software::Graph newResult(current);
+
+                // create a new possiblity
+                newResult.factFrom(Hyperedges{algUid}, newResult.instantiateComponent(Hyperedges{implClassUid}, newResult.read(algUid).label()), realizedByUid);
+                newResults.push_back(newResult);
                 std::cout << "o";
-                first = false; 
             }
         }
-        results.insert(results.end(), newResults.begin(), newResults.end());
+        results = newResults;
         std::cout << "\n";
     }
 
     // Now we have a list of all possible implementation graphs which can be build from algorithm graphs
     std::cout << "Found " << results.size() << " possible networks.\n";
-
-    // TODO: Until here, the code has been tested :)
 
     // Wire new instance(s) to already created instances iff corresponding algorithm instances are also wired
     // TODO: Do we have to find originalInterfaces?
@@ -153,14 +145,18 @@ int main (int argc, char **argv)
 
     std::cout << "Storing results\n";
     std::ofstream fout;
-    fout.open(fileNameOut);
-    if(fout.good()) {
-        fout << YAML::StringFrom(results[0]) << std::endl;
-    } else {
-        std::cout << "FAILED\n";
+    int i = 1;
+    for (const Software::Graph& current : results)
+    {
+        fout.open(fileNameOutPrefix+std::to_string(i)+".yml");
+        if(fout.good()) {
+            fout << YAML::StringFrom(current) << std::endl;
+        } else {
+            std::cout << "FAILED\n";
+        }
+        fout.close();
+        i++;
     }
-    fout.close();
 
-
-    return 0;
+    return i;
 }
