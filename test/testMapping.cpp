@@ -109,6 +109,14 @@ int main (void)
     std::cout << "\n\nSetting up a software and a hardware graph and perform a nested mapping\n";
 
     Software::Graph sw;
+    std::ofstream fout;
+    fout.open("empty_sw_net.yml");
+    if(fout.good()) {
+        fout << YAML::StringFrom(sw) << std::endl;
+    } else {
+        std::cout << "FAILED\n";
+    }
+    fout.close();
 
     std::cout << "Setup Software Model\n";
 
@@ -290,7 +298,6 @@ int main (void)
         }
     };
 
-    std::ofstream fout;
     fout.open("rcm_spec.yml");
     if(fout.good()) {
         fout << YAML::StringFrom(sw2hw) << std::endl;
