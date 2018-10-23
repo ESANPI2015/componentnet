@@ -266,7 +266,6 @@ int main (int argc, char **argv)
         result << "\t\t\t// Initializing component interfaces\n";
         for (const UniqueId& partUid : parts)
         {
-            // TODO: Instantiate values. That means that we have to instantiate the PARTS first?!
             Hyperedges partInputUids(intersect(allInputUids, swgraph.interfacesOf(Hyperedges{partUid})));
             for (const UniqueId& partInputUid : partInputUids)
             {
@@ -323,10 +322,6 @@ int main (int argc, char **argv)
                 result << genTypeFromLabel(swgraph.get(inputClassUid)->label()) << " " << genInputIdentifier(swgraph.get(inputId)->label());
                 result << ";\n";
             }
-            // Instantiate specialized interface
-            Hyperedges typeUids(intersect(relevantTypeUids, swgraph.directSubclassesOf(inputClassUids)));
-            Hyperedges specializedInterfaceUids(swgraph.instantiateInterfaceFor(Hyperedges{implId}, typeUids, genInputIdentifier(swgraph.get(inputId)->label())));
-            swgraph.needsInterface(Hyperedges{implId}, specializedInterfaceUids); 
         }
         // Generate output arguments
         result << "\n\t\t// Output variables\n";
@@ -339,10 +334,6 @@ int main (int argc, char **argv)
                 result << genTypeFromLabel(swgraph.get(outputClassUid)->label()) << " " << genOutputIdentifier(swgraph.get(outputId)->label());
                 result << ";\n";
             }
-            // Instantiate specialized interface
-            Hyperedges typeUids(intersect(relevantTypeUids, swgraph.directSubclassesOf(outputClassUids)));
-            Hyperedges specializedInterfaceUids(swgraph.instantiateInterfaceFor(Hyperedges{implId}, typeUids, genOutputIdentifier(swgraph.get(outputId)->label())));
-            swgraph.providesInterface(Hyperedges{implId}, specializedInterfaceUids);
         }
 
         // Instantiate parts (to not confuse C++, partId is also included)

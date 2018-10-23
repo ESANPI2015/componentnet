@@ -294,10 +294,6 @@ int main (int argc, char **argv)
                 std::string typeOfInput(sanitizeString(swgraph.get(classUid)->label()));
                 result << "\t" << genInputIdentifier(swgraph.get(inputId)->label()) << " : in " << genTypeFromLabel(typeOfInput) << ";\n";
             }
-            // Instantiate specialized interface
-            Hyperedges typeUids(intersect(relevantTypeUids, swgraph.directSubclassesOf(inputClassUids)));
-            Hyperedges specializedInterfaceUids(swgraph.instantiateInterfaceFor(Hyperedges{implId}, typeUids, genInputIdentifier(swgraph.get(inputId)->label())));
-            swgraph.needsInterface(Hyperedges{implId}, specializedInterfaceUids); 
         }
         // Handle Outputs
         result << "\n\t-- Outputs --\n";
@@ -310,10 +306,6 @@ int main (int argc, char **argv)
                 std::string typeOfOutput(sanitizeString(swgraph.get(classUid)->label()));
                 result << "\t" << genOutputIdentifier(swgraph.get(outputId)->label()) << " : out " << genTypeFromLabel(typeOfOutput) << ";\n";
             }
-            // Instantiate specialized interface
-            Hyperedges typeUids(intersect(relevantTypeUids, swgraph.directSubclassesOf(outputClassUids)));
-            Hyperedges specializedInterfaceUids(swgraph.instantiateInterfaceFor(Hyperedges{implId}, typeUids, genOutputIdentifier(swgraph.get(outputId)->label())));
-            swgraph.providesInterface(Hyperedges{implId}, specializedInterfaceUids);
         }
         result << "\n\t-- Standard Signals --\n";
         //result << "\tstart : in std_logic;\n";
