@@ -174,14 +174,14 @@ int main (int argc, char **argv)
                 break;
             default:
                 std::cout << "W00t?!\n";
-                return 1;
+                return -1;
         }
     }
 
     if ((argc - optind) < 2)
     {
         usage(argv[0]);
-        return 1;
+        return -1;
     }
 
     // Set vars
@@ -205,22 +205,22 @@ int main (int argc, char **argv)
     if (nProviders < 1)
     {
         std::cout << "No providers found\n";
-        return 2;
+        return -2;
     }
     if (nConsumers < 1)
     {
         std::cout << "No consumers found\n";
-        return 3;
+        return -3;
     }
     if (impls < 1)
     {
         std::cout << "No implementations found\n";
-        return 4;
+        return -4;
     }
     if (procs < 1)
     {
         std::cout << "No processors found\n";
-        return 5;
+        return -5;
     }
 
     std::cout << "#IMPLEMENTATIONS:\t\t" << impls << "\n";
@@ -232,7 +232,8 @@ int main (int argc, char **argv)
 
     ResourceCost::Model result(rcm.map(ResourceCost::Model::partitionFuncLeft, ResourceCost::Model::partitionFuncRight, matchFunc, costFunc, mapFunc));
 
-    // Print mapping results
+    // Print mapping results & sum up remaining resources/max resources per target (or multiply it?)
+    float globalCosts = 0.f;
     for (const UniqueId& swUid : sw.implementations())
     {
         std::cout << "Implementation " << result.read(swUid).label();
@@ -240,6 +241,16 @@ int main (int argc, char **argv)
         for (const UniqueId& hwUid : hwTargetUids)
         {
             std::cout << " -> Processor " << result.read(hwUid).label();
+            Hyperedges resourceUids(result.resourcesOf(Hyperedges{hwUid}));
+            for (const UniqueId& resourceUid : resourceUids)
+            {
+                const std::string rLabel(result.read(resourceUid).label());
+                const float maxR(std::stof(rLabel.substr(0,rLabel.find("|"))));
+                const std::size_t lastPipePos(rLabel.rfind("|"));
+                const float r(lastPipePos != std::string::npos ? std::stof(rLabel.substr(rLabel.rfind("|")+1)) : maxR);
+                globalCosts += r / maxR;
+                std::cout << " Cost: " << r / maxR;
+            }
         }
         std::cout << std::endl;
         Hyperedges swInterfaceUids(sw.interfacesOf(Hyperedges{swUid}));
@@ -254,6 +265,7 @@ int main (int argc, char **argv)
             std::cout << std::endl;
         }
     }
+    std::cout << "Global Normalized Costs: " << std::to_string(globalCosts) << "\n";
 
     // Store result
     std::ofstream fout;
@@ -265,5 +277,6 @@ int main (int argc, char **argv)
     }
     fout.close();
 
+    // TODO: Return the global costs! This means, that for each processor, we have to sum up the amount of resources left.
     return 0;
 }
