@@ -26,7 +26,7 @@ int main(void)
     std::cout << "> Instantiate components and connect their interfaces\n";
     Hyperedges instanceA(cnd.instantiateComponent(Hyperedges{"MyFirstComponent"}));
     Hyperedges instanceB(cnd.instantiateComponent(Hyperedges{"MySecondComponent"}));
-    std::cout << unite(instanceA, instanceB) << "\n";
+    std::cout << cnd.instancesOf(Hyperedges{"MyFirstComponent","MySecondComponent"}) << "\n";
 
     std::cout << "> Query their interfaces\n";
     std::cout << cnd.interfacesOf(cnd.instancesOf(Hyperedges{"MyFirstComponent","MySecondComponent"})) << "\n";
