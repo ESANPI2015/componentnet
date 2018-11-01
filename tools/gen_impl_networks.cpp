@@ -71,7 +71,7 @@ int main (int argc, char **argv)
 
     std::cout << "Storing results\n";
     std::ofstream fout;
-    int i = 1;
+    int i = 0;
     for (const Software::Graph& current : results)
     {
         fout.open(fileNameOutPrefix+std::to_string(i)+".yml");
@@ -84,5 +84,5 @@ int main (int argc, char **argv)
         i++;
     }
 
-    return i;
+    return results.size();
 }
