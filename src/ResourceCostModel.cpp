@@ -94,8 +94,12 @@ Hyperedges Model::costs(const Hyperedges& consumerUids, const Hyperedges& provid
 {
     Hyperedges result;
     // For each pair of consumer and producer, create a fact
-    Hyperedges validConsumerUids(intersect(consumerUids, consumers()));
-    Hyperedges validProviderUids(intersect(providerUids, providers()));
+    Hyperedges validConsumerClassUids(consumerClasses());
+    Hyperedges validProviderClassUids(providerClasses());
+    Hyperedges validConsumerInstanceUids(instancesOf(validConsumerClassUids));
+    Hyperedges validProviderInstanceUids(instancesOf(validProviderClassUids));
+    Hyperedges validConsumerUids(intersect(consumerUids, unite(validConsumerClassUids, validConsumerInstanceUids)));
+    Hyperedges validProviderUids(intersect(providerUids, unite(validProviderClassUids, validProviderInstanceUids)));
     for (const UniqueId& consumerUid : validConsumerUids)
     {
         for (const UniqueId& providerUid : validProviderUids)
