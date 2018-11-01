@@ -63,85 +63,11 @@ int main (int argc, char **argv)
     const std::string fileNameOutPrefix(argv[optind+1]);
     Software::Graph sw(YAML::LoadFile(fileNameIn).as<Hypergraph>());
 
-    // In order to find our implementations later on in different results, we define a new relation
-    const UniqueId realizedByUid("Software::Graph::RealizedBy");
-    sw.relate(realizedByUid, Hyperedges{Software::Graph::AlgorithmId}, Hyperedges{Software::Graph::ImplementationId}, "REALIZED-BY");
-
     std::cout << "Searching for possible implementation nets ...\n";
-    std::vector< Software::Graph > results;
-    results.push_back(sw);
-
-    // Cycle through all algorithm instances
-    Hyperedges algUids(sw.algorithms());
-    for (const UniqueId& algUid : algUids)
-    {
-        std::cout << "Processing [" << algUid << "] aka " << sw.read(algUid).label() << " ";
-        // Find all implementation classes
-        Hyperedges algClassUids(sw.instancesOf(Hyperedges{algUid},"", Hypergraph::TraversalDirection::FORWARD));
-        Hyperedges implClassUids(sw.directSubclassesOf(algClassUids));
-
-        // For each possible implementation (except of the first one) we have a new possibility
-        std::vector< Software::Graph > newResults;
-        for (const Software::Graph& current : results)
-        {
-            for (const UniqueId& implClassUid : implClassUids)
-            {
-                // Store a copy of the current graph before modification
-                Software::Graph newResult(current);
-
-                // create a new possiblity
-                newResult.factFrom(Hyperedges{algUid}, newResult.instantiateComponent(Hyperedges{implClassUid}, newResult.read(algUid).label()), realizedByUid);
-                newResults.push_back(newResult);
-                std::cout << "o";
-            }
-        }
-        results = newResults;
-        std::cout << "\n";
-    }
+    std::vector< Software::Graph > results(sw.generateAllImplementationNetworks());
 
     // Now we have a list of all possible implementation graphs which can be build from algorithm graphs
     std::cout << "Found " << results.size() << " possible networks.\n";
-
-    // Wire new instance(s) to already created instances iff corresponding algorithm instances are also wired
-    // TODO: Do we have to find originalInterfaces?
-    std::cout << "Rewiring ...\n";
-    for (const UniqueId& algUid : algUids)
-    {
-        // Find interfaces
-        Hyperedges algInterfaceUids(sw.interfacesOf(Hyperedges{algUid}));
-        for (const UniqueId& algInterfaceUid : algInterfaceUids)
-        {
-            // Find other interfaces
-            Hyperedges endpointUids(sw.endpointsOf(Hyperedges{algInterfaceUid}));
-            //Hyperedges otherAlgInterfaceClassUids(sw.instancesOf(algClassUids,"",Hypergraph::TraversalDirection::FORWARD));
-            for (const UniqueId& otherAlgInterfaceUid : endpointUids)
-            {
-                // Find other algorithms
-                Hyperedges otherAlgUids(intersect(algUids, sw.interfacesOf(Hyperedges{otherAlgInterfaceUid}, "", Hypergraph::TraversalDirection::INVERSE)));
-                for (const UniqueId& otherAlgUid : otherAlgUids)
-                {
-                    std::cout << "Processing [" << algUid << "] -> [" << otherAlgUid << "]\n";
-                    // We now have algUid -> algInterfaceUid -> otherAlgInterfaceUid -> otherAlgUid
-                    // We have to find implUid -> implInterfaceUid -> otherImpleInterfaceUid -> otherImplUid in ALL results
-                    for (Software::Graph& current : results)
-                    {
-                        // NOTE: For each result, we have different instances (at most one though)
-                        // To find them, we need to get all facts of realizedByUid, which also point from algUid or otherAlgUid
-                        Hyperedges implUids(current.to(current.factsOf(realizedByUid, "", Hypergraph::TraversalDirection::INVERSE, Hyperedges{algUid})));
-                        Hyperedges otherImplUids(current.to(current.factsOf(realizedByUid, "", Hypergraph::TraversalDirection::INVERSE, Hyperedges{otherAlgUid})));
-                        std::cout << "Matches implementation " << implUids << " -> " << otherImplUids << "\n";
-                        // Find the correct interfaces ... by ownership & name
-                        Hyperedges implInterfaceUids(current.interfacesOf(implUids, sw.read(algInterfaceUid).label()));
-                        Hyperedges otherImplInterfaceUids(current.interfacesOf(otherImplUids, sw.read(otherAlgInterfaceUid).label()));
-                        std::cout << "Matches interfaces " << implInterfaceUids << " -> " << otherImplInterfaceUids << "\n";
-                        // Wire
-                        // NOTE: implInterfaceUids are inputs, otherImpleInterfaceUids are outputs
-                        current.dependsOn(implInterfaceUids, otherImplInterfaceUids);
-                    }
-                }
-            }
-        }
-    }
 
     std::cout << "Storing results\n";
     std::ofstream fout;

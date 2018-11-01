@@ -54,6 +54,7 @@ class Graph : public Component::Network
         static const UniqueId NeedsId;
         static const UniqueId ProvidesId;
         static const UniqueId DependsOnId;
+        static const UniqueId RealizedById;
 
         // Constructor/Destructor
         Graph();
@@ -101,6 +102,10 @@ class Graph : public Component::Network
         // I/O & Dependencies
         // RULE: I dependsOn O -> I is-a Input, O is-a Output
         Hyperedges dependsOn(const Hyperedges& inputIds, const Hyperedges& outputIds);
+
+        // Higher functions
+        // This function generates all possbile choices of implementations given a network of algorithm instances
+        std::vector< Software::Graph > generateAllImplementationNetworks() const;
 };
 
 }
