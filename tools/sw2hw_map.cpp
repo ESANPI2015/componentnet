@@ -91,8 +91,12 @@ bool matchFunc (const Component::Network& rcm, const UniqueId& a, const UniqueId
 float costFunc (const ResourceCost::Model& rcm, const UniqueId& a, const UniqueId& b)
 {
     float minimum(std::numeric_limits<float>::infinity());
+    // For finding the resources we can query b ...
     Hyperedges resourceUids(rcm.resourcesOf(Hyperedges{b}));
-    Hyperedges resourceCostUids(rcm.costsOf(Hyperedges{a}, Hyperedges{b}));
+    // ... but for the costs we have to query the classes of a and b
+    Hyperedges consumerClassUids(rcm.instancesOf(Hyperedges{a},"",Hypergraph::TraversalDirection::FORWARD));
+    Hyperedges providerClassUids(rcm.instancesOf(Hyperedges{b},"",Hypergraph::TraversalDirection::FORWARD));
+    Hyperedges resourceCostUids(rcm.costsOf(consumerClassUids, providerClassUids));
     for (const UniqueId& resourceUid : resourceUids)
     {
         Hyperedges resourceClassUids(rcm.instancesOf(Hyperedges{resourceUid}, "", Hypergraph::TraversalDirection::FORWARD));
@@ -118,8 +122,12 @@ void mapFunc (CommonConceptGraph& g, const UniqueId& a, const UniqueId& b)
 {
     ResourceCost::Model& rcm = static_cast< ResourceCost::Model& >(g);
     // I. Update all resources
+    // For finding the resources we can query b ...
     Hyperedges resourceUids(rcm.resourcesOf(Hyperedges{b}));
-    Hyperedges resourceCostUids(rcm.costsOf(Hyperedges{a}, Hyperedges{b}));
+    // ... but for the costs we have to query the classes of a and b
+    Hyperedges consumerClassUids(rcm.instancesOf(Hyperedges{a},"",Hypergraph::TraversalDirection::FORWARD));
+    Hyperedges providerClassUids(rcm.instancesOf(Hyperedges{b},"",Hypergraph::TraversalDirection::FORWARD));
+    Hyperedges resourceCostUids(rcm.costsOf(consumerClassUids, providerClassUids));
     for (const UniqueId& resourceUid : resourceUids)
     {
         Hyperedges resourceClassUids(rcm.instancesOf(Hyperedges{resourceUid}, "", Hypergraph::TraversalDirection::FORWARD));
@@ -277,6 +285,5 @@ int main (int argc, char **argv)
     }
     fout.close();
 
-    // TODO: Return the global costs! This means, that for each processor, we have to sum up the amount of resources left.
-    return 0;
+    return static_cast<int>(globalCosts*100.f);
 }
