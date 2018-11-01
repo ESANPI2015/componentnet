@@ -109,20 +109,13 @@ int main (void)
     std::cout << "\n\nSetting up a software and a hardware graph and perform a nested mapping\n";
 
     Software::Graph sw;
-    std::ofstream fout;
-    fout.open("empty_sw_net.yml");
-    if(fout.good()) {
-        fout << YAML::StringFrom(sw) << std::endl;
-    } else {
-        std::cout << "FAILED\n";
-    }
-    fout.close();
-
     std::cout << "Setup Software Model\n";
 
-    sw.createImplementation("Implementation::A", "A");
-    sw.instantiateInterfaceFor(Hyperedges{"Implementation::A"}, Hyperedges{Software::Graph::OutputId}, "out");
-    sw.instantiateInterfaceFor(Hyperedges{"Implementation::A"}, Hyperedges{Software::Graph::InputId}, "in");
+    sw.createAlgorithm("Algorithm::A", "Algorithm A");
+    sw.createImplementation("Implementation::A", "Implementation A");
+    sw.isA(Hyperedges{"Implementation::A"}, Hyperedges{"Algorithm::A"});
+    sw.instantiateInterfaceFor(Hyperedges{"Algorithm::A"}, Hyperedges{Software::Graph::OutputId}, "out");
+    sw.instantiateInterfaceFor(Hyperedges{"Algorithm::A"}, Hyperedges{Software::Graph::InputId}, "in");
     sw.instantiateComponent(Hyperedges{"Implementation::A"}, "a");
     sw.instantiateComponent(Hyperedges{"Implementation::A"}, "b");
     sw.instantiateComponent(Hyperedges{"Implementation::A"}, "c");
@@ -161,10 +154,20 @@ int main (void)
     // TODO: What do interfaces cost? Maybe something like 'bandwidth'?
 
     // One statement to rule them all :)
-    sw2hw.costs(sw2hw.instancesOf(Hyperedges{"Implementation::A"}), sw2hw.instancesOf(Hyperedges{"Processor::X"}), sw2hw.instantiateResource(sw2hw.find("Memory"), 32.f));
+    sw2hw.costs(Hyperedges{"Implementation::A"}, Hyperedges{"Processor::X"}, sw2hw.instantiateResource(sw2hw.find("Memory"), 32.f));
     // Define mapping relation
     sw2hw.relate("Software::Component::MappedTo::Hardware::Component", Hyperedges{Software::Graph::ImplementationId}, Hyperedges{Hardware::Computational::Network::ProcessorId}, "MAPPED-TO");
     sw2hw.relate("Software::Interface::MappedTo::Hardware::Interface", Hyperedges{Software::Graph::InterfaceId}, Hyperedges{Hardware::Computational::Network::InterfaceId}, "MAPPED-TO");
+
+    std::ofstream fout;
+    fout.open("unmapped_rcm_spec.yml");
+    if(fout.good()) {
+        fout << YAML::StringFrom(sw2hw) << std::endl;
+    } else {
+        std::cout << "FAILED\n";
+    }
+    fout.close();
+
 
     std::cout << "Graph before map()\n";
     for (const UniqueId& conceptUid : sw2hw.find())
@@ -236,8 +239,12 @@ int main (void)
 
     auto costSwHw = [] (const ResourceCost::Model& rcm, const UniqueId& a, const UniqueId& b) -> float {
         float minimum(std::numeric_limits<float>::infinity());
+        // For finding the resources we can query b ...
         Hyperedges resourceUids(rcm.resourcesOf(Hyperedges{b}));
-        Hyperedges resourceCostUids(rcm.costsOf(Hyperedges{a}, Hyperedges{b}));
+        // ... but for the costs we have to query the classes of a and b
+        Hyperedges consumerClassUids(rcm.instancesOf(Hyperedges{a},"",Hypergraph::TraversalDirection::FORWARD));
+        Hyperedges providerClassUids(rcm.instancesOf(Hyperedges{b},"",Hypergraph::TraversalDirection::FORWARD));
+        Hyperedges resourceCostUids(rcm.costsOf(consumerClassUids, providerClassUids));
         for (const UniqueId& resourceUid : resourceUids)
         {
             Hyperedges resourceClassUids(rcm.instancesOf(Hyperedges{resourceUid}, "", Hypergraph::TraversalDirection::FORWARD));
@@ -263,7 +270,9 @@ int main (void)
         ResourceCost::Model& rcm = static_cast< ResourceCost::Model& >(g);
         // I. Update all resources
         Hyperedges resourceUids(rcm.resourcesOf(Hyperedges{b}));
-        Hyperedges resourceCostUids(rcm.costsOf(Hyperedges{a}, Hyperedges{b}));
+        Hyperedges consumerClassUids(rcm.instancesOf(Hyperedges{a},"",Hypergraph::TraversalDirection::FORWARD));
+        Hyperedges providerClassUids(rcm.instancesOf(Hyperedges{b},"",Hypergraph::TraversalDirection::FORWARD));
+        Hyperedges resourceCostUids(rcm.costsOf(consumerClassUids, providerClassUids));
         for (const UniqueId& resourceUid : resourceUids)
         {
             Hyperedges resourceClassUids(rcm.instancesOf(Hyperedges{resourceUid}, "", Hypergraph::TraversalDirection::FORWARD));
