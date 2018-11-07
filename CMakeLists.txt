@@ -65,6 +65,11 @@ target_link_libraries(testMapping componentnet)
 install(TARGETS testMapping
 RUNTIME DESTINATION bin)
 
+add_executable(createEmptyNetworks test/createEmptyNetworks.cpp)
+target_link_libraries(createEmptyNetworks componentnet)
+install(TARGETS createEmptyNetworks
+RUNTIME DESTINATION bin)
+
 add_executable(gen_vhdl_entity tools/gen_vhdl_entity.cpp)
 target_link_libraries(gen_vhdl_entity componentnet)
 install(TARGETS gen_vhdl_entity
