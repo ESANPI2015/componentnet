@@ -24,7 +24,7 @@ int main(void)
     auto sets = hwnet.find();
     for (auto setId : sets)
     {
-        std::cout << setId << " " << hwnet.get(setId)->label() << std::endl;
+        std::cout << setId << " " << hwnet.read(setId).label() << std::endl;
     }
 
     std::cout << "> Create 2nd device\n";
@@ -45,21 +45,21 @@ int main(void)
     auto devsId = hwnet.deviceClasses();
     for (auto setId : devsId)
     {
-        std::cout << setId << " " << hwnet.get(setId)->label() << std::endl;
+        std::cout << setId << " " << hwnet.read(setId).label() << std::endl;
     }
 
     std::cout << "> Query interfaceClasses\n";
     auto ifsId = hwnet.interfaceClasses();
     for (auto setId : ifsId)
     {
-        std::cout << setId << " " << hwnet.get(setId)->label() << std::endl;
+        std::cout << setId << " " << hwnet.read(setId).label() << std::endl;
     }
 
     std::cout << "> Query busClasses\n";
     auto bussesId = hwnet.busClasses();
     for (auto setId : bussesId)
     {
-        std::cout << setId << " " << hwnet.get(setId)->label() << std::endl;
+        std::cout << setId << " " << hwnet.read(setId).label() << std::endl;
     }
 
     std::cout << "> Store hwnet using YAML" << std::endl;

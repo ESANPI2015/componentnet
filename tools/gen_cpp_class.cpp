@@ -198,16 +198,16 @@ int main (int argc, char **argv)
     {
         Hyperedges myInterfaceClassIds;
         std::stringstream result;
-        Hyperedge*  algorithm(swgraph.get(algorithmId));
+        Hyperedge& algorithm(swgraph.get(algorithmId));
 
-        std::cout << "Generating code for " << algorithm->label() << "\n";
+        std::cout << "Generating code for " << algorithm.label() << "\n";
 
         // Check early if implementation exists and overwrite is not desired
-        const UniqueId& implId(cppImplementationUid+"::"+algorithm->label());
+        const UniqueId& implId(cppImplementationUid+"::"+algorithm.label());
         bool implFound = (std::find(allImplementationClasses.begin(), allImplementationClasses.end(), implId) != allImplementationClasses.end());
         if (implFound && !overwrite)
         {
-            std::cout << "Implementation for " << algorithm->label() << "already exists. Skipping\n";
+            std::cout << "Implementation for " << algorithm.label() << "already exists. Skipping\n";
             continue;
         }
         if (implFound && overwrite)
@@ -236,24 +236,24 @@ int main (int argc, char **argv)
 
         // PREAMBLE
         result << "// Algorithm to C++ generator\n";
-        result << "#ifndef __" << sanitizeString(algorithm->label()) << "_HEADER\n";
-        result << "#define __" << sanitizeString(algorithm->label()) << "_HEADER\n";
+        result << "#ifndef __" << sanitizeString(algorithm.label()) << "_HEADER\n";
+        result << "#define __" << sanitizeString(algorithm.label()) << "_HEADER\n";
         result << "#include <string>\n";
         result << "// Include headers for inheritance\n";
         for (const UniqueId& superclassUid : mySuperclasses)
         {
-            result << "#include \"" << sanitizeString(swgraph.get(superclassUid)->label()) << ".hpp\"\n";
+            result << "#include \"" << sanitizeString(swgraph.get(superclassUid).label()) << ".hpp\"\n";
         }
         result << "// Include headers of parts\n";
         for (const UniqueId& superclassUid : superclasses)
         {
-            result << "#include \"" << sanitizeString(swgraph.get(superclassUid)->label()) << ".hpp\"\n";
+            result << "#include \"" << sanitizeString(swgraph.get(superclassUid).label()) << ".hpp\"\n";
         }
-        result << "class " << sanitizeString(algorithm->label()) << " : "; 
+        result << "class " << sanitizeString(algorithm.label()) << " : "; 
         Hyperedges::const_iterator it(mySuperclasses.begin());
         while (it != mySuperclasses.end())
         {
-            result << "public " << sanitizeString(swgraph.get(*it)->label());
+            result << "public " << sanitizeString(swgraph.get(*it).label());
             it++;
             if (it != mySuperclasses.end())
                 result << ", ";
@@ -261,7 +261,7 @@ int main (int argc, char **argv)
         result << "\n{\n";
         result << "\tpublic:\n";
         result << "\n\t\t// Constructor to initialize class\n";
-        result << "\t\t" << sanitizeString(algorithm->label()) << "(const std::string& param=\"" << algorithm->label() << "\")\n";
+        result << "\t\t" << sanitizeString(algorithm.label()) << "(const std::string& param=\"" << algorithm.label() << "\")\n";
         result << "\t\t{\n";
         result << "\t\t\t// Initializing component interfaces\n";
         for (const UniqueId& partUid : parts)
@@ -275,8 +275,8 @@ int main (int argc, char **argv)
                 for (const UniqueId& interfaceValueUid : specificValueClassUids)
                 {
                     result << "\t\t\t";
-                    result << genPartIdentifier(partUid) << "." << genInputIdentifier(swgraph.get(partInputUid)->label());
-                    result << " = " << swgraph.get(interfaceValueUid)->label();
+                    result << genPartIdentifier(partUid) << "." << genInputIdentifier(swgraph.get(partInputUid).label());
+                    result << " = " << swgraph.get(interfaceValueUid).label();
                     result << ";\n";
                 }
             }
@@ -289,8 +289,8 @@ int main (int argc, char **argv)
                 for (const UniqueId& interfaceValueUid : specificValueClassUids)
                 {
                     result << "\t\t\t";
-                    result << genPartIdentifier(partUid) << "." << genOutputIdentifier(swgraph.get(partOutputUid)->label());
-                    result << " = " << swgraph.get(interfaceValueUid)->label();
+                    result << genPartIdentifier(partUid) << "." << genOutputIdentifier(swgraph.get(partOutputUid).label());
+                    result << " = " << swgraph.get(interfaceValueUid).label();
                     result << ";\n";
                 }
             }
@@ -306,7 +306,7 @@ int main (int argc, char **argv)
             for (const UniqueId& typeUid : typeUids)
             {
                 result << "\t\ttypedef ";
-                result << genTypeFromLabel(swgraph.get(typeUid)->label()) << " " << genTypeFromLabel(swgraph.get(interfaceClassId)->label());
+                result << genTypeFromLabel(swgraph.get(typeUid).label()) << " " << genTypeFromLabel(swgraph.get(interfaceClassId).label());
                 result << ";\n";
             }
         }
@@ -319,7 +319,7 @@ int main (int argc, char **argv)
             for (const UniqueId& inputClassUid : inputClassUids)
             {
                 result << "\t\t";
-                result << genTypeFromLabel(swgraph.get(inputClassUid)->label()) << " " << genInputIdentifier(swgraph.get(inputId)->label());
+                result << genTypeFromLabel(swgraph.get(inputClassUid).label()) << " " << genInputIdentifier(swgraph.get(inputId).label());
                 result << ";\n";
             }
         }
@@ -331,7 +331,7 @@ int main (int argc, char **argv)
             for (const UniqueId& outputClassUid : outputClassUids)
             {
                 result << "\t\t";
-                result << genTypeFromLabel(swgraph.get(outputClassUid)->label()) << " " << genOutputIdentifier(swgraph.get(outputId)->label());
+                result << genTypeFromLabel(swgraph.get(outputClassUid).label()) << " " << genOutputIdentifier(swgraph.get(outputId).label());
                 result << ";\n";
             }
         }
@@ -347,26 +347,26 @@ int main (int argc, char **argv)
                 Hyperedges partImplementationclassUids(intersect(allImplementationClasses, swgraph.directSubclassesOf(Hyperedges{superUid})));
                 if (!partImplementationclassUids.size())
                 {
-                    std::cout << "No implementation found for " << swgraph.get(superUid)->label() << ". Skipping\n";
+                    std::cout << "No implementation found for " << swgraph.get(superUid).label() << ". Skipping\n";
                     continue;
                 }
                 for (const UniqueId& implClassUid : partImplementationclassUids)
                 {
                     // Instantiate part from implementation
                     Hyperedges partImplementationUid(swgraph.instantiateComponent(Hyperedges{implClassUid}, genPartIdentifier(partId)));
-                    result << "\t\t" << sanitizeString(swgraph.get(superUid)->label()) << " " << genPartIdentifier(partId) << ";\n";
+                    result << "\t\t" << sanitizeString(swgraph.get(superUid).label()) << " " << genPartIdentifier(partId) << ";\n";
                     partImplementations = unite(partImplementations, partImplementationUid);
 
                     // If desired, we will output the implementation to file
                     if (generateFiles)
                     {
                         // Skip file creation if it already exists
-                        if (std::ifstream(sanitizeString(swgraph.get(superUid)->label())+".hpp"))
+                        if (std::ifstream(sanitizeString(swgraph.get(superUid).label())+".hpp"))
                             continue;
-                        std::cout << "Writing implementation of " << swgraph.get(superUid)->label() << " to file\n";
-                        fout.open(sanitizeString(swgraph.get(superUid)->label())+".hpp");
+                        std::cout << "Writing implementation of " << swgraph.get(superUid).label() << " to file\n";
+                        fout.open(sanitizeString(swgraph.get(superUid).label())+".hpp");
                         if(fout.good()) {
-                            fout << swgraph.get(implClassUid)->label() << std::endl;
+                            fout << swgraph.get(implClassUid).label() << std::endl;
                         } else {
                             std::cout << "FAILED\n";
                         }
@@ -380,7 +380,7 @@ int main (int argc, char **argv)
 
         // Generate main function signature
         result << "\n\t\t// Generate main function\n";
-        result << "\t\tbool operator () (const std::string& param=\"" << algorithm->label() << "\")\n";
+        result << "\t\tbool operator () (const std::string& param=\"" << algorithm.label() << "\")\n";
         result << "\t\t{\n";
         // Close argument list (with a pointer to a context) and start creation of body
         if (!parts.size())
@@ -401,8 +401,8 @@ int main (int argc, char **argv)
                     for (const UniqueId& internalPartUid : internalParts)
                     {
                         result << "\t\t\t";
-                        result << genPartIdentifier(internalPartUid) << "." << genInputIdentifier(swgraph.get(internalInputId)->label())
-                               << " = this->" << genInputIdentifier(swgraph.get(inputId)->label()) << ";\n";
+                        result << genPartIdentifier(internalPartUid) << "." << genInputIdentifier(swgraph.get(internalInputId).label())
+                               << " = this->" << genInputIdentifier(swgraph.get(inputId).label()) << ";\n";
                     }
                 }
             }
@@ -411,7 +411,7 @@ int main (int argc, char **argv)
             for (const UniqueId& partUid : parts)
             {
                 result << "\t\t\t";
-                result << genPartIdentifier(partUid) << "(\"" << swgraph.get(partUid)->label() << "\");\n";
+                result << genPartIdentifier(partUid) << "(\"" << swgraph.get(partUid).label() << "\");\n";
             }
             // III. For every edge: Copy output value to corresponding input value
             result << "\t\t\t// Copy results from parts to inputs of connected parts\n";
@@ -427,8 +427,8 @@ int main (int argc, char **argv)
                         for (const UniqueId& consumerUid : consumerUids)
                         {
                             result << "\t\t\t";
-                            result << genPartIdentifier(consumerUid) << "." << genInputIdentifier(swgraph.get(consumerInputUid)->label())
-                                   << " = " << genPartIdentifier(producerUid) << "." << genOutputIdentifier(swgraph.get(producerOutputUid)->label()) << ";\n";
+                            result << genPartIdentifier(consumerUid) << "." << genInputIdentifier(swgraph.get(consumerInputUid).label())
+                                   << " = " << genPartIdentifier(producerUid) << "." << genOutputIdentifier(swgraph.get(producerOutputUid).label()) << ";\n";
                         }
                     }
                 }
@@ -444,8 +444,8 @@ int main (int argc, char **argv)
                     for (const UniqueId& internalPartUid : internalParts)
                     {
                         result << "\t\t\t";
-                        result << "this->" << genOutputIdentifier(swgraph.get(outputId)->label()) 
-                               << " = " << genPartIdentifier(internalPartUid) << "." << genOutputIdentifier(swgraph.get(internalOutputId)->label()) << ";\n";
+                        result << "this->" << genOutputIdentifier(swgraph.get(outputId).label()) 
+                               << " = " << genPartIdentifier(internalPartUid) << "." << genOutputIdentifier(swgraph.get(internalOutputId).label()) << ";\n";
                     }
                 }
             }
@@ -457,15 +457,15 @@ int main (int argc, char **argv)
         result << "#endif\n";
 
         // Update label
-        swgraph.get(implId)->updateLabel(result.str());
+        swgraph.get(implId).updateLabel(result.str());
 
         // If desired, write implementation to file
         if (generateFiles)
         {
-            std::cout << "Writing implementation of " << algorithm->label() << " to file\n";
-            fout.open(sanitizeString(algorithm->label())+".hpp");
+            std::cout << "Writing implementation of " << algorithm.label() << " to file\n";
+            fout.open(sanitizeString(algorithm.label())+".hpp");
             if(fout.good()) {
-                fout << swgraph.get(implId)->label() << std::endl;
+                fout << swgraph.get(implId).label() << std::endl;
             } else {
                 std::cout << "FAILED\n";
             }

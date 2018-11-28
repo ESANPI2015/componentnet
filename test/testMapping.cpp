@@ -70,7 +70,7 @@ int main (void)
         std::cout << providerUid << ": ";
         for (const UniqueId& resourceUid : rm.resourcesOf(Hyperedges{providerUid}))
         {
-            std::cout << rm.get(resourceUid)->label() << " ";
+            std::cout << rm.get(resourceUid).label() << " ";
         }
         std::cout << "\n";
     }
@@ -87,10 +87,10 @@ int main (void)
     std::cout << "Graph before map()\n";
     for (const UniqueId& conceptUid : rm.find())
     {
-        std::cout << *rm.get(conceptUid) << std::endl;
+        std::cout << rm.get(conceptUid) << std::endl;
         for (const UniqueId& relUid : rm.relationsTo(Hyperedges{conceptUid}))
         {
-            std::cout << "\t" << *rm.get(relUid) << std::endl;
+            std::cout << "\t" << rm.get(relUid) << std::endl;
         }
     }
 
@@ -99,10 +99,10 @@ int main (void)
     std::cout << "Graph after map()\n";
     for (const UniqueId& conceptUid : rm2.find())
     {
-        std::cout << *rm2.get(conceptUid) << std::endl;
+        std::cout << rm2.get(conceptUid) << std::endl;
         for (const UniqueId& relUid : rm2.relationsTo(Hyperedges{conceptUid}))
         {
-            std::cout << "\t" << *rm2.get(relUid) << std::endl;
+            std::cout << "\t" << rm2.get(relUid) << std::endl;
         }
     }
 
@@ -172,10 +172,10 @@ int main (void)
     std::cout << "Graph before map()\n";
     for (const UniqueId& conceptUid : sw2hw.find())
     {
-        std::cout << *sw2hw.get(conceptUid) << std::endl;
+        std::cout << sw2hw.get(conceptUid) << std::endl;
         for (const UniqueId& relUid : sw2hw.relationsTo(Hyperedges{conceptUid}))
         {
-            std::cout << "\t" << *sw2hw.get(relUid) << std::endl;
+            std::cout << "\t" << sw2hw.get(relUid) << std::endl;
         }
     }
 
@@ -287,7 +287,7 @@ int main (void)
                 const float r(lastPipePos != std::string::npos ? std::stof(rLabel.substr(rLabel.rfind("|")+1)) : std::stof(rLabel));
                 const float c(std::stof(rcm.read(resourceCostUid).label()));
                 // Update resources by appending it! (so we always find initial and current resources
-                rcm.get(resourceUid)->updateLabel(std::to_string(r)+"|"+std::to_string(r - c));
+                rcm.get(resourceUid).updateLabel(std::to_string(r)+"|"+std::to_string(r - c));
             }
         }
         // II. Map a to b

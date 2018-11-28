@@ -214,15 +214,15 @@ int main (int argc, char **argv)
     {
         Hyperedges myInterfaceClassIds;
         std::stringstream result;
-        Hyperedge*  algorithm(swgraph.get(algorithmId));
-        std::cout << "Generating code for " << algorithm->label() << "\n";
+        Hyperedge&  algorithm(swgraph.get(algorithmId));
+        std::cout << "Generating code for " << algorithm.label() << "\n";
 
         // Check early if implementation exists and overwrite is not desired
-        const UniqueId& implId(vhdlImplementationUid+"::"+algorithm->label());
+        const UniqueId& implId(vhdlImplementationUid+"::"+algorithm.label());
         bool implFound = (std::find(allImplementationClasses.begin(), allImplementationClasses.end(), implId) != allImplementationClasses.end());
         if (implFound && !overwrite)
         {
-            std::cout << "Implementation for " << algorithm->label() << "already exists. Skipping\n";
+            std::cout << "Implementation for " << algorithm.label() << "already exists. Skipping\n";
             continue;
         }
         if (implFound && overwrite)
@@ -260,27 +260,27 @@ int main (int argc, char **argv)
 
         // Handle the collected interface classes
         result << "\n-- Package def --\n";
-        result << "package " << sanitizeString(algorithm->label()) << "_types is\n";
+        result << "package " << sanitizeString(algorithm.label()) << "_types is\n";
         for (const UniqueId& interfaceClassId : interfaceClassUids)
         {
-            Hyperedge* interface(swgraph.get(interfaceClassId));
+            Hyperedge& interface(swgraph.get(interfaceClassId));
             Hyperedges typeUids(intersect(relevantTypeUids, swgraph.directSubclassesOf(Hyperedges{interfaceClassId})));
             for (const UniqueId& typeUid : typeUids)
             {
-                std::string datatypeName(sanitizeString(swgraph.get(typeUid)->label()));
+                std::string datatypeName(sanitizeString(swgraph.get(typeUid).label()));
                 if (isVHDLSubType(datatypeName))
-                    result << "\tsubtype " << genTypeFromLabel(interface->label()) << " is " << datatypeName << ";\n";
+                    result << "\tsubtype " << genTypeFromLabel(interface.label()) << " is " << datatypeName << ";\n";
                 else
-                    result << "\ttype " << genTypeFromLabel(interface->label()) << " is " << datatypeName << ";\n";
+                    result << "\ttype " << genTypeFromLabel(interface.label()) << " is " << datatypeName << ";\n";
             }
         }
-        result << "end " << sanitizeString(algorithm->label()) << "_types;\n";
+        result << "end " << sanitizeString(algorithm.label()) << "_types;\n";
 
         // Reinsert library statement because the previous one only applies to package def
         result << "library IEEE;\n";
         result << "use IEEE.STD_LOGIC_1164.ALL;\n";
-        result << "use work." << sanitizeString(algorithm->label()) << "_types.all;\n";
-        result << "\nentity " << sanitizeString(algorithm->label()) << " is\n";
+        result << "use work." << sanitizeString(algorithm.label()) << "_types.all;\n";
+        result << "\nentity " << sanitizeString(algorithm.label()) << " is\n";
         result << "port(\n";
 
         // Handle Inputs (input instances which are interfaces of algorithmId
@@ -291,8 +291,8 @@ int main (int argc, char **argv)
             Hyperedges inputClassUids(swgraph.instancesOf(inputId,"",Hypergraph::TraversalDirection::FORWARD));
             for (const UniqueId& classUid : inputClassUids)
             {
-                std::string typeOfInput(sanitizeString(swgraph.get(classUid)->label()));
-                result << "\t" << genInputIdentifier(swgraph.get(inputId)->label()) << " : in " << genTypeFromLabel(typeOfInput) << ";\n";
+                std::string typeOfInput(sanitizeString(swgraph.get(classUid).label()));
+                result << "\t" << genInputIdentifier(swgraph.get(inputId).label()) << " : in " << genTypeFromLabel(typeOfInput) << ";\n";
             }
         }
         // Handle Outputs
@@ -303,8 +303,8 @@ int main (int argc, char **argv)
             Hyperedges outputClassUids(swgraph.instancesOf(outputId,"",Hypergraph::TraversalDirection::FORWARD));
             for (const UniqueId& classUid : outputClassUids)
             {
-                std::string typeOfOutput(sanitizeString(swgraph.get(classUid)->label()));
-                result << "\t" << genOutputIdentifier(swgraph.get(outputId)->label()) << " : out " << genTypeFromLabel(typeOfOutput) << ";\n";
+                std::string typeOfOutput(sanitizeString(swgraph.get(classUid).label()));
+                result << "\t" << genOutputIdentifier(swgraph.get(outputId).label()) << " : out " << genTypeFromLabel(typeOfOutput) << ";\n";
             }
         }
         result << "\n\t-- Standard Signals --\n";
@@ -320,7 +320,7 @@ int main (int argc, char **argv)
         {
             // Architecture for atomic entity
             result << "\n-- Architecture def --\n";
-            result << "architecture BEHAVIOURAL of " << sanitizeString(algorithm->label()) << " is\n";
+            result << "architecture BEHAVIOURAL of " << sanitizeString(algorithm.label()) << " is\n";
             result << "-- signals here --\n";
             result << "\nbegin\n";
             result << "-- processes here --\n";
@@ -339,7 +339,7 @@ int main (int argc, char **argv)
         } else {
             // * For each component, create ONE signal per input and ONE signal per OUTPUT!!!!
             result << "\n-- Architecture def --\n";
-            result << "architecture BEHAVIOURAL of " << sanitizeString(algorithm->label()) << " is\n";
+            result << "architecture BEHAVIOURAL of " << sanitizeString(algorithm.label()) << " is\n";
             result << "-- signals here --\n";
             // I: Create signals for each component
             result << "-- signals of parts --\n";
@@ -352,8 +352,8 @@ int main (int argc, char **argv)
                     for (const UniqueId& classUid : interfaceClassUids)
                     {
                         result << "signal ";
-                        result << genPartIdentifier(partUid) << "_" << genInputIdentifier(swgraph.get(partInputUid)->label());
-                        result << " : " << genTypeFromLabel(swgraph.get(classUid)->label());
+                        result << genPartIdentifier(partUid) << "_" << genInputIdentifier(swgraph.get(partInputUid).label());
+                        result << " : " << genTypeFromLabel(swgraph.get(classUid).label());
                     }
                     Hyperedges interfaceValueUids(swgraph.valuesOf(Hyperedges{partInputUid}));
                     Hyperedges interfaceValueClassUids(swgraph.instancesOf(interfaceValueUids, "", Hypergraph::TraversalDirection::FORWARD));
@@ -362,7 +362,7 @@ int main (int argc, char **argv)
                     {
                         for (const UniqueId& interfaceValueUid : specificValueClassUids)
                         {
-                            result << " := " << swgraph.get(interfaceValueUid)->label();
+                            result << " := " << swgraph.get(interfaceValueUid).label();
                         }
                     }
                     result << ";\n";
@@ -374,8 +374,8 @@ int main (int argc, char **argv)
                     for (const UniqueId& classUid : interfaceClassUids)
                     {
                         result << "signal ";
-                        result << genPartIdentifier(partUid) << "_" << genOutputIdentifier(swgraph.get(partOutputUid)->label());
-                        result << " : " << genTypeFromLabel(swgraph.get(classUid)->label());
+                        result << genPartIdentifier(partUid) << "_" << genOutputIdentifier(swgraph.get(partOutputUid).label());
+                        result << " : " << genTypeFromLabel(swgraph.get(classUid).label());
                     }
                     Hyperedges interfaceValueUids(swgraph.valuesOf(Hyperedges{partOutputUid}));
                     Hyperedges interfaceValueClassUids(swgraph.instancesOf(interfaceValueUids, "", Hypergraph::TraversalDirection::FORWARD));
@@ -384,7 +384,7 @@ int main (int argc, char **argv)
                     {
                         for (const UniqueId& interfaceValueUid : specificValueClassUids)
                         {
-                            result << " := " << swgraph.get(interfaceValueUid)->label();
+                            result << " := " << swgraph.get(interfaceValueUid).label();
                         }
                     }
                     result << ";\n";
@@ -401,9 +401,9 @@ int main (int argc, char **argv)
                     Hyperedges partUids(intersect(parts, swgraph.interfacesOf(Hyperedges{internalInputId}, "", Hypergraph::TraversalDirection::INVERSE)));
                     for (const UniqueId& partUid : partUids)
                     {
-                        result << genPartIdentifier(partUid) << "_" << genInputIdentifier(swgraph.get(internalInputId)->label());
+                        result << genPartIdentifier(partUid) << "_" << genInputIdentifier(swgraph.get(internalInputId).label());
                         result << " <= ";
-                        result << genInputIdentifier(swgraph.get(inputId)->label());
+                        result << genInputIdentifier(swgraph.get(inputId).label());
                         result << ";\n";
                     }
                 }
@@ -418,9 +418,9 @@ int main (int argc, char **argv)
                     Hyperedges partUids(intersect(parts, swgraph.interfacesOf(Hyperedges{internalOutputId}, "", Hypergraph::TraversalDirection::INVERSE)));
                     for (const UniqueId& partUid : partUids)
                     {
-                        result << genOutputIdentifier(swgraph.get(outputId)->label());
+                        result << genOutputIdentifier(swgraph.get(outputId).label());
                         result << " <= ";
-                        result << genPartIdentifier(partUid) << "_" << genOutputIdentifier(swgraph.get(internalOutputId)->label());
+                        result << genPartIdentifier(partUid) << "_" << genOutputIdentifier(swgraph.get(internalOutputId).label());
                         result << ";\n";
                     }
                 }
@@ -444,9 +444,9 @@ int main (int argc, char **argv)
                         Hyperedges producerUids(intersect(parts, swgraph.interfacesOf(Hyperedges{partOutputUid}, "", Hypergraph::TraversalDirection::INVERSE)));
                         for (const UniqueId& producerUid : producerUids)
                         {
-                            result << genPartIdentifier(partUid) << "_" << genInputIdentifier(swgraph.get(partInputUid)->label());
+                            result << genPartIdentifier(partUid) << "_" << genInputIdentifier(swgraph.get(partInputUid).label());
                             result << " <= ";
-                            result << genPartIdentifier(producerUid) << "_" << genOutputIdentifier(swgraph.get(partOutputUid)->label());
+                            result << genPartIdentifier(producerUid) << "_" << genOutputIdentifier(swgraph.get(partOutputUid).label());
                             result << ";\n";
                         }
                     }
@@ -458,28 +458,28 @@ int main (int argc, char **argv)
                     if (!partImplementationclassUids.size())
                     {
                         // TODO: we could add it to the list of algorithms to be generated? :)
-                        std::cout << "No implementation found for " << swgraph.get(superUid)->label() << ". Skipping\n";
+                        std::cout << "No implementation found for " << swgraph.get(superUid).label() << ". Skipping\n";
                         continue;
                     }
                     for (const UniqueId& implClassUid : partImplementationclassUids)
                     {
-                        result << genPartIdentifier(partUid) << ": entity work." << sanitizeString(swgraph.get(superUid)->label()) << "\n";
+                        result << genPartIdentifier(partUid) << ": entity work." << sanitizeString(swgraph.get(superUid).label()) << "\n";
                         result << "port map (\n";
                         result << "\t-- inputs --\n";
                         // VI. Wire to corresponding signals
                         for (const UniqueId& partInputUid : partInputUids)
                         {
                                 result << "\t";
-                                result << genInputIdentifier(swgraph.get(partInputUid)->label()) << " => ";
-                                result << genPartIdentifier(partUid) << "_" << genInputIdentifier(swgraph.get(partInputUid)->label());
+                                result << genInputIdentifier(swgraph.get(partInputUid).label()) << " => ";
+                                result << genPartIdentifier(partUid) << "_" << genInputIdentifier(swgraph.get(partInputUid).label());
                                 result << ",\n";
                         }
                         result << "\t-- outputs --\n";
                         for (const UniqueId& partOutputUid : partOutputUids)
                         {
                                 result << "\t";
-                                result << genOutputIdentifier(swgraph.get(partOutputUid)->label()) << " => ";
-                                result << genPartIdentifier(partUid) << "_" << genOutputIdentifier(swgraph.get(partOutputUid)->label());
+                                result << genOutputIdentifier(swgraph.get(partOutputUid).label()) << " => ";
+                                result << genPartIdentifier(partUid) << "_" << genOutputIdentifier(swgraph.get(partOutputUid).label());
                                 result << ",\n";
                         }
                         result << "\tclk => clk,\n";
@@ -493,12 +493,12 @@ int main (int argc, char **argv)
                         if (generateFiles)
                         {
                             // Skip file creation if it already exists
-                            if (std::ifstream(sanitizeString(swgraph.get(superUid)->label())+".vhdl"))
+                            if (std::ifstream(sanitizeString(swgraph.get(superUid).label())+".vhdl"))
                                 continue;
-                            std::cout << "Writing implementation of " << swgraph.get(superUid)->label() << " to file\n";
-                            fout.open(sanitizeString(swgraph.get(superUid)->label())+".vhdl");
+                            std::cout << "Writing implementation of " << swgraph.get(superUid).label() << " to file\n";
+                            fout.open(sanitizeString(swgraph.get(superUid).label())+".vhdl");
                             if(fout.good()) {
-                                fout << swgraph.get(implClassUid)->label() << std::endl;
+                                fout << swgraph.get(implClassUid).label() << std::endl;
                             } else {
                                 std::cout << "FAILED\n";
                             }
@@ -515,15 +515,15 @@ int main (int argc, char **argv)
         }
 
         // Update label
-        swgraph.get(implId)->updateLabel(result.str());
+        swgraph.get(implId).updateLabel(result.str());
 
         // If desired, write implementation to file
         if (generateFiles)
         {
-            std::cout << "Writing implementation of " << algorithm->label() << " to file\n";
-            fout.open(sanitizeString(algorithm->label())+".vhdl");
+            std::cout << "Writing implementation of " << algorithm.label() << " to file\n";
+            fout.open(sanitizeString(algorithm.label())+".vhdl");
             if(fout.good()) {
-                fout << swgraph.get(implId)->label() << std::endl;
+                fout << swgraph.get(implId).label() << std::endl;
             } else {
                 std::cout << "FAILED\n";
             }

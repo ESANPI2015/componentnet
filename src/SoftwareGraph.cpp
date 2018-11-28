@@ -26,13 +26,13 @@ void Graph::createMainConcepts()
 
     // Relations
     subrelationFrom(Graph::DependsOnId, Hyperedges{Graph::InputId}, Hyperedges{Graph::OutputId}, CommonConceptGraph::ConnectsId);
-    get(Graph::DependsOnId)->updateLabel("DEPENDS-ON");
+    get(Graph::DependsOnId).updateLabel("DEPENDS-ON");
 
     subrelationFrom(Graph::NeedsId, Hyperedges{Graph::AlgorithmId}, Hyperedges{Graph::InputId}, CommonConceptGraph::HasAId);
-    get(Graph::NeedsId)->updateLabel("NEEDS");
+    get(Graph::NeedsId).updateLabel("NEEDS");
 
     subrelationFrom(Graph::ProvidesId, Hyperedges{Graph::AlgorithmId}, Hyperedges{Graph::OutputId}, CommonConceptGraph::HasAId);
-    get(Graph::ProvidesId)->updateLabel("PROVIDES");
+    get(Graph::ProvidesId).updateLabel("PROVIDES");
 
     relate(Graph::RealizedById, Hyperedges{Graph::AlgorithmId}, Hyperedges{Graph::ImplementationId}, "REALIZED-BY");
 }

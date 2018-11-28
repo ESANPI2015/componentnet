@@ -186,7 +186,7 @@ void Model::mapFunc (CommonConceptGraph& ccg, const UniqueId& consumerUid, const
             const float r(std::stof(rcm.read(resourceUid).label()));
             const float c(std::stof(rcm.read(resourceCostUid).label()));
             // Update resources
-            rcm.get(resourceUid)->updateLabel(std::to_string(r - c));
+            rcm.get(resourceUid).updateLabel(std::to_string(r - c));
         }
     }
     // Now we should map consumer to provider.

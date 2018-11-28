@@ -143,7 +143,7 @@ void mapFunc (CommonConceptGraph& g, const UniqueId& a, const UniqueId& b)
             const float r(lastPipePos != std::string::npos ? std::stof(rLabel.substr(rLabel.rfind("|")+1)) : maxR);
             const float c(std::stof(rcm.read(resourceCostUid).label()));
             // Update resources by appending it! (so we always find initial and current resources
-            rcm.get(resourceUid)->updateLabel(std::to_string(maxR)+"|"+std::to_string(r - c));
+            rcm.get(resourceUid).updateLabel(std::to_string(maxR)+"|"+std::to_string(r - c));
         }
     }
     // II. Map a to b
