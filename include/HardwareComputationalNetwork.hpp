@@ -55,6 +55,7 @@ class Network: public Component::Network
         Hyperedges processorClasses(const std::string& name="", const Hyperedges& suids=Hyperedges()) const;
         Hyperedges interfaceClasses(const std::string& name="", const Hyperedges& suids=Hyperedges()) const;
         Hyperedges busClasses(const std::string& name="", const Hyperedges& suids=Hyperedges()) const;
+
         // NOTE: These return the individuals of all the corresponding classes
         Hyperedges devices(const std::string& name="", const std::string& className="") const;
         Hyperedges processors(const std::string& name="", const std::string& className="") const;

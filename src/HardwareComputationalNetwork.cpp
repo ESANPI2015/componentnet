@@ -16,7 +16,6 @@ void Network::createMainConcepts()
 {
     // Create concepts
     createComponent(Network::DeviceId, "DEVICE");
-    isA(Hyperedges{Network::DeviceId}, Hyperedges{Component::Network::NetworkId}); // Make devices also networks
     createComponent(Network::ProcessorId, "PROCESSOR", Hyperedges{Network::DeviceId});
     Component::Network::createInterface(Network::InterfaceId, "INTERFACE");
     createComponent(Network::BusId, "BUS");

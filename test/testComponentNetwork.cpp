@@ -34,10 +34,10 @@ int main(void)
     std::cout << "> Connect interface y of A to interface u of B\n";
     std::cout << cnd.connectInterface(cnd.interfacesOf(instanceA,"y"), cnd.interfacesOf(instanceB,"u")) << "\n";
 
-    std::cout << "> Make the components part of a network\n";
-    std::cout << cnd.partOfNetwork(unite(instanceA, instanceB), cnd.createNetwork("MyFirstNetwork","C")) << "\n";
+    std::cout << "> Make the components part of a composite component\n";
+    std::cout << cnd.partOfComponent(unite(instanceA, instanceB), cnd.createComponent("MyFirstNetwork","C")) << "\n";
 
-    std::cout << "> Export interfaces to network level\n";
+    std::cout << "> Export internal interfaces\n";
     std::cout << cnd.hasInterface(Hyperedges{"MyFirstNetwork"}, unite(cnd.interfacesOf(instanceA,"x"), cnd.interfacesOf(instanceB,"v"))) << "\n";
 
     std::cout << "> Store component network using YAML" << std::endl;
