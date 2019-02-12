@@ -23,43 +23,63 @@ namespace Software {
     ALGORITHM -- provides(has) --> OUTPUT
     INPUT -- dependsOn(connects) --> OUTPUT
 
-    ALGORITHM <-- realizes(is-a) -- IMPLEMENTATION
+    Although IMPLEMENTATIONS are themselves ALGORITHMS, a specific IMPLEMENTATION implements an ALGORITHM while not inheriting its INTERFACES.
+    This is NOT an IS-A relation!
+    The same is also true for interfaces.
+    A (concrete) INTERFACE encodes the information of an (abstract) INTERFACE
+    The reason for the extra relation is to cleanly decouple implementations and abstract algorithms.
+
+    ALGORITHM <-- implements -- IMPLEMENTATION
+    (abstract) INTERFACE <-- encodes -- (concrete) INTERFACE
 
     If some X is a ALGORITHM then there exists a path of IS-A relations from X to ALGORITHM
 
     Some example:
 
-        |---------- realizes -- disparity.c
+        |---------- implements -- disparity.c
         v
-    DisparityMap -- needs --> left -- is-a --> Input
-      | |                       |---- is-a --> Image <-- is-a -- uint8_t[MAX_X][MAX_Y]
+    DisparityMap -- needs --> left -- instanceOf --> ImageInput
+      | |                      
       | |---------- needs --> right ...
       |------------ provides --> disparity ...
 
+    disparity.c -- needs --> left -- instanceOf --> uint8[MAX_X][MAX_Y] -- encodes --> ImageInput
+
     NOTE: When merging with the concept of Finite State Machines, this whole thing would become an even whiter box :)
-    NOTE: To support different programming languages, you can create e.g. specialized interfaces by subclassing.
+    NOTE: To support different programming languages, you can create e.g. specialized interfaces by ENCODES relations.
+    NOTE: IMPLEMENTS denotes the possibility to use a IMPLEMENTATION CLASS for some ALGOITHM CLASS. REALIZES denotes that a specific IMPLEMENTATION INSTANCE has been chosen to realize an ALGORITHM INSTANCE.
+
+    Open questions:
+    * If we have specified NEEDS and PROVIDES ... do we need to specify INPUTS & OUTPUTS seperately? Isn't this redundant?
+    * Shall we split ALGORITHM domain and IMPLEMENTATION domain into two classes?
+    * Shall we drop the notion of input and output? Makes everything more complicated
 */
 
-class Graph : public Component::Network
+class Network : public Component::Network
 {
     public:
-        // Identifiers for the main concepts
+        // Identifiers for the algorithmic concepts
         static const UniqueId AlgorithmId;
         static const UniqueId InterfaceId;
         static const UniqueId InputId;
         static const UniqueId OutputId;
+
+        // Identifiers for implementation specific concepts
         static const UniqueId ImplementationId;
+        // TODO: Does it make sense to introduce concrete interfaces?
 
         // Ids for identifiing main relations
         static const UniqueId NeedsId;
         static const UniqueId ProvidesId;
         static const UniqueId DependsOnId;
-        static const UniqueId RealizedById;
+        static const UniqueId ImplementsId;
+        static const UniqueId EncodesId;
+        static const UniqueId RealizesId;
 
         // Constructor/Destructor
-        Graph();
-        Graph(const Hypergraph& A);
-        ~Graph();
+        Network();
+        Network(const Hypergraph& A);
+        ~Network();
 
         // Generates the dictionary
         void createMainConcepts();
@@ -87,25 +107,28 @@ class Graph : public Component::Network
         Hyperedges outputs(const std::string& name="", const std::string& className="") const;
         Hyperedges implementations(const std::string& name="", const std::string& className="") const;
 
-        // TODO: Nice additional queries
-        // inputsOf()
-        // outputsOf()
+        // Special additional queries
+        Hyperedges inputsOf(const Hyperedges& algorithmIds, const std::string& name="") const;
+        Hyperedges outputsOf(const Hyperedges& algorithmIds, const std::string& name="") const;
+        Hyperedges implementationsOf(const Hyperedges& algorithmIds, const std::string& name="", const TraversalDirection dir=INVERSE) const;
+        Hyperedges encodersOf(const Hyperedges& interfaceIds, const std::string& name="", const TraversalDirection dir=INVERSE) const;
+        Hyperedges realizersOf(const Hyperedges& algorithmIds, const std::string& name="", const TraversalDirection dir=INVERSE) const;
 
         // Facts
         // NOTE: Only the multidimensionals are used here (more generic)
-        // Algorithms & I/O/P
-        // RULE: A has X -> X is-a Interface
-        // RULE: A provides O -> A has O, O is-a Output (, O is-a Interface)
-        // RULE: A needs I -> A has I, I is-a Input (, I is-a Interface)
+        // Algorithms/Implementations & I/O/P
         Hyperedges providesInterface(const Hyperedges& algorithmIds, const Hyperedges& outputIds);
         Hyperedges needsInterface(const Hyperedges& algorithmIds, const Hyperedges& inputIds);
         // I/O & Dependencies
-        // RULE: I dependsOn O -> I is-a Input, O is-a Output
         Hyperedges dependsOn(const Hyperedges& inputIds, const Hyperedges& outputIds);
 
-        // Higher functions
-        // This function generates all possbile choices of implementations given a network of algorithm instances
-        std::vector< Software::Graph > generateAllImplementationNetworks() const;
+        // Concrete Implementation/Interfaces to abstract Algorithm/Interfaces facts
+        Hyperedges implements(const Hyperedges& implementationIds, const Hyperedges& algorithmIds);
+        Hyperedges encodes(const Hyperedges& concreteInterfaceIds, const Hyperedges& interfaceIds);
+        Hyperedges realizes(const Hyperedges& implementationIds, const Hyperedges& algorithmIds);
+
+        // Special function to find all possible implementation networks from an algorithm network
+        std::vector< Software::Network > generateAllImplementationNetworks() const;
 };
 
 }

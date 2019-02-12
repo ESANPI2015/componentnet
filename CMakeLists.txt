@@ -32,14 +32,18 @@ add_definitions(${componentnet_PKGCONFIG_CFLAGS_OTHER} --pedantic -Wall)
 set(SOURCES
     src/ComponentNetwork.cpp
     src/HardwareComputationalNetwork.cpp
-    src/SoftwareGraph.cpp
+    src/SoftwareNetwork.cpp
     src/ResourceCostModel.cpp
+    src/Mapper.cpp
+    src/Generator.cpp
     )
 set(HEADERS
     include/ComponentNetwork.hpp
     include/HardwareComputationalNetwork.hpp
-    include/SoftwareGraph.hpp
+    include/SoftwareNetwork.hpp
     include/ResourceCostModel.hpp
+    include/Mapper.hpp
+    include/Generator.hpp
     )
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/")
@@ -70,20 +74,25 @@ target_link_libraries(createEmptyNetworks componentnet)
 install(TARGETS createEmptyNetworks
 RUNTIME DESTINATION bin)
 
-add_executable(gen_vhdl_entity tools/gen_vhdl_entity.cpp)
-target_link_libraries(gen_vhdl_entity componentnet)
-install(TARGETS gen_vhdl_entity
+add_executable(testGenerator test/testGenerator.cpp)
+target_link_libraries(testGenerator componentnet)
+install(TARGETS testGenerator
 RUNTIME DESTINATION bin)
 
-add_executable(gen_cpp_class tools/gen_cpp_class.cpp)
-target_link_libraries(gen_cpp_class componentnet)
-install(TARGETS gen_cpp_class
-RUNTIME DESTINATION bin)
+#add_executable(gen_vhdl_entity tools/gen_vhdl_entity.cpp)
+#target_link_libraries(gen_vhdl_entity componentnet)
+#install(TARGETS gen_vhdl_entity
+#RUNTIME DESTINATION bin)
 
-add_executable(sw2hw_map tools/sw2hw_map.cpp)
-target_link_libraries(sw2hw_map componentnet)
-install(TARGETS sw2hw_map
-RUNTIME DESTINATION bin)
+#add_executable(gen_cpp_class tools/gen_cpp_class.cpp)
+#target_link_libraries(gen_cpp_class componentnet)
+#install(TARGETS gen_cpp_class
+#RUNTIME DESTINATION bin)
+
+#add_executable(sw2hw_map tools/sw2hw_map.cpp)
+#target_link_libraries(sw2hw_map componentnet)
+#install(TARGETS sw2hw_map
+#RUNTIME DESTINATION bin)
 
 add_executable(gen_impl_networks tools/gen_impl_networks.cpp)
 target_link_libraries(gen_impl_networks componentnet)

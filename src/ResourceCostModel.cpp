@@ -9,9 +9,9 @@ const UniqueId Model::CostsUid    = "ResourceCost::Model::Costs";
 
 void Model::setupMetaModel()
 {
-    create(Model::ConsumerUid, "Consumer");
-    create(Model::ProviderUid, "Provider");
-    create(Model::ResourceUid, "Resource");
+    concept(Model::ConsumerUid, "Consumer");
+    concept(Model::ProviderUid, "Provider");
+    concept(Model::ResourceUid, "Resource");
     relate(Model::CostsUid, Hyperedges{Model::ConsumerUid, Model::ProviderUid}, Hyperedges{Model::ResourceUid}, "COSTS");
 }
 
@@ -33,7 +33,7 @@ Model::~Model()
 Hyperedges Model::defineResource(const UniqueId& uid, const std::string& name, const Hyperedges& superResourceUids)
 {
     Hyperedges all(subclassesOf(Hyperedges{Model::ResourceUid}));
-    if(!isA(create(uid, name), intersect(unite(Hyperedges{Model::ResourceUid}, superResourceUids), all)).empty())
+    if(!isA(concept(uid, name), intersect(unite(Hyperedges{Model::ResourceUid}, superResourceUids), all)).empty())
         return Hyperedges{uid};
     return Hyperedges();
 }
@@ -41,7 +41,7 @@ Hyperedges Model::defineResource(const UniqueId& uid, const std::string& name, c
 Hyperedges Model::instantiateResource(const Hyperedges& resourceUids, const float amount)
 {
     Hyperedges validResourceUids(intersect(resourceUids, subclassesOf(Hyperedges{Model::ResourceUid})));
-    return instantiateDeepFrom(validResourceUids, std::to_string(amount));
+    return instantiateFrom(validResourceUids, std::to_string(amount));
 }
 
 Hyperedges Model::instantiateResourceFor(const Hyperedges& someUids, const Hyperedges& resourceUids, const float amount)
@@ -119,13 +119,24 @@ Hyperedges Model::resourcesOf(const Hyperedges& providerUids, const Hyperedges& 
     return intersect(validResourceInstanceUids, childrenOf(providerUids));
 }
 
-Hyperedges Model::costsOf(const Hyperedges& consumerUids, const Hyperedges& providerUids, const Hyperedges& resourceUids) const
+Hyperedges Model::costsOf(const Hyperedges& consumerUids, const Hyperedges& providerUids, const Hyperedges& resourceUids, const TraversalDirection& dir) const
 {
+    Hyperedges result;
     Hyperedges validResourceInstanceUids(instancesOf(subclassesOf(resourceUids)));
-    Hyperedges factUids(factsOf(Hyperedges{Model::CostsUid}));
-    Hyperedges relsFromUids(intersect(relationsFrom(consumerUids), relationsFrom(providerUids)));
-    Hyperedges matches(intersect(factUids, relsFromUids));
-    return intersect(validResourceInstanceUids, to(matches));
+    Hyperedges subRelUids(subrelationsOf(Hyperedges{Model::CostsUid}));
+    Hyperedges factUids(factsOf(subRelUids,unite(consumerUids,providerUids),validResourceInstanceUids)); // TODO: Verify with changing traversal dir
+    switch (dir)
+    {
+        case INVERSE:
+            result = unite(result, isPointingFrom(factUids));
+            break;
+        case BOTH:
+            result = unite(result, isPointingFrom(factUids));
+        case FORWARD:
+            result = unite(result, isPointingTo(factUids));
+            break;
+    }
+    return result;
 }
 
 Hyperedges Model::partitionFuncLeft (const ResourceCost::Model& rcm)
@@ -159,8 +170,8 @@ float Model::costFunc (const ResourceCost::Model& rcm, const UniqueId& consumerU
             // Only costs of the same class can be handled
             if (intersect(resourceClassUids, resourceCostClassUids).empty())
                 continue;
-            const float r(std::stof(rcm.read(resourceUid).label()));
-            const float c(std::stof(rcm.read(resourceCostUid).label()));
+            const float r(std::stof(rcm.access(resourceUid).label()));
+            const float c(std::stof(rcm.access(resourceCostUid).label()));
             // Calculate new minimum
             minimum = std::min(minimum, (r - c));
         }
@@ -183,10 +194,10 @@ void Model::mapFunc (CommonConceptGraph& ccg, const UniqueId& consumerUid, const
             // Only costs of the same class can be handled
             if (intersect(resourceClassUids, resourceCostClassUids).empty())
                 continue;
-            const float r(std::stof(rcm.read(resourceUid).label()));
-            const float c(std::stof(rcm.read(resourceCostUid).label()));
+            const float r(std::stof(rcm.access(resourceUid).label()));
+            const float c(std::stof(rcm.access(resourceCostUid).label()));
             // Update resources
-            rcm.get(resourceUid).updateLabel(std::to_string(r - c));
+            rcm.access(resourceUid).updateLabel(std::to_string(r - c));
         }
     }
     // Now we should map consumer to provider.

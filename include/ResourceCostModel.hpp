@@ -82,7 +82,7 @@ class Model: public CommonConceptGraph
         // Returns all the resources of some entities (optional: filtered by resource type)
         Hyperedges resourcesOf(const Hyperedges& providerUids, const Hyperedges& resourceUids = Hyperedges{ResourceUid}) const;
         // Returns all costs given two sets of entities (optional: filtered by resource type)
-        Hyperedges costsOf(const Hyperedges& consumerUids, const Hyperedges& providerUids, const Hyperedges& resourceUids = Hyperedges{ResourceUid}) const;
+        Hyperedges costsOf(const Hyperedges& consumerUids, const Hyperedges& providerUids, const Hyperedges& resourceUids = Hyperedges{ResourceUid}, const TraversalDirection& dir=FORWARD) const;
 
         // Advanced functions
         static Hyperedges partitionFuncLeft (const ResourceCost::Model& rcm);

@@ -1,5 +1,5 @@
 #include "ResourceCostModel.hpp"
-#include "SoftwareGraph.hpp"
+#include "SoftwareNetwork.hpp"
 #include "HardwareComputationalNetwork.hpp"
 #include "HypergraphYAML.hpp"
 
@@ -12,7 +12,7 @@ int main (void)
     std::cout << "Create empty networks\n";
 
     std::ofstream fout;
-    Software::Graph sw;
+    Software::Network sw;
     fout.open("empty_sw.yml");
     if(fout.good()) {
         fout << YAML::StringFrom(sw) << std::endl;

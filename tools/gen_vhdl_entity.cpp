@@ -1,4 +1,4 @@
-#include "SoftwareGraph.hpp"
+#include "SoftwareNetwork.hpp"
 #include "HypergraphYAML.hpp"
 
 #include <iostream>
@@ -171,7 +171,7 @@ int main (int argc, char **argv)
     // Set vars
     std::string fileNameIn(argv[optind]);
     std::string fileNameOut(argv[optind+1]);
-    Software::Graph swgraph(YAML::LoadFile(fileNameIn).as<Hypergraph>());
+    Software::Network swgraph(YAML::LoadFile(fileNameIn).as<Hypergraph>());
 
     // Get all algorithm classes (without overall superclass)
     // and find the candidate(s)
@@ -186,7 +186,7 @@ int main (int argc, char **argv)
     }
 
     // Set our language
-    const UniqueId& vhdlImplementationUid("Software::Graph::Implementation::VHDL");
+    const UniqueId& vhdlImplementationUid("Software::Network::Implementation::VHDL");
     swgraph.createImplementation(vhdlImplementationUid, "VHDLImplementation");
 
     // Find relevant interface classes

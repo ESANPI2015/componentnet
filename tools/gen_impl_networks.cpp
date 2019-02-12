@@ -1,4 +1,4 @@
-#include "SoftwareGraph.hpp"
+#include "SoftwareNetwork.hpp"
 #include "HypergraphYAML.hpp"
 
 #include <iostream>
@@ -61,10 +61,10 @@ int main (int argc, char **argv)
     // Set vars
     const std::string fileNameIn(argv[optind]);
     const std::string fileNameOutPrefix(argv[optind+1]);
-    Software::Graph sw(YAML::LoadFile(fileNameIn).as<Hypergraph>());
+    Software::Network sw(YAML::LoadFile(fileNameIn).as<Hypergraph>());
 
     std::cout << "Searching for possible implementation nets ...\n";
-    std::vector< Software::Graph > results(sw.generateAllImplementationNetworks());
+    std::vector< Software::Network > results(sw.generateAllImplementationNetworks());
 
     // Now we have a list of all possible implementation graphs which can be build from algorithm graphs
     std::cout << "Found " << results.size() << " possible networks.\n";
@@ -72,7 +72,7 @@ int main (int argc, char **argv)
     std::cout << "Storing results\n";
     std::ofstream fout;
     int i = 0;
-    for (const Software::Graph& current : results)
+    for (const Software::Network& current : results)
     {
         fout.open(fileNameOutPrefix+std::to_string(i)+".yml");
         if(fout.good()) {
