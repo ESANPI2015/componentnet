@@ -12,16 +12,14 @@ namespace Software {
     This class is derived from the concept graph class.
 
     It introduces these different concepts:
-        ALGORITHM, INPUT, OUTPUT, INTERFACE (for logical specification and skeleton generation)
+        ALGORITHM, INTERFACE (for logical specification and skeleton generation)
         IMPLEMENTATION (for storing already available implementations of algorithms in different languages)
     The domain is encoded as follows:
 
     (ALGORITHM -- has --> INTERFACE)                    optional, inferrable
-    INPUT -- is-a --> INTERFACE
-    OUTPUT -- is-a --> INTERFACE
-    ALGORITHM -- needs(has) --> INPUT
-    ALGORITHM -- provides(has) --> OUTPUT
-    INPUT -- dependsOn(connects) --> OUTPUT
+    ALGORITHM -- needs(has) --> INTERFACE               encodes necessary information (inputs)
+    ALGORITHM -- provides(has) --> INTERFACE            encodes results of processing (outputs)
+    INTERFACE -- dependsOn(connects) --> INTERFACE      encodes information flow from one interface to another
 
     Although IMPLEMENTATIONS are themselves ALGORITHMS, a specific IMPLEMENTATION implements an ALGORITHM while not inheriting its INTERFACES.
     This is NOT an IS-A relation!
@@ -38,12 +36,12 @@ namespace Software {
 
         |---------- implements -- disparity.c
         v
-    DisparityMap -- needs --> left -- instanceOf --> ImageInput
+    DisparityMap -- needs --> left -- instanceOf --> Image
       | |                      
       | |---------- needs --> right ...
       |------------ provides --> disparity ...
 
-    disparity.c -- needs --> left -- instanceOf --> uint8[MAX_X][MAX_Y] -- encodes --> ImageInput
+    disparity.c -- needs --> left -- instanceOf --> uint8[MAX_X][MAX_Y] -- encodes --> Image
 
     NOTE: When merging with the concept of Finite State Machines, this whole thing would become an even whiter box :)
     NOTE: To support different programming languages, you can create e.g. specialized interfaces by ENCODES relations.
@@ -61,12 +59,10 @@ class Network : public Component::Network
         // Identifiers for the algorithmic concepts
         static const UniqueId AlgorithmId;
         static const UniqueId InterfaceId;
-        static const UniqueId InputId;
-        static const UniqueId OutputId;
 
         // Identifiers for implementation specific concepts
         static const UniqueId ImplementationId;
-        // TODO: Does it make sense to introduce concrete interfaces?
+        static const UniqueId ImplementationInterfaceId;
 
         // Ids for identifiing main relations
         static const UniqueId NeedsId;
@@ -88,31 +84,28 @@ class Network : public Component::Network
         // NOTE: Create classes
         Hyperedges createAlgorithm(const UniqueId& uid, const std::string& name="Algorithm", const Hyperedges& suids=Hyperedges());
         Hyperedges createInterface(const UniqueId& uid, const std::string& name="Interface", const Hyperedges& suids=Hyperedges());
-        Hyperedges createInput(const UniqueId& uid, const std::string& name="Input", const Hyperedges& suids=Hyperedges());
-        Hyperedges createOutput(const UniqueId& uid, const std::string& name="Output", const Hyperedges& suids=Hyperedges());
         Hyperedges createImplementation(const UniqueId& uid, const std::string& name="Implementation", const Hyperedges& suids=Hyperedges());
+        Hyperedges createImplementationInterface(const UniqueId& uid, const std::string& name="Interface", const Hyperedges& suids=Hyperedges());
 
         // Queries
         // NOTE: Returns subclasses
         Hyperedges algorithmClasses(const std::string& name="", const Hyperedges& suids=Hyperedges()) const;
         Hyperedges interfaceClasses(const std::string& name="", const Hyperedges& suids=Hyperedges()) const;
-        Hyperedges inputClasses(const std::string& name="", const Hyperedges& suids=Hyperedges()) const;
-        Hyperedges outputClasses(const std::string& name="", const Hyperedges& suids=Hyperedges()) const;
         Hyperedges implementationClasses(const std::string& name="", const Hyperedges& suids=Hyperedges()) const;
+        Hyperedges implementationInterfaceClasses(const std::string& name="", const Hyperedges& suids=Hyperedges()) const;
 
         // NOTE: Returns instances
         Hyperedges algorithms(const std::string& name="", const std::string& className="") const;
         Hyperedges interfaces(const std::string& name="", const std::string& className="") const;
-        Hyperedges inputs(const std::string& name="", const std::string& className="") const;
-        Hyperedges outputs(const std::string& name="", const std::string& className="") const;
         Hyperedges implementations(const std::string& name="", const std::string& className="") const;
+        Hyperedges implementationInterfaces(const std::string& name="", const std::string& className="") const;
 
         // Special additional queries
-        Hyperedges inputsOf(const Hyperedges& algorithmIds, const std::string& name="") const;
-        Hyperedges outputsOf(const Hyperedges& algorithmIds, const std::string& name="") const;
-        Hyperedges implementationsOf(const Hyperedges& algorithmIds, const std::string& name="", const TraversalDirection dir=INVERSE) const;
-        Hyperedges encodersOf(const Hyperedges& interfaceIds, const std::string& name="", const TraversalDirection dir=INVERSE) const;
-        Hyperedges realizersOf(const Hyperedges& algorithmIds, const std::string& name="", const TraversalDirection dir=INVERSE) const;
+        Hyperedges inputsOf(const Hyperedges& uids, const std::string& name="", const TraversalDirection dir=FORWARD) const;
+        Hyperedges outputsOf(const Hyperedges& uids, const std::string& name="", const TraversalDirection dir=FORWARD) const;
+        Hyperedges implementationsOf(const Hyperedges& uids, const std::string& name="", const TraversalDirection dir=INVERSE) const;
+        Hyperedges encodersOf(const Hyperedges& uids, const std::string& name="", const TraversalDirection dir=INVERSE) const;
+        Hyperedges realizersOf(const Hyperedges& uids, const std::string& name="", const TraversalDirection dir=INVERSE) const;
 
         // Facts
         // NOTE: Only the multidimensionals are used here (more generic)

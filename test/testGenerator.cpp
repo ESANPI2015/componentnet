@@ -13,14 +13,12 @@ int main (void)
     Software::Generator gen(net);
 
     gen.createAlgorithm("SimpleAlgorithm", "F");
-    gen.createInput("ARealNumberInput", "Real");
-    gen.createOutput("ARealNumberOutput", "Real");
-    gen.needsInterface(Hyperedges{"SimpleAlgorithm"}, gen.instantiateFrom("ARealNumberInput", "x"));
-    gen.providesInterface(Hyperedges{"SimpleAlgorithm"}, gen.instantiateFrom("ARealNumberOutput", "y"));
+    gen.createInterface("ARealNumber", "Real");
+    gen.needsInterface(Hyperedges{"SimpleAlgorithm"}, gen.instantiateFrom("ARealNumber", "x"));
+    gen.providesInterface(Hyperedges{"SimpleAlgorithm"}, gen.instantiateFrom("ARealNumber", "y"));
 
     Hyperedges generatedStuff;
-    generatedStuff = unite(generatedStuff, gen.generateConcreteInterfaceClassFor("ARealNumberInput", "ConcreteInput"));
-    generatedStuff = unite(generatedStuff, gen.generateConcreteInterfaceClassFor("ARealNumberOutput", "ConcreteOutput"));
+    generatedStuff = unite(generatedStuff, gen.generateConcreteInterfaceClassFor("ARealNumber", "ConcreteRealNumber"));
     generatedStuff = unite(generatedStuff, gen.generateImplementationClassFor("SimpleAlgorithm","SimpleImplementation"));
 
     std::cout << "Generated code:\n";
@@ -30,12 +28,12 @@ int main (void)
     std::cout << "Create a simple nested algorithm\n";
     
     gen.createAlgorithm("SimpleNestedAlgorithm", "G");
-    gen.needsInterface(Hyperedges{"SimpleNestedAlgorithm"}, gen.instantiateFrom("ARealNumberInput", "a"));
-    gen.providesInterface(Hyperedges{"SimpleNestedAlgorithm"}, gen.instantiateFrom("ARealNumberOutput", "b"));
+    gen.needsInterface(Hyperedges{"SimpleNestedAlgorithm"}, gen.instantiateFrom("ARealNumber", "a"));
+    gen.providesInterface(Hyperedges{"SimpleNestedAlgorithm"}, gen.instantiateFrom("ARealNumber", "b"));
 
     Hyperedges innerPart(gen.instantiateComponent(Hyperedges{"SimpleAlgorithm"}, "f"));
-    gen.partOf(innerPart, Hyperedges{"SimpleNestedAlgorithm"});
-    gen.aliasOf(gen.inputsOf(Hyperedges{"SimpleNestedAlgorithm"}, "a"), gen.inputsOf(innerPart, "x"));
+    gen.partOfComponent(innerPart, Hyperedges{"SimpleNestedAlgorithm"});
+    gen.aliasOf(gen.inputsOf(Hyperedges{"SimpleNestedAlgorithm"}, "a"), gen.inputsOf(innerPart, "x")); // NOK
     gen.aliasOf(gen.outputsOf(Hyperedges{"SimpleNestedAlgorithm"}, "b"), gen.outputsOf(innerPart, "y"));
 
     generatedStuff = unite(generatedStuff, gen.generateImplementationClassFor("SimpleNestedAlgorithm", "SimpleNestedImplementation"));
@@ -46,8 +44,8 @@ int main (void)
     std::cout << "Create a more complex nested algorithm\n";
     
     gen.createAlgorithm("NestedAlgorithm", "H");
-    gen.needsInterface(Hyperedges{"NestedAlgorithm"}, gen.instantiateFrom("ARealNumberInput", "u"));
-    gen.providesInterface(Hyperedges{"NestedAlgorithm"}, gen.instantiateFrom("ARealNumberOutput", "v"));
+    gen.needsInterface(Hyperedges{"NestedAlgorithm"}, gen.instantiateFrom("ARealNumber", "u"));
+    gen.providesInterface(Hyperedges{"NestedAlgorithm"}, gen.instantiateFrom("ARealNumber", "v"));
 
     std::cout << "Place initial values on the interfaces\n";
     gen.createValue("SimpleValue", "0.f");
@@ -55,7 +53,7 @@ int main (void)
 
     Hyperedges innerPart2(gen.instantiateComponent(Hyperedges{"SimpleAlgorithm"}, "f"));
     Hyperedges innerPart3(gen.instantiateComponent(Hyperedges{"SimpleNestedAlgorithm"}, "g"));
-    gen.partOf(unite(innerPart2, innerPart3), Hyperedges{"NestedAlgorithm"});
+    gen.partOfComponent(unite(innerPart2, innerPart3), Hyperedges{"NestedAlgorithm"});
     gen.dependsOn(gen.inputsOf(innerPart3, "a"), gen.outputsOf(innerPart2, "y"));
     gen.aliasOf(gen.inputsOf(Hyperedges{"NestedAlgorithm"}, "u"), gen.inputsOf(innerPart2, "x"));
     gen.aliasOf(gen.outputsOf(Hyperedges{"NestedAlgorithm"}, "v"), gen.outputsOf(innerPart3, "b"));

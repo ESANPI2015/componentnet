@@ -5,8 +5,7 @@ namespace Software {
 
 // Concept Ids
 const UniqueId Network::InterfaceId       = "Software::Network::Interface";
-const UniqueId Network::InputId           = "Software::Network::Input";
-const UniqueId Network::OutputId          = "Software::Network::Output";
+const UniqueId Network::ImplementationInterfaceId       = "Software::Network::Implementation::Interface";
 const UniqueId Network::AlgorithmId       = "Software::Network::Algorithm";
 const UniqueId Network::ImplementationId  = "Software::Network::Implementation";
 // Relation Ids
@@ -22,23 +21,22 @@ void Network::createMainConcepts()
 {
     createComponent(Network::AlgorithmId, "ALGORITHM"); // Abstract, semantic definition (e.g. Localize)
     Component::Network::createInterface(Network::InterfaceId, "INTERFACE"); // Abstract, semantic interface (e.g. Position)
-    Component::Network::createInterface(Network::InputId, "INPUT", Hyperedges{Network::InterfaceId});
-    Component::Network::createInterface(Network::OutputId, "OUTPUT", Hyperedges{Network::InterfaceId});
     createComponent(Network::ImplementationId, "IMPLEMENTATION", Hyperedges{Network::AlgorithmId}); // Concrete algorithm (e.g. 3DSLAM.cpp)
+    Component::Network::createInterface(Network::ImplementationInterfaceId, "INTERFACE", Hyperedges{Network::InterfaceId}); // Concrete interface implementation (e.g. Vector3D)
     // NOTE: In general IMPLEMENTTIONS are also algorithms, so they can have interfaces as well
 
     // Relations
-    subrelationFrom(Network::DependsOnId, Hyperedges{Network::InputId}, Hyperedges{Network::OutputId}, Component::Network::ConnectedToInterfaceId);
+    subrelationFrom(Network::DependsOnId, Hyperedges{Network::InterfaceId}, Hyperedges{Network::InterfaceId}, Component::Network::ConnectedToInterfaceId);
     access(Network::DependsOnId).updateLabel("DEPENDS-ON");
 
-    subrelationFrom(Network::NeedsId, Hyperedges{Network::AlgorithmId}, Hyperedges{Network::InputId}, Component::Network::HasAInterfaceId);
+    subrelationFrom(Network::NeedsId, Hyperedges{Network::AlgorithmId}, Hyperedges{Network::InterfaceId}, Component::Network::HasAInterfaceId);
     access(Network::NeedsId).updateLabel("NEEDS");
 
-    subrelationFrom(Network::ProvidesId, Hyperedges{Network::AlgorithmId}, Hyperedges{Network::OutputId}, Component::Network::HasAInterfaceId);
+    subrelationFrom(Network::ProvidesId, Hyperedges{Network::AlgorithmId}, Hyperedges{Network::InterfaceId}, Component::Network::HasAInterfaceId);
     access(Network::ProvidesId).updateLabel("PROVIDES");
 
     relate(Network::ImplementsId, Hyperedges{Network::ImplementationId}, Hyperedges{Network::AlgorithmId}, "IMPLEMENTS");
-    relate(Network::EncodesId, Hyperedges{Network::InterfaceId}, Hyperedges{Network::InterfaceId}, "ENCODES");
+    relate(Network::EncodesId, Hyperedges{Network::ImplementationInterfaceId}, Hyperedges{Network::InterfaceId}, "ENCODES");
     relate(Network::RealizesId, Hyperedges{Network::ImplementationId}, Hyperedges{Network::AlgorithmId}, "REALIZES");
 }
 
@@ -62,16 +60,6 @@ Hyperedges Network::createAlgorithm(const UniqueId& uid, const std::string& name
     return createComponent(uid, name, suids.empty() ? Hyperedges{Network::AlgorithmId} : intersect(algorithmClasses(), suids));
 }
 
-Hyperedges Network::createInput(const UniqueId& uid, const std::string& name, const Hyperedges& suids)
-{
-    return createInterface(uid, name, suids.empty() ? Hyperedges{Network::InputId} : intersect(inputClasses(), suids));
-}
-
-Hyperedges Network::createOutput(const UniqueId& uid, const std::string& name, const Hyperedges& suids)
-{
-    return createInterface(uid, name, suids.empty() ? Hyperedges{Network::OutputId} : intersect(outputClasses(), suids));
-}
-
 Hyperedges Network::createInterface(const UniqueId& uid, const std::string& name, const Hyperedges& suids)
 {
     return Component::Network::createInterface(uid, name, suids.empty() ? Hyperedges{Network::InterfaceId} : intersect(interfaceClasses(), suids));
@@ -80,6 +68,11 @@ Hyperedges Network::createInterface(const UniqueId& uid, const std::string& name
 Hyperedges Network::createImplementation(const UniqueId& uid, const std::string& name, const Hyperedges& suids)
 {
     return createAlgorithm(uid, name, suids.empty() ? Hyperedges{Network::ImplementationId} : intersect(implementationClasses(), suids));
+}
+
+Hyperedges Network::createImplementationInterface(const UniqueId& uid, const std::string& name, const Hyperedges& suids)
+{
+    return Component::Network::createInterface(uid, name, suids.empty() ? Hyperedges{Network::ImplementationInterfaceId} : intersect(interfaceClasses(), suids));
 }
 
 Hyperedges Network::algorithmClasses(const std::string& name, const Hyperedges& suids) const
@@ -94,21 +87,15 @@ Hyperedges Network::interfaceClasses(const std::string& name, const Hyperedges& 
     return suids.empty() ? all : intersect(all, subclassesOf(suids, name));
 }
 
-Hyperedges Network::inputClasses(const std::string& name, const Hyperedges& suids) const
-{
-    Hyperedges all(interfaceClasses(name, Hyperedges{Network::InputId}));
-    return suids.empty() ? all : intersect(all, subclassesOf(suids, name));
-}
-
-Hyperedges Network::outputClasses(const std::string& name, const Hyperedges& suids) const
-{
-    Hyperedges all(interfaceClasses(name, Hyperedges{Network::OutputId}));
-    return suids.empty() ? all : intersect(all, subclassesOf(suids, name));
-}
-
 Hyperedges Network::implementationClasses(const std::string& name, const Hyperedges& suids) const
 {
     Hyperedges all(algorithmClasses(name, Hyperedges{Network::ImplementationId}));
+    return suids.empty() ? all : intersect(all, subclassesOf(suids, name));
+}
+
+Hyperedges Network::implementationInterfaceClasses(const std::string& name, const Hyperedges& suids) const
+{
+    Hyperedges all(Component::Network::interfaceClasses(name, Hyperedges{Network::ImplementationInterfaceId}));
     return suids.empty() ? all : intersect(all, subclassesOf(suids, name));
 }
 
@@ -126,17 +113,10 @@ Hyperedges Network::interfaces(const std::string& name, const std::string& class
     // ... and then the instances of them
     return instancesOf(classIds, name);
 }
-Hyperedges Network::inputs(const std::string& name, const std::string& className) const
+Hyperedges Network::implementationInterfaces(const std::string& name, const std::string& className) const
 {
     // Get all super classes
-    Hyperedges classIds = inputClasses(className);
-    // ... and then the instances of them
-    return instancesOf(classIds, name);
-}
-Hyperedges Network::outputs(const std::string& name, const std::string& className) const
-{
-    // Get all super classes
-    Hyperedges classIds = outputClasses(className);
+    Hyperedges classIds = implementationInterfaceClasses(className);
     // ... and then the instances of them
     return instancesOf(classIds, name);
 }
@@ -148,68 +128,111 @@ Hyperedges Network::implementations(const std::string& name, const std::string& 
     return instancesOf(classIds, name);
 }
 
-Hyperedges Network::inputsOf(const Hyperedges& algorithmIds, const std::string& name) const
+Hyperedges Network::inputsOf(const Hyperedges& uids, const std::string& name, const TraversalDirection dir) const
 {
-    return intersect(inputs(name), interfacesOf(algorithmIds, name));
+    Hyperedges result;
+    Hyperedges subRelUids(subrelationsOf(Hyperedges{Network::NeedsId}));
+    Hyperedges factUids;
+    switch (dir)
+    {
+        case INVERSE:
+            factUids = unite(factUids, factsOf(subRelUids, Hyperedges(), uids));
+            result = unite(result, isPointingFrom(factUids, name));
+            break;
+        case BOTH:
+            factUids = unite(factUids, factsOf(subRelUids, Hyperedges(), uids));
+            result = unite(result, isPointingFrom(factUids, name));
+        case FORWARD:
+            factUids = unite(factUids, factsOf(subRelUids, uids, Hyperedges()));
+            result = unite(result, isPointingTo(factUids, name));
+            break;
+    }
+    return result;
 }
 
-Hyperedges Network::outputsOf(const Hyperedges& algorithmIds, const std::string& name) const
+Hyperedges Network::outputsOf(const Hyperedges& uids, const std::string& name, const TraversalDirection dir) const
 {
-    return intersect(outputs(name), interfacesOf(algorithmIds, name));
+    Hyperedges result;
+    Hyperedges subRelUids(subrelationsOf(Hyperedges{Network::ProvidesId}));
+    Hyperedges factUids;
+    switch (dir)
+    {
+        case INVERSE:
+            factUids = unite(factUids, factsOf(subRelUids, Hyperedges(), uids));
+            result = unite(result, isPointingFrom(factUids, name));
+            break;
+        case BOTH:
+            factUids = unite(factUids, factsOf(subRelUids, Hyperedges(), uids));
+            result = unite(result, isPointingFrom(factUids, name));
+        case FORWARD:
+            factUids = unite(factUids, factsOf(subRelUids, uids, Hyperedges()));
+            result = unite(result, isPointingTo(factUids, name));
+            break;
+    }
+    return result;
 }
 
-Hyperedges Network::implementationsOf(const Hyperedges& algorithmIds, const std::string& name, const TraversalDirection dir) const
+Hyperedges Network::implementationsOf(const Hyperedges& uids, const std::string& name, const TraversalDirection dir) const
 {
     // Get all X,name <-- IMPLEMENTS --> ALG and return the X (INVERSE) or ALG (FORWARD)
     Hyperedges result;
     Hyperedges subRelUids(subrelationsOf(Hyperedges{Network::ImplementsId}));
-    Hyperedges factUids(factsOf(subRelUids,Hyperedges(),algorithmIds));
+    Hyperedges factUids;
     switch (dir)
     {
         case INVERSE:
+            factUids = unite(factUids, factsOf(subRelUids, Hyperedges(), uids));
             result = unite(result, isPointingFrom(factUids, name));
             break;
         case BOTH:
+            factUids = unite(factUids, factsOf(subRelUids, Hyperedges(), uids));
             result = unite(result, isPointingFrom(factUids, name));
         case FORWARD:
+            factUids = unite(factUids, factsOf(subRelUids, uids, Hyperedges()));
             result = unite(result, isPointingTo(factUids, name));
             break;
     }
     return result;
 }
 
-Hyperedges Network::encodersOf(const Hyperedges& interfaceIds, const std::string& name, const TraversalDirection dir) const
+Hyperedges Network::encodersOf(const Hyperedges& uids, const std::string& name, const TraversalDirection dir) const
 {
     Hyperedges result;
     Hyperedges subRelUids(subrelationsOf(Hyperedges{Network::EncodesId}));
-    Hyperedges factUids(factsOf(subRelUids,Hyperedges(),interfaceIds));
+    Hyperedges factUids;
     switch (dir)
     {
         case INVERSE:
+            factUids = unite(factUids, factsOf(subRelUids, Hyperedges(), uids));
             result = unite(result, isPointingFrom(factUids, name));
             break;
         case BOTH:
+            factUids = unite(factUids, factsOf(subRelUids, Hyperedges(), uids));
             result = unite(result, isPointingFrom(factUids, name));
         case FORWARD:
+            factUids = unite(factUids, factsOf(subRelUids, uids, Hyperedges()));
             result = unite(result, isPointingTo(factUids, name));
             break;
     }
     return result;
 }
 
-Hyperedges Network::realizersOf(const Hyperedges& algorithmIds, const std::string& name, const TraversalDirection dir) const
+Hyperedges Network::realizersOf(const Hyperedges& uids, const std::string& name, const TraversalDirection dir) const
 {
     Hyperedges result;
     Hyperedges subRelUids(subrelationsOf(Hyperedges{Network::RealizesId}));
-    Hyperedges factUids(factsOf(subRelUids,Hyperedges(),algorithmIds));
+    Hyperedges factUids;
     switch (dir)
     {
         case INVERSE:
+            factUids = unite(factUids, factsOf(subRelUids, Hyperedges(), uids));
             result = unite(result, isPointingFrom(factUids, name));
             break;
         case BOTH:
+            factUids = unite(factUids, factsOf(subRelUids, Hyperedges(), uids));
             result = unite(result, isPointingFrom(factUids, name));
         case FORWARD:
+            factUids = unite(factUids, factsOf(subRelUids, uids, Hyperedges()));
             result = unite(result, isPointingTo(factUids, name));
             break;
     }
@@ -221,7 +244,7 @@ Hyperedges Network::providesInterface(const Hyperedges& algorithmIds, const Hype
     Hyperedges result;
     // An algorithm class or instance can only have an output instance
     Hyperedges fromIds = unite(intersect(this->algorithms(), algorithmIds), intersect(algorithmClasses(), algorithmIds));
-    Hyperedges toIds = intersect(this->outputs(), outputIds);
+    Hyperedges toIds = intersect(this->interfaces(), outputIds);
     for (const UniqueId& fromId : fromIds)
     {
         for (const UniqueId& toId : toIds)
@@ -237,9 +260,7 @@ Hyperedges Network::needsInterface(const Hyperedges& algorithmIds, const Hypered
     Hyperedges result;
     // An algorithm class or instance can only have an output instance
     Hyperedges fromIds = unite(intersect(this->algorithms(), algorithmIds), intersect(algorithmClasses(), algorithmIds));
-    Hyperedges toIds = intersect(this->inputs(), inputIds);
-    std::cout << fromIds << std::endl;
-    std::cout << toIds << std::endl;
+    Hyperedges toIds = intersect(this->interfaces(), inputIds);
     for (const UniqueId& fromId : fromIds)
     {
         for (const UniqueId& toId : toIds)
@@ -254,8 +275,8 @@ Hyperedges Network::dependsOn(const Hyperedges& inputIds, const Hyperedges& outp
 {
     Hyperedges result;
     // For now only input instances can depend on output instances
-    Hyperedges fromIds = intersect(this->inputs(), inputIds);
-    Hyperedges toIds = intersect(this->outputs(), outputIds);
+    Hyperedges fromIds = intersect(this->interfaces(), inputIds);
+    Hyperedges toIds = intersect(this->interfaces(), outputIds);
     for (const UniqueId& fromId : fromIds)
     {
         for (const UniqueId& toId : toIds)
