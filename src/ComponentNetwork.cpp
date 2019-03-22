@@ -86,7 +86,11 @@ Hyperedges Network::instantiateComponent(const Hyperedges& componentIds, const s
     // When instantiating a component, we also want to instantiate the interfaces
     Hyperedges interfacesToBeCloned(interfacesOf(subclassesOf(componentIds,"",FORWARD)));
     Hyperedges instanceUid(instantiateFrom(componentIds, newName));
-    hasInterface(instanceUid, instantiateAnother(interfacesToBeCloned));
+    // NOTE: Here we have to clone the facts of any subrelation of 'HasAInterface'
+    for (const UniqueId& interfaceUid : interfacesToBeCloned)
+    {
+        factFromAnother(instanceUid, instantiateAnother(Hyperedges{interfaceUid}), factsOf(subrelationsOf(Hyperedges{Network::HasAInterfaceId}), componentIds, Hyperedges{interfaceUid}));
+    }
     return instanceUid;
 }
 
