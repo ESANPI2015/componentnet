@@ -27,8 +27,7 @@ class Mapper : public ResourceCost::Model
         
         static Hyperedges partitionFuncLeft (const ResourceCost::Model& rcm);
         static Hyperedges partitionFuncRight (const ResourceCost::Model& rcm);
-        static bool matchFunc (const Component::Network& rcm, const UniqueId& consumerUid, const UniqueId& providerUid);
-        static float costFunc (const ResourceCost::Model& rcm, const UniqueId& consumerUid, const UniqueId& providerUid);
+        static float matchFunc (const ResourceCost::Model& rcm, const UniqueId& consumerUid, const UniqueId& providerUid);
         static void mapFunc (CommonConceptGraph& ccg, const UniqueId& consumerUid, const UniqueId& providerUid); 
 
         /* Uses the implemented functions to map software implementations to hardware processors */

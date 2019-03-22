@@ -6,42 +6,67 @@
 namespace ResourceCost {
 
 /*
-    This class introduces the following new concepts/relations:
+    This class introduces the following new concepts:
     * CONSUMER
     * PROVIDER
-    * RESOURCES
-    * COSTS
+    * RESOURCE
+
+    and the following relations:
+    
+    * CONSUMER NEEDS RESOURCE
+    * COMSUMER CONSUMES RESOURCE
+    * PROVIDER PROVIDES RESOURCE
+
+    Rules:
+
+    * CONSUMES implies NEEDS but not vice versa. That means that CONSUMES is a subrelation of NEEDS.
 
     A resource is a property of some provider, that means that:
 
-    X -- has --> N -- instance-of --> RESOURCE A
+    X -- provides --> N -- instance-of --> RESOURCE A
     X -- is-a --> PROVIDER
 
-    In other words: "Entity X has N units of resource A"
+    In other words: "Entity X provides N units of resource A"
 
-    When some X has a certain ressource some other entity Y can cause these resources to be consumed.
+    When some X has a certain ressource some other entity Y might be in need of that resource.
     This is modeled as a new relation like this:
 
-    Y --|
-        COSTS --> M -- instance-of --> RESOURCE A
-    X --|
-
+    Y -- needs --> M -- instance-of --> RESOURCE A
     Y -- is-a --> CONSUMER
-    X -- is-a --> PROVIDER
 
-    In other words: "Y costs M units of resource A when applied to X"
+    In other words: "Entity Y needs M units of resource A"
+
+    However, some resources need only to exist for Y but others are depleted.
+    Therefore another relation encodes this fact:
+
+    Y -- consumes --> M -- instance-of --> RESOURCE A
+    Y -- is-a --> CONSUMER
+
+    In other words: "Entitiy Y consumes M units of resource A"
+
+    Whenever a CONSUMER is about to be bound to a PROVIDER, the mapping algorithm should check if:
+    For every pair NEEDS N, PROVIDES M of a RESOURCE A holds N <= M
+
+    Furthermore, if a CONSUMER is bound to a PROVIDER:
+    Every CONSUMES N will result in an update of PROVIDES M to reflect resource consumption
+
+    To prevent overwriting information, the mapping algorithm should also check if:
+    For every CONSUMES N and a PROVIDES M of a RESOURCE A, the sum of them (let it be X) holds X <= M
 
 
     Example:
-    
-    X -- isA --> Function
-    Y -- isA --> Processor
 
-    Y -- has --> N -- instance-of --> Memory
-    X,Y -- COSTS --> M -- instance-of --|
+    Y -- provides --> M of RESOURCE A
+    Y -- consumes --> I of RESOURCE A
+    Z -- consumes --> J of RESOURCE A
 
-    In other words:
-    "When X which is a Function is executed on Y which is a Processor and has N units of Memory X will consume/cost M units of of that Memory"
+    Y -- mapped-to --> X
+    Z -- mapped-to --> X
+
+    ONLY, IFF
+
+    I <= M, J <= M, I+J <= M
+
 */
 
 class Model;
@@ -52,7 +77,10 @@ class Model: public CommonConceptGraph
         static const UniqueId ConsumerUid;
         static const UniqueId ProviderUid;
         static const UniqueId ResourceUid;
-        static const UniqueId CostsUid;
+        static const UniqueId NeedsUid;
+        static const UniqueId ProvidesUid;
+        static const UniqueId ConsumesUid;
+        static const UniqueId MappedToUid;
 
         // Creates the above fundamental concepts/relations
         void setupMetaModel();
@@ -65,9 +93,8 @@ class Model: public CommonConceptGraph
         // Define resource types
         Hyperedges defineResource(const UniqueId& uid, const std::string& name="Resource", const Hyperedges& superResourceUids = Hyperedges{ResourceUid});
         // Instantiate a resource of a given amount
-        Hyperedges instantiateResource(const Hyperedges& resourceUids, const float amount=0.f);
-        // Instantiate a resource for some entity with a certain amount
-        Hyperedges instantiateResourceFor(const Hyperedges& someUids, const Hyperedges& resourceUids, const float amount=0.f);
+        Hyperedges instantiateResource(const Hyperedges& resourceClassUids, const float amount=0.f);
+
         // Make something a consumer
         Hyperedges isConsumer(const Hyperedges& consumerUids);
         Hyperedges consumerClasses(const std::string& name="", const Hyperedges& suids=Hyperedges{ConsumerUid}) const;
@@ -76,19 +103,30 @@ class Model: public CommonConceptGraph
         Hyperedges isProvider(const Hyperedges& providerUids);
         Hyperedges providerClasses(const std::string& name="", const Hyperedges& suids=Hyperedges{ProviderUid}) const;
         Hyperedges providers(const std::string& name="") const;
-        // Given two entity sets, define the costs
-        // NOTE: The amount of resources has to be encoded by a resource instance
-        Hyperedges costs(const Hyperedges& consumerUids, const Hyperedges& providerUids, const Hyperedges& resourceInstanceUids);
-        // Returns all the resources of some entities (optional: filtered by resource type)
-        Hyperedges resourcesOf(const Hyperedges& providerUids, const Hyperedges& resourceUids = Hyperedges{ResourceUid}) const;
-        // Returns all costs given two sets of entities (optional: filtered by resource type)
-        Hyperedges costsOf(const Hyperedges& consumerUids, const Hyperedges& providerUids, const Hyperedges& resourceUids = Hyperedges{ResourceUid}, const TraversalDirection& dir=FORWARD) const;
+
+        // Bind resources to consumer or provider
+        Hyperedges needs(const Hyperedges& consumerUids, const Hyperedges& resourceUids);
+        Hyperedges provides(const Hyperedges& providerUids, const Hyperedges& resourceUids);
+        // This states that a consumer actually consumes a resource
+        // NOTE: This should be stated ONLY if a resource is in fact consumable
+        Hyperedges consumes(const Hyperedges& consumerUids, const Hyperedges& resourceUids);
+
+        // Returns all the resources a consumer needs/consumes (optional: filtered by resource type)
+        Hyperedges demandsOf(const Hyperedges& consumerUids, const Hyperedges& resourceClassUids = Hyperedges{ResourceUid}) const;
+        // Returns all the resources of providers (optional: filtered by resource type)
+        Hyperedges resourcesOf(const Hyperedges& providerUids, const Hyperedges& resourceClassUids = Hyperedges{ResourceUid}) const;
+        // Returns all consumers mapped to providers
+        Hyperedges consumersOf(const Hyperedges& providerUids) const;
+        // Returns all providers to which consumerUids are mapped to
+        Hyperedges providersOf(const Hyperedges& consumerUids) const;
+        // Check if a provider fullfills all resource needs of a consumer
+        // Returns >= 0 if satisfiable and < 0 if not satisfiable
+        float satisfies(const Hyperedges& providerUids, const Hyperedges& consumerUids) const;
 
         // Advanced functions
         static Hyperedges partitionFuncLeft (const ResourceCost::Model& rcm);
         static Hyperedges partitionFuncRight (const ResourceCost::Model& rcm);
-        static bool matchFunc (const ResourceCost::Model& rcm, const UniqueId& consumerUid, const UniqueId& providerUid);
-        static float costFunc (const ResourceCost::Model& rcm, const UniqueId& consumerUid, const UniqueId& providerUid);
+        static float matchFunc (const ResourceCost::Model& rcm, const UniqueId& consumerUid, const UniqueId& providerUid);
         static void mapFunc (CommonConceptGraph& ccg, const UniqueId& consumerUid, const UniqueId& providerUid); 
 };
 
