@@ -17,8 +17,11 @@ void Model::setupMetaModel()
     concept(Model::ResourceUid, "Resource");
     relate(Model::NeedsUid, Hyperedges{Model::ConsumerUid}, Hyperedges{Model::ResourceUid}, "NEEDS");
     subrelationFrom(Model::ConsumesUid, Hyperedges{Model::ConsumerUid}, Hyperedges{Model::ResourceUid}, Model::NeedsUid);
+    access(Model::ConsumesUid).updateLabel("CONSUMES");
     subrelationFrom(Model::ProvidesUid, Hyperedges{Model::ProviderUid}, Hyperedges{Model::ResourceUid}, CommonConceptGraph::HasAId);
+    access(Model::ProvidesUid).updateLabel("PROVIDES");
     subrelationFrom(Model::MappedToUid, Hyperedges{Model::ConsumerUid}, Hyperedges{Model::ProviderUid}, CommonConceptGraph::PartOfId);
+    access(Model::MappedToUid).updateLabel("MAPPED-TO");
 }
 
 Model::Model()
@@ -219,7 +222,7 @@ float Model::satisfies(const Hyperedges& providerUids, const Hyperedges& consume
             // Check if every needed resource has been matched to an available resource
             if (matchingResources < neededResourceUids.size())
             {
-                std::cout << "SAT-CHECK FAILED: Amount of different resource classes needed: " << neededResourceUids.size() << " Amount of matching resource classes found: " << matchingResources << "\n";
+                std::cout << "SAT-CHECK FAILED: Resource classes needed: " << neededResourceUids.size() << " Resource classes found: " << matchingResources << "\n";
                 return -std::numeric_limits<float>::infinity();
             }
         }

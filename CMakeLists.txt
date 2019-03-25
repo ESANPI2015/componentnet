@@ -84,15 +84,15 @@ RUNTIME DESTINATION bin)
 #install(TARGETS gen_vhdl_entity
 #RUNTIME DESTINATION bin)
 
-#add_executable(gen_cpp_class tools/gen_cpp_class.cpp)
-#target_link_libraries(gen_cpp_class componentnet)
-#install(TARGETS gen_cpp_class
-#RUNTIME DESTINATION bin)
+add_executable(gen_cpp_class tools/gen_cpp_class.cpp)
+target_link_libraries(gen_cpp_class componentnet)
+install(TARGETS gen_cpp_class
+RUNTIME DESTINATION bin)
 
-#add_executable(sw2hw_map tools/sw2hw_map.cpp)
-#target_link_libraries(sw2hw_map componentnet)
-#install(TARGETS sw2hw_map
-#RUNTIME DESTINATION bin)
+add_executable(sw2hw_map tools/sw2hw_map.cpp)
+target_link_libraries(sw2hw_map componentnet)
+install(TARGETS sw2hw_map
+RUNTIME DESTINATION bin)
 
 add_executable(gen_impl_networks tools/gen_impl_networks.cpp)
 target_link_libraries(gen_impl_networks componentnet)

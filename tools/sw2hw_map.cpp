@@ -103,38 +103,18 @@ int main (int argc, char **argv)
     std::cout << "#PROVIDERS:\t\t" << nProviders << "\n";
 
     float globalCosts = mapper.map();
-    ResourceCost::Model result(mapper);
 
     // Print mapping results & sum up remaining resources/max resources per target (or multiply it?)
     for (const UniqueId& swUid : sw.implementations())
     {
-        std::cout << "Implementation " << result.read(swUid).label();
-        Hyperedges hwTargetUids(result.to(intersect(result.relationsFrom(Hyperedges{swUid}),result.factsOf(Software::Hardware::Mapper::executedOnUid))));
-        for (const UniqueId& hwUid : hwTargetUids)
+        std::cout << "Implementation " << mapper.access(swUid).label();
+        Hyperedges hwUids(mapper.providersOf(Hyperedges{swUid}));
+        for (const UniqueId& hwUid : hwUids)
         {
-            std::cout << " -> Processor " << result.read(hwUid).label();
-            Hyperedges resourceUids(result.resourcesOf(Hyperedges{hwUid}));
-            for (const UniqueId& resourceUid : resourceUids)
-            {
-                const std::string rLabel(result.read(resourceUid).label());
-                const float maxR(std::stof(rLabel.substr(0,rLabel.find("|"))));
-                const std::size_t lastPipePos(rLabel.rfind("|"));
-                const float r(lastPipePos != std::string::npos ? std::stof(rLabel.substr(rLabel.rfind("|")+1)) : maxR);
-                std::cout << " Cost: " << r / maxR;
-            }
+            std::cout << " -> Processor " << mapper.access(hwUid).label();
         }
-        std::cout << std::endl;
-        Hyperedges swInterfaceUids(sw.interfacesOf(Hyperedges{swUid}));
-        for (const UniqueId& swInterfaceUid : swInterfaceUids)
-        {
-            std::cout << "\tInterface " << result.read(swInterfaceUid).label();
-            Hyperedges hwTargetInterfaceUids(result.to(intersect(result.relationsFrom(Hyperedges{swInterfaceUid}),result.factsOf(Software::Hardware::Mapper::reachableViaUid))));
-            for (const UniqueId& hwInterfaceUid : hwTargetInterfaceUids)
-            {
-                std::cout << " -> Interface " << result.read(hwInterfaceUid).label();
-            }
-            std::cout << std::endl;
-        }
+        std::cout << "\n";
+        // TODO: Print interface mapping
     }
     std::cout << "Global Normalized Costs: " << std::to_string(globalCosts) << "\n";
 
@@ -142,7 +122,7 @@ int main (int argc, char **argv)
     std::ofstream fout;
     fout.open(fileNameOut);
     if(fout.good()) {
-        fout << YAML::StringFrom(result) << std::endl;
+        fout << YAML::StringFrom(mapper) << std::endl;
     } else {
         std::cout << "FAILED\n";
     }
