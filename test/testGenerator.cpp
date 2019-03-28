@@ -1,4 +1,5 @@
 #include "Generator.hpp"
+#include "VHDLGenerator.hpp"
 #include "HypergraphYAML.hpp"
 
 #include <fstream>
@@ -72,9 +73,16 @@ int main (void)
         fout << gen.access(impl).label();
     fout.close();
 
+    std::cout << "*** Testing VHDL Generator ***\n";
+
+    Software::VHDLGenerator vhdlGen(gen);
+
+    vhdlGen.generateImplementationClassFor("SimpleAlgorithm", "SimpleVHDLImplementation");
+    std::cout << vhdlGen.access("SimpleVHDLImplementation").label() << std::endl;
+
     fout.open("generated.yml");
     if(fout.good()) {
-        fout << YAML::StringFrom(gen) << std::endl;
+        fout << YAML::StringFrom(vhdlGen) << std::endl;
     } else {
         std::cout << "FAILED\n";
     }
