@@ -1,5 +1,6 @@
 #include "Generator.hpp"
 #include <iostream>
+#include <string>
 
 namespace Software {
 
@@ -7,7 +8,7 @@ std::string GeneratorHook::ask(const std::string& question) const
 {
    std::string answer;
    std::cout << question << ": ";
-   std::cin >> answer;
+   std::getline(std::cin, answer);
    return answer;
 }
 
@@ -68,6 +69,7 @@ Hyperedges Generator::generateConcreteInterfaceClassFor(const UniqueId& abstract
                 while (exists(uid))
                     uid = hook.ask(uid + " already exists. Provide a different uid");
                 generateConcreteInterfaceClassFor(abstractIfSuperclassUid, uid, hook);
+                validConcreteInterfaceClassUids.push_back(uid);
             }
         } else {
             for (const UniqueId& ifUid : concreteIfSuperclassUids)
@@ -81,8 +83,8 @@ Hyperedges Generator::generateConcreteInterfaceClassFor(const UniqueId& abstract
         }
         if (uid.empty())
             continue;
-        abstractIfSuperclassUids.push_back(abstractIfSuperclassUid);
-        validConcreteIfSuperclassUids.push_back(uid);
+        abstractIfSuperclassUids = unite(abstractIfSuperclassUids, Hyperedges{abstractIfSuperclassUid}); // NOTE: unite() will not add duplicates!
+        validConcreteIfSuperclassUids = unite(validConcreteIfSuperclassUids, Hyperedges{uid});
     }
 
     // Collect part information
@@ -105,6 +107,7 @@ Hyperedges Generator::generateConcreteInterfaceClassFor(const UniqueId& abstract
                 while (exists(uid))
                     uid = hook.ask(uid + " already exists. Provide a different uid");
                 generateConcreteInterfaceClassFor(myAbstractInterfacePartClassUids[0], uid, hook);
+                validConcreteInterfaceClassUids.push_back(uid);
             }
         } else {
             for (const UniqueId& ifUid : concreteInterfacePartClassUids)
@@ -118,8 +121,8 @@ Hyperedges Generator::generateConcreteInterfaceClassFor(const UniqueId& abstract
         }
         if (uid.empty())
             continue;
-        myAbstractInterfacePartUids.push_back(myAbstractInterfacePartUid);
-        validInterfacePartClassUids.push_back(uid);
+        myAbstractInterfacePartUids = unite(myAbstractInterfacePartUids, Hyperedges{myAbstractInterfacePartUid});
+        validInterfacePartClassUids = unite(validInterfacePartClassUids, Hyperedges{uid});
         myInterfacePartUids = unite(myInterfacePartUids, instantiateFrom(Hyperedges{uid}, access(myAbstractInterfacePartUid).label()));
     }
 
@@ -212,9 +215,6 @@ Hyperedges Generator::generateImplementationClassFor(const UniqueId& algorithmCl
 
     std::string name(access(algorithmClassUid).label());
 
-    result << "#ifndef _ALGORITHM_" << name << "_IMPL\n";
-    result << "#define _ALGORITHM_" << name << "_IMPL\n";
-
     // Collect all valid superclass info
     Hyperedges algorithmSuperclassUids;
     Hyperedges myImplementationSuperclassUids;
@@ -232,6 +232,7 @@ Hyperedges Generator::generateImplementationClassFor(const UniqueId& algorithmCl
                 while (exists(uid))
                     uid = hook.ask(uid + " already exists. Provide a different uid");
                 generateImplementationClassFor(algorithmSuperclassUid, uid, hook);
+                validImplementationClassUids.push_back(uid);
             }
         } else {
             for (const UniqueId& implUid : implementationSuperclassUids)
@@ -245,14 +246,14 @@ Hyperedges Generator::generateImplementationClassFor(const UniqueId& algorithmCl
         }
         if (uid.empty())
             continue;
-        result << access(uid).label();
-        algorithmSuperclassUids.push_back(algorithmSuperclassUid);
-        myImplementationSuperclassUids.push_back(uid);
+        algorithmSuperclassUids = unite(algorithmSuperclassUids, Hyperedges{algorithmSuperclassUid});
+        myImplementationSuperclassUids = unite(myImplementationSuperclassUids, Hyperedges{uid});
     }
 
     // Collect all interface info (and instantiate concrete interfaces)
     Hyperedges _myAbstractInterfaceUids(interfacesOf(Hyperedges{algorithmClassUid}));
     Hyperedges myAbstractInterfaceUids;
+    Hyperedges myConcreteInterfaceClassUids;
     Hyperedges myConcreteInterfaceUids;
     for (const UniqueId& myAbstractInterfaceUid : _myAbstractInterfaceUids)
     {
@@ -269,6 +270,7 @@ Hyperedges Generator::generateImplementationClassFor(const UniqueId& algorithmCl
                 while (exists(uid))
                     uid = hook.ask(uid + " already exists. Provide a different uid");
                 generateConcreteInterfaceClassFor(myAbstractInterfaceClassUids[0], uid, hook);
+                validConcreteInterfaceClassUids.push_back(uid);
             }
         } else {
             for (const UniqueId& ifUid : concreteInterfaceClassUids)
@@ -282,14 +284,15 @@ Hyperedges Generator::generateImplementationClassFor(const UniqueId& algorithmCl
         }
         if (uid.empty())
             continue;
-        result << access(uid).label();
-        myAbstractInterfaceUids.push_back(myAbstractInterfaceUid);
+        myAbstractInterfaceUids = unite(myAbstractInterfaceUids, Hyperedges{myAbstractInterfaceUid});
+        myConcreteInterfaceClassUids = unite(myConcreteInterfaceClassUids, Hyperedges{uid});
         myConcreteInterfaceUids = unite(myConcreteInterfaceUids, instantiateFrom(Hyperedges{uid}, access(myAbstractInterfaceUid).label()));
     }
 
     // ... and of our parts (instantiate them as well)
     Hyperedges _myAbstractPartUids(subcomponentsOf(Hyperedges{algorithmClassUid}));
     Hyperedges myAbstractPartUids;
+    Hyperedges myImplementationPartClassUids;
     Hyperedges myImplementationPartUids;
     for (const UniqueId& myAbstractPartUid : _myAbstractPartUids)
     {
@@ -306,6 +309,7 @@ Hyperedges Generator::generateImplementationClassFor(const UniqueId& algorithmCl
                 while (exists(uid))
                     uid = hook.ask(uid + " already exists. Provide a different uid");
                 generateImplementationClassFor(myAbstractPartClassUids[0], uid, hook);
+                validImplementationClassUids.push_back(uid);
             }
         } else {
             for (const UniqueId& implUid : implementationClassUids)
@@ -319,14 +323,32 @@ Hyperedges Generator::generateImplementationClassFor(const UniqueId& algorithmCl
         }
         if (uid.empty())
             continue;
-        result << access(uid).label();
-        myAbstractPartUids.push_back(myAbstractPartUid);
+        myAbstractPartUids = unite(myAbstractPartUids, Hyperedges{myAbstractPartUid});
+        myImplementationPartClassUids = unite(myImplementationPartClassUids, Hyperedges{uid});
         myImplementationPartUids = unite(myImplementationPartUids, instantiateComponent(Hyperedges{uid}, access(myAbstractPartUid).label()));
     }
+
     // Collect input/output/bidir info
     Hyperedges myAbstractInputUids(intersect(myAbstractInterfaceUids, inputsOf(Hyperedges{algorithmClassUid})));
     Hyperedges myAbstractOutputUids(intersect(myAbstractInterfaceUids, outputsOf(Hyperedges{algorithmClassUid})));
     Hyperedges myAbstractIOUids(subtract(myAbstractInterfaceUids, unite(myAbstractInputUids, myAbstractOutputUids)));
+
+    result << "#ifndef _ALGORITHM_" << name << "_IMPL\n";
+    result << "#define _ALGORITHM_" << name << "_IMPL\n";
+
+    // Copy and paste the needed classes into this definition
+    for (const UniqueId& uid : myImplementationSuperclassUids)
+    {
+        result << access(uid).label() << std::endl;
+    }
+    for (const UniqueId& uid : myConcreteInterfaceClassUids)
+    {
+        result << access(uid).label() << std::endl;
+    }
+    for (const UniqueId& uid : myImplementationPartClassUids)
+    {
+        result << access(uid).label() << std::endl;
+    }
 
     if (algorithmSuperclassUids.empty())
     {

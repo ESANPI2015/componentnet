@@ -7,6 +7,7 @@
 
 int main (void)
 {
+    std::cout << "*** Testing C++ Generator ***\n";
     std::cout << "Create a simple algorithm\n";
 
     Software::Network net;
