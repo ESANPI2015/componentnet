@@ -80,6 +80,9 @@ int main (void)
     vhdlGen.generateImplementationClassFor("SimpleAlgorithm", "SimpleVHDLImplementation");
     std::cout << vhdlGen.access("SimpleVHDLImplementation").label() << std::endl;
 
+    vhdlGen.generateImplementationClassFor("NestedAlgorithm", "VHDLNestedImplementation");
+    std::cout << vhdlGen.access("VHDLNestedImplementation").label() << std::endl;
+
     fout.open("generated.yml");
     if(fout.good()) {
         fout << YAML::StringFrom(vhdlGen) << std::endl;

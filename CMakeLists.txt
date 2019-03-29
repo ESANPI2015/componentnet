@@ -81,10 +81,10 @@ target_link_libraries(testGenerator componentnet)
 install(TARGETS testGenerator
 RUNTIME DESTINATION bin)
 
-#add_executable(gen_vhdl_entity tools/gen_vhdl_entity.cpp)
-#target_link_libraries(gen_vhdl_entity componentnet)
-#install(TARGETS gen_vhdl_entity
-#RUNTIME DESTINATION bin)
+add_executable(gen_vhdl_entity tools/gen_vhdl_entity.cpp)
+target_link_libraries(gen_vhdl_entity componentnet)
+install(TARGETS gen_vhdl_entity
+RUNTIME DESTINATION bin)
 
 add_executable(gen_cpp_class tools/gen_cpp_class.cpp)
 target_link_libraries(gen_cpp_class componentnet)
