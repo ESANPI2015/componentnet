@@ -36,10 +36,8 @@ int main(void)
     std::cout << "> Assign interface to device\n";
     std::cout << hwnet.hasInterface(Hyperedges{"Second device"}, hwnet.instantiateFrom(Hyperedges{"Second interface"})) << "\n";
 
-    std::cout << "> Connect the two interfaces by a bus\n";
-    std::cout << hwnet.hasInterface(hwnet.createBus("MyBus","x2y"), hwnet.instantiateFrom(Hyperedges{"First interface", "Second interface"})) << "\n";
-    std::cout << hwnet.connectInterface(hwnet.interfacesOf(Hyperedges{"First device"},"x"), hwnet.interfacesOf(Hyperedges{"MyBus"},"x")) << "\n";
-    std::cout << hwnet.connectInterface(hwnet.interfacesOf(Hyperedges{"Second device"},"y"), hwnet.interfacesOf(Hyperedges{"MyBus"},"y")) << "\n";
+    std::cout << "> Connect the two interfaces\n";
+    std::cout << hwnet.connectInterface(hwnet.interfacesOf(Hyperedges{"First device"},"x"), hwnet.interfacesOf(Hyperedges{"Second device"},"y")) << "\n";
 
     std::cout << "> Query deviceClasses\n";
     auto devsId = hwnet.deviceClasses();
@@ -51,13 +49,6 @@ int main(void)
     std::cout << "> Query interfaceClasses\n";
     auto ifsId = hwnet.interfaceClasses();
     for (auto setId : ifsId)
-    {
-        std::cout << setId << " " << hwnet.access(setId).label() << std::endl;
-    }
-
-    std::cout << "> Query busClasses\n";
-    auto bussesId = hwnet.busClasses();
-    for (auto setId : bussesId)
     {
         std::cout << setId << " " << hwnet.access(setId).label() << std::endl;
     }
@@ -84,8 +75,6 @@ int main(void)
     Hyperedges convSC = hwnet.createDevice("DFKI::LVDS2USB", "lvds2usb");
     Hyperedges lvdsSC = hwnet.createInterface("LVDS","lvds");
     Hyperedges usbSC = hwnet.createInterface("USB","usb");
-    Hyperedges ndlcomSC = hwnet.createBus("DFKI::iStruct::NDLCom", "NDLCom");
-    Hyperedges usbBusSC = hwnet.createBus("USB::P2P", "usb");
 
     // Create interfaces
     // NOTE: The following reads as "Every mdaq2 HAS a LVDS1 and a LVDS2 interface of class LVDS"
@@ -101,13 +90,6 @@ int main(void)
     id2 = hwnet.instantiateFrom(usbSC, "/dev/ttyUSB0");
     hwnet.hasInterface(pcSC, id2);
 
-    // Define bus domains
-    //hwnet.connects(usbBusSC, usbSC);
-    //hwnet.connects(ndlcomSC, lvdsSC);
-    // TODO: The busses have one interface to connect all others. Is this the way to go? Or should we make a BUS a component AND an interface?
-    hwnet.hasInterface(ndlcomSC, hwnet.instantiateFrom(lvdsSC, "lvds"));
-    hwnet.hasInterface(usbBusSC, unite(hwnet.instantiateFrom(usbSC, "usb0"), hwnet.instantiateFrom(usbSC, "usb1")));
-
     // The hardware graph now contains the models of the devices we want to instantiate and connect in the following
     // We start with instantiating one device, the interfaces we want to connect
     // NOTE: The following reads as "There is a TEST BOARD of type mdaq2"
@@ -116,18 +98,14 @@ int main(void)
     Hyperedges convId = hwnet.instantiateComponent(convSC);
     Hyperedges laptopId = hwnet.instantiateComponent(pcSC, "My Laptop");
 
-    // We should now have the devices and the needed interfaces. It is time to connect them
-    // NOTE: The following reads as "There is a bus of type NDLCom which connects a LVDS1 of TEST BOARD and LVDS1 of spine_board"
-    //hwnet.instantiateBus(ndlcomSC, unite(hwnet.interfaces(mdaqId, "LVDS1"),hwnet.interfaces(spineId,"LVDS1")));
-    //hwnet.instantiateBus(ndlcomSC, unite(hwnet.interfaces(convId, "LVDS1"),hwnet.interfaces(spineId,"LVDS2")));
-    //hwnet.instantiateBus(usbBusSC, unite(hwnet.interfaces(convId, "USB1"),hwnet.interfaces(laptopId,"/dev/ttyUSB0")));
-    // TODO: We need a convenience function to make connections over busses more easy
-    Hyperedges ndlcomBus = hwnet.instantiateComponent(ndlcomSC);
-    Hyperedges usbBus = hwnet.instantiateComponent(usbBusSC);
-    hwnet.connectInterface(hwnet.interfacesOf(ndlcomBus), hwnet.interfacesOf(unite(convId,unite(mdaqId,spineId)), "lvds1"));
-    hwnet.connectInterface(hwnet.interfacesOf(ndlcomBus), hwnet.interfacesOf(spineId, "lvds2"));
-    hwnet.connectInterface(hwnet.interfacesOf(usbBus,"usb0"), hwnet.interfacesOf(convId,"usb1"));
-    hwnet.connectInterface(hwnet.interfacesOf(usbBus,"usb1"), hwnet.interfacesOf(laptopId,"/dev/ttyUSB0"));
+    // Lets connect the devices
+    // Here, we want to model the physical connections only, not the logical ones which would be protocol dependent
+    // If a protocol (e.g. NDLCom) would allow lets say message forwarding, we should
+    // a) subclass the LVDS interface class (e.g. create NDLCom class)
+    // b) fully connect all devices with NDLCom interfaces OR specify a RULE to transform any a:NDLCOM --> b:NDLCOM of c, d:NDLCOM of c --> e: NDLCOM      =>     a:NDLCOM --> e:NDLCOM
+    hwnet.connectInterface(hwnet.interfacesOf(mdaqId, "lvds1"), hwnet.interfacesOf(spineId, "lvds2"));
+    hwnet.connectInterface(hwnet.interfacesOf(spineId, "lvds2"), hwnet.interfacesOf(convId, "lvds1"));
+    hwnet.connectInterface(hwnet.interfacesOf(convId, "usb1"), hwnet.interfacesOf(laptopId, "/dev/ttyUSB0"));
 
     // We could now make the specific instances and the network they form PART-OF some X. This X would then represent all occurences of this setting/network.
 

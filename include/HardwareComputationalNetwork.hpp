@@ -13,9 +13,9 @@ namespace Computational {
     In this domain, the following components are defined:
     DEVICE
     PROCESSOR
-    BUS
+    INTERFACE (HW)
 
-    The BUS component is always accompanied by interfaces ... otherwise it is not valid
+    NOTE: Busses are not modelled explicitely ... if two interfaces are connected, their types define the nature of that connection
 
     Even though INTERFACE concepts exist in the Component::Network domain,
     they are subclassed to distinguish them later on from other domains:
@@ -32,7 +32,6 @@ class Network: public Component::Network
         static const UniqueId DeviceId;
         static const UniqueId ProcessorId;
         static const UniqueId InterfaceId;
-        static const UniqueId BusId;
 
         // Constructor/Destructor
         Network();
@@ -47,20 +46,17 @@ class Network: public Component::Network
         Hyperedges createDevice(const UniqueId& uid, const std::string& name="Device", const Hyperedges& suids=Hyperedges());
         Hyperedges createProcessor(const UniqueId& uid, const std::string& name="Processor", const Hyperedges& suids=Hyperedges());
         Hyperedges createInterface(const UniqueId& uid, const std::string& name="Interface", const Hyperedges& suids=Hyperedges());
-        Hyperedges createBus(const UniqueId& uid, const std::string& name="Bus", const Hyperedges& suids=Hyperedges());
 
         // Queries
         // NOTE: These return the subclasses of the corresponding main concepts
         Hyperedges deviceClasses(const std::string& name="", const Hyperedges& suids=Hyperedges()) const;
         Hyperedges processorClasses(const std::string& name="", const Hyperedges& suids=Hyperedges()) const;
         Hyperedges interfaceClasses(const std::string& name="", const Hyperedges& suids=Hyperedges()) const;
-        Hyperedges busClasses(const std::string& name="", const Hyperedges& suids=Hyperedges()) const;
 
         // NOTE: These return the individuals of all the corresponding classes
         Hyperedges devices(const std::string& name="", const std::string& className="") const;
         Hyperedges processors(const std::string& name="", const std::string& className="") const;
-        Hyperedges interfaces(const Hyperedges deviceIds, const std::string& name="", const std::string& className="") const; //< If a deviceId is given, only its interfaces are returned
-        Hyperedges busses(const std::string& name="", const std::string& className="") const;
+        Hyperedges interfaces(const Hyperedges& deviceIds=Hyperedges(), const std::string& name="", const std::string& className="") const; //< If a deviceId is given, only its interfaces are returned
 };
 
 }

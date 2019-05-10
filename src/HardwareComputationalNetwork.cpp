@@ -7,7 +7,6 @@ namespace Computational {
 // DICTIONARY
 // Concept Ids
 const UniqueId Network::InterfaceId = "Hardware::Computational::Network::Interface";
-const UniqueId Network::BusId       = "Hardware::Computational::Network::Bus";
 const UniqueId Network::DeviceId    = "Hardware::Computational::Network::Device";
 const UniqueId Network::ProcessorId = "Hardware::Computational::Network::Processor";
 
@@ -18,7 +17,6 @@ void Network::createMainConcepts()
     createComponent(Network::DeviceId, "DEVICE");
     createComponent(Network::ProcessorId, "PROCESSOR", Hyperedges{Network::DeviceId});
     Component::Network::createInterface(Network::InterfaceId, "INTERFACE");
-    createComponent(Network::BusId, "BUS");
 }
 
 Network::Network()
@@ -55,11 +53,6 @@ Hyperedges Network::interfaceClasses(const std::string& name, const Hyperedges& 
     return suids.empty() ? all : intersect(all, subclassesOf(suids, name));
 }
 
-Hyperedges Network::busClasses(const std::string& name, const Hyperedges& suids) const
-{
-    Hyperedges all(componentClasses(name, Hyperedges{Network::BusId}));
-    return suids.empty() ? all : intersect(all, subclassesOf(suids, name));
-}
 
 Hyperedges Network::createProcessor(const UniqueId& uid, const std::string& name, const Hyperedges& suids)
 {
@@ -74,11 +67,6 @@ Hyperedges Network::createDevice(const UniqueId& uid, const std::string& name, c
 Hyperedges Network::createInterface(const UniqueId& uid, const std::string& name, const Hyperedges& suids)
 {
     return Component::Network::createInterface(uid, name, suids.empty() ? Hyperedges{Network::InterfaceId} : intersect(interfaceClasses(), suids));
-}
-
-Hyperedges Network::createBus(const UniqueId& uid, const std::string& name, const Hyperedges& suids)
-{
-    return createComponent(uid, name, suids.empty() ? Hyperedges{Network::BusId} : intersect(busClasses(), suids));
 }
 
 Hyperedges Network::devices(const std::string& name, const std::string& className) const
@@ -97,7 +85,7 @@ Hyperedges Network::processors(const std::string& name, const std::string& class
     return instancesOf(classIds, name);
 }
 
-Hyperedges Network::interfaces(const Hyperedges deviceIds, const std::string& name, const std::string& className) const
+Hyperedges Network::interfaces(const Hyperedges& deviceIds, const std::string& name, const std::string& className) const
 {
     // Get all interfaceClasses
     Hyperedges classIds = interfaceClasses(className);
@@ -108,14 +96,6 @@ Hyperedges Network::interfaces(const Hyperedges deviceIds, const std::string& na
         result = intersect(result, interfacesOf(deviceIds, name));
     }
     return result;
-}
-
-Hyperedges Network::busses(const std::string& name, const std::string& className) const
-{
-    // Get all busClasses
-    Hyperedges classIds = busClasses(className);
-    // ... and return all instances of them
-    return instancesOf(classIds, name);
 }
 
 }
