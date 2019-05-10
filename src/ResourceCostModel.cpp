@@ -133,6 +133,8 @@ Hyperedges Model::consumes(const Hyperedges& consumerUids, const Hyperedges& res
 
 Hyperedges Model::demandsOf(const Hyperedges& consumerUids, const Hyperedges& resourceClassUids) const
 {
+    if (consumerUids.empty())
+        return Hyperedges();
     Hyperedges validResourceInstanceUids(instancesOf(subclassesOf(resourceClassUids)));
     Hyperedges relevantFacts(factsOf(subrelationsOf(Hyperedges{Model::NeedsUid}), consumerUids, validResourceInstanceUids));
     return isPointingTo(relevantFacts);
@@ -140,18 +142,24 @@ Hyperedges Model::demandsOf(const Hyperedges& consumerUids, const Hyperedges& re
 
 Hyperedges Model::resourcesOf(const Hyperedges& providerUids, const Hyperedges& resourceClassUids) const
 {
+    if (providerUids.empty())
+        return Hyperedges();
     Hyperedges validResourceInstanceUids(instancesOf(subclassesOf(resourceClassUids)));
     return intersect(validResourceInstanceUids, childrenOf(providerUids));
 }
 
 Hyperedges Model::consumersOf(const Hyperedges& providerUids) const
 {
+    if (providerUids.empty())
+        return Hyperedges();
     Hyperedges relevantFacts(factsOf(subrelationsOf(Hyperedges{Model::MappedToUid}), Hyperedges(), providerUids));
     return isPointingFrom(relevantFacts);
 }
 
 Hyperedges Model::providersOf(const Hyperedges& consumerUids) const
 {
+    if (consumerUids.empty())
+        return Hyperedges();
     Hyperedges relevantFacts(factsOf(subrelationsOf(Hyperedges{Model::MappedToUid}), consumerUids, Hyperedges()));
     return isPointingTo(relevantFacts);
 }

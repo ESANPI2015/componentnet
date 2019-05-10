@@ -131,6 +131,9 @@ Hyperedges Network::implementations(const std::string& name, const std::string& 
 Hyperedges Network::inputsOf(const Hyperedges& uids, const std::string& name, const TraversalDirection dir) const
 {
     Hyperedges result;
+    // For empty uids, return empty result
+    if (uids.empty())
+        return result;
     Hyperedges subRelUids(subrelationsOf(Hyperedges{Network::NeedsId}));
     Hyperedges factUids;
     switch (dir)
@@ -153,6 +156,9 @@ Hyperedges Network::inputsOf(const Hyperedges& uids, const std::string& name, co
 Hyperedges Network::outputsOf(const Hyperedges& uids, const std::string& name, const TraversalDirection dir) const
 {
     Hyperedges result;
+    // For empty uids, return empty result
+    if (uids.empty())
+        return result;
     Hyperedges subRelUids(subrelationsOf(Hyperedges{Network::ProvidesId}));
     Hyperedges factUids;
     switch (dir)
@@ -176,6 +182,9 @@ Hyperedges Network::implementationsOf(const Hyperedges& uids, const std::string&
 {
     // Get all X,name <-- IMPLEMENTS --> ALG and return the X (INVERSE) or ALG (FORWARD)
     Hyperedges result;
+    // For empty uids, return empty result
+    if (uids.empty())
+        return result;
     Hyperedges subRelUids(subrelationsOf(Hyperedges{Network::ImplementsId}));
     Hyperedges factUids;
     switch (dir)
@@ -198,6 +207,9 @@ Hyperedges Network::implementationsOf(const Hyperedges& uids, const std::string&
 Hyperedges Network::encodersOf(const Hyperedges& uids, const std::string& name, const TraversalDirection dir) const
 {
     Hyperedges result;
+    // For empty uids, return empty result
+    if (uids.empty())
+        return result;
     Hyperedges subRelUids(subrelationsOf(Hyperedges{Network::EncodesId}));
     Hyperedges factUids;
     switch (dir)
@@ -220,6 +232,9 @@ Hyperedges Network::encodersOf(const Hyperedges& uids, const std::string& name, 
 Hyperedges Network::realizersOf(const Hyperedges& uids, const std::string& name, const TraversalDirection dir) const
 {
     Hyperedges result;
+    // For empty uids, return empty result
+    if (uids.empty())
+        return result;
     Hyperedges subRelUids(subrelationsOf(Hyperedges{Network::RealizesId}));
     Hyperedges factUids;
     switch (dir)

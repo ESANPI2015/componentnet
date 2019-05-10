@@ -151,6 +151,10 @@ Hyperedges Network::hasValue(const Hyperedges& interfaceIds, const Hyperedges& v
 Hyperedges Network::valuesOf(const Hyperedges& uids, const std::string& value, const TraversalDirection dir) const
 {
     Hyperedges result;
+    // For empty uids, return empty result
+    if (uids.empty())
+        return result;
+
     Hyperedges subRelUids(subrelationsOf(Hyperedges{Network::HasAValueId}));
     Hyperedges factUids;
     switch (dir)
@@ -267,6 +271,9 @@ Hyperedges Network::connectInterface(const Hyperedges& fromInterfaceIds, const H
 Hyperedges Network::interfacesOf(const Hyperedges& uids, const std::string& name, const TraversalDirection dir) const
 {
     Hyperedges result;
+    // For empty uids, return empty result
+    if (uids.empty())
+        return result;
     Hyperedges subRelUids(subrelationsOf(Hyperedges{Network::HasAInterfaceId}));
     Hyperedges factUids;
     switch (dir)
@@ -319,6 +326,9 @@ Hyperedges Network::partOfInterface(const Hyperedges& interfaceIds, const Hypere
 Hyperedges Network::subinterfacesOf(const Hyperedges& uids, const std::string& name, const TraversalDirection dir) const
 {
     Hyperedges result;
+    // For empty uids, return empty result
+    if (uids.empty())
+        return result;
     Hyperedges subRelUids(subrelationsOf(Hyperedges{Network::PartOfInterfaceId}));
     Hyperedges factUids;
     switch (dir)
@@ -341,6 +351,9 @@ Hyperedges Network::subinterfacesOf(const Hyperedges& uids, const std::string& n
 Hyperedges Network::subcomponentsOf(const Hyperedges& uids, const std::string& name, const TraversalDirection dir) const
 {
     Hyperedges result;
+    // For empty uids, return empty result
+    if (uids.empty())
+        return result;
     Hyperedges subRelUids(subrelationsOf(Hyperedges{Network::PartOfComponentId}));
     Hyperedges factUids;
     switch (dir)
