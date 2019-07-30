@@ -28,4 +28,6 @@ These models can encode e.g. task networks, processor networks and other domains
 
 ## TODO
 
-* The current cost function used in mapping is not completely correct. If resources do not match, we need INFINITE costs!
+* The tools should be just calling classes ... e.g. the gen\_\* tools should make use of a generator class.
+* Do not use implicit information: No clk, rst in VHDL, simple interface classes/component classes in C++.
+* Add artifical intelligence approaches? e.g. learn good selection/pruning strategies during pattern matching?
