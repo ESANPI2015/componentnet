@@ -85,14 +85,41 @@ Hyperedges Network::instantiateComponent(const Hyperedges& componentIds, const s
 {
     // When instantiating a component, we also want to instantiate the interfaces
     // NOTE: Here we have to clone the facts of any subrelation of 'HasAInterface'
+    //Hyperedges superClassUids(subclassesOf(componentIds,"",FORWARD));
+    //Hyperedges instanceUid(instantiateFrom(componentIds, newName));
+    //for (const UniqueId& superClassUid : superClassUids)
+    //{
+    //    Hyperedges interfacesToBeCloned(interfacesOf(Hyperedges{superClassUid}));
+    //    for (const UniqueId& interfaceUid : interfacesToBeCloned)
+    //    {
+    //        factFromAnother(instanceUid, instantiateAnother(Hyperedges{interfaceUid}), factsOf(subrelationsOf(Hyperedges{Network::HasAInterfaceId}), Hyperedges{superClassUid}, Hyperedges{interfaceUid}));
+    //    }
+    //}
+    //return instanceUid;
+    // I. Find all superclasses
     Hyperedges superClassUids(subclassesOf(componentIds,"",FORWARD));
     Hyperedges instanceUid(instantiateFrom(componentIds, newName));
     for (const UniqueId& superClassUid : superClassUids)
     {
-        Hyperedges interfacesToBeCloned(interfacesOf(Hyperedges{superClassUid}));
-        for (const UniqueId& interfaceUid : interfacesToBeCloned)
+        // II. Find all descendants of all superclasses
+        Hyperedges descUids(descendantsOf(Hyperedges{superClassUid}));
+        std::map< UniqueId, Hyperedges > clones;
+        // III. Clone descendants and their relations
+        // b) between them and new instance
+        for (const UniqueId& toBeClonedUid : descUids)
         {
-            factFromAnother(instanceUid, instantiateAnother(Hyperedges{interfaceUid}), factsOf(subrelationsOf(Hyperedges{Network::HasAInterfaceId}), Hyperedges{superClassUid}, Hyperedges{interfaceUid}));
+            Hyperedges newUid(instantiateAnother(Hyperedges{toBeClonedUid}));
+            factFromAnother(instanceUid, newUid, factsOf(subrelationsOf(Hyperedges{CommonConceptGraph::HasAId}), Hyperedges{superClassUid}, Hyperedges{toBeClonedUid}));
+            clones[toBeClonedUid] = newUid;
+        }
+        // a) between them
+        for (const UniqueId& srcUid : descUids)
+        {
+            for (const UniqueId& dstUid : descUids)
+            {
+                // TODO: Any facts or just descendative facts?
+                factFromAnother(clones[srcUid], clones[dstUid], factsOf(subrelationsOf(Hyperedges{CommonConceptGraph::HasAId}), Hyperedges{srcUid}, Hyperedges{dstUid}));
+            }
         }
     }
     return instanceUid;
