@@ -21,7 +21,18 @@ namespace Software {
 
 class GeneratorHook {
     public:
-        virtual std::string ask(const std::string& question) const;
+        /*Hint to the hook function about the nature of the question (for automatic generation)*/
+        enum QuestionType {
+            QUESTION_GENERATE_IFCLASS = 0,
+            QUESTION_PROVIDE_UID = 1,
+            QUESTION_USE_IFCLASS = 2,
+            QUESTION_PROVIDE_PLAIN_TYPE = 3,
+            QUESTION_GENERATE_IMPLCLASS = 4,
+            QUESTION_USE_IMPLCLASS = 5,
+            QUESTION_PROVIDE_CODE = 6,
+            QUESTION_GENERAL = 7
+        };
+        virtual std::string ask(const std::string& question, const enum QuestionType& type=QUESTION_GENERAL) const;
 };
 
 class Generator : public Network {
