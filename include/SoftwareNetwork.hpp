@@ -41,7 +41,7 @@ namespace Software {
       | |---------- needs --> right ...
       |------------ provides --> disparity ...
 
-    disparity.c -- needs --> left -- instanceOf --> uint8[MAX_X][MAX_Y] -- encodes --> Image
+    disparity.c -- needs --> left -- instanceOf --> uint8[][] -- encodes --> Image
 
     NOTE: When merging with the concept of Finite State Machines, this whole thing would become an even whiter box :)
     NOTE: To support different programming languages, you can create e.g. specialized interfaces by ENCODES relations.
