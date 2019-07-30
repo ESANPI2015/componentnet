@@ -38,18 +38,18 @@ Hyperedges VHDLGenerator::generateConcreteInterfaceClassFor(const UniqueId& abst
         if (concreteIfSuperclassUids.empty())
         {
             // If none exists, ignore? Or generate it?
-            if (hook.ask("A. No concrete interface found for "+access(abstractIfSuperclassUid).label()+". Generate it? [y/n]") == "y")
+            if (hook.ask("A. No concrete interface found for "+access(abstractIfSuperclassUid).label()+". Generate it? [y/n]", GeneratorHook::QuestionType::QUESTION_GENERATE_IFCLASS) == "y")
             {
-                uid = hook.ask("Please provide a unique id");
+                uid = hook.ask("Please provide a unique id", GeneratorHook::QuestionType::QUESTION_PROVIDE_UID);
                 while (exists(uid))
-                    uid = hook.ask(uid + " already exists. Provide a different uid");
+                    uid = hook.ask(uid + " already exists. Provide a different uid", GeneratorHook::QuestionType::QUESTION_PROVIDE_UID);
                 generateConcreteInterfaceClassFor(abstractIfSuperclassUid, uid, hook);
                 validConcreteInterfaceClassUids.push_back(uid);
             }
         } else {
             for (const UniqueId& ifUid : concreteIfSuperclassUids)
             {
-                if (hook.ask("A. Use concrete interface "+access(ifUid).label()+"? [y/n]") == "y")
+                if (hook.ask("A. Use concrete interface "+access(ifUid).label()+"? [y/n]", GeneratorHook::QuestionType::QUESTION_USE_IFCLASS) == "y")
                 {
                     uid = ifUid;
                     break;
@@ -75,18 +75,18 @@ Hyperedges VHDLGenerator::generateConcreteInterfaceClassFor(const UniqueId& abst
         if (concreteInterfacePartClassUids.empty())
         {
             // If none given, generate it or ignore it
-            if (hook.ask("B. No concrete interface found for "+access(myAbstractInterfacePartClassUids[0]).label()+". Generate it? [y/n]") == "y")
+            if (hook.ask("B. No concrete interface found for "+access(myAbstractInterfacePartClassUids[0]).label()+". Generate it? [y/n]", GeneratorHook::QuestionType::QUESTION_GENERATE_IFCLASS) == "y")
             {
-                uid = hook.ask("Please provide a unique id");
+                uid = hook.ask("Please provide a unique id", GeneratorHook::QuestionType::QUESTION_PROVIDE_UID);
                 while (exists(uid))
-                    uid = hook.ask(uid + " already exists. Provide a different uid");
+                    uid = hook.ask(uid + " already exists. Provide a different uid", GeneratorHook::QuestionType::QUESTION_PROVIDE_UID);
                 generateConcreteInterfaceClassFor(myAbstractInterfacePartClassUids[0], uid, hook);
                 validConcreteInterfaceClassUids.push_back(uid);
             }
         } else {
             for (const UniqueId& ifUid : concreteInterfacePartClassUids)
             {
-                if (hook.ask("B. Use concrete interface "+access(ifUid).label()+"? [y/n]") == "y")
+                if (hook.ask("B. Use concrete interface "+access(ifUid).label()+"? [y/n]", GeneratorHook::QuestionType::QUESTION_USE_IFCLASS) == "y")
                 {
                     uid = ifUid;
                     break;
@@ -103,7 +103,7 @@ Hyperedges VHDLGenerator::generateConcreteInterfaceClassFor(const UniqueId& abst
     if (myInterfacePartUids.empty())
     {
         // plain type
-        std::string type(hook.ask("C. Please provide a built-in VHDL type for interface class " + name));
+        std::string type(hook.ask("C. Please provide a built-in VHDL type for interface class " + name, GeneratorHook::QuestionType::QUESTION_PROVIDE_PLAIN_TYPE));
         result << "subtype " << name << " is " << type << ";";
     } else {
         // composite type
@@ -114,7 +114,7 @@ Hyperedges VHDLGenerator::generateConcreteInterfaceClassFor(const UniqueId& abst
     Hyperedges newInterfaceClassUid(createInterface(concreteInterfaceClassUid, result.str(), Hyperedges{ifClassUid}));
     encodes(newInterfaceClassUid, Hyperedges{abstractInterfaceClassUid});
     isA(newInterfaceClassUid, validConcreteIfSuperclassUids);
-    partOfInterface(myInterfacePartUids, newInterfaceClassUid);
+    hasSubInterface(newInterfaceClassUid, myInterfacePartUids);
     return newInterfaceClassUid;
 }
 
@@ -140,8 +140,6 @@ Hyperedges VHDLGenerator::generateImplementationClassFor(const UniqueId& algorit
         ...
         <interface-name> : inout <interface-type-def>;
         ...
-        clk : in std_logic;
-        rst : in std_logic
         );
         end;
         architecture BEHAVIOURAL of <name> is
@@ -183,18 +181,18 @@ Hyperedges VHDLGenerator::generateImplementationClassFor(const UniqueId& algorit
         if (implementationSuperclassUids.empty())
         {
             // If none exists, ignore or generate it
-            if (hook.ask("1. No concrete implementation found for "+access(algorithmSuperclassUid).label()+". Generate it? [y/n]") == "y")
+            if (hook.ask("1. No concrete implementation found for "+access(algorithmSuperclassUid).label()+". Generate it? [y/n]", GeneratorHook::QuestionType::QUESTION_GENERATE_IMPLCLASS) == "y")
             {
-                uid = hook.ask("Please provide a unique id");
+                uid = hook.ask("Please provide a unique id", GeneratorHook::QuestionType::QUESTION_PROVIDE_UID);
                 while (exists(uid))
-                    uid = hook.ask(uid + " already exists. Provide a different uid");
+                    uid = hook.ask(uid + " already exists. Provide a different uid", GeneratorHook::QuestionType::QUESTION_PROVIDE_UID);
                 generateImplementationClassFor(algorithmSuperclassUid, uid, hook);
                 validImplementationClassUids.push_back(uid);
             }
         } else {
             for (const UniqueId& implUid : implementationSuperclassUids)
             {
-                if (hook.ask("1. Use concrete implementation "+access(implUid).label()+"? [y/n]") == "y")
+                if (hook.ask("1. Use concrete implementation "+access(implUid).label()+"? [y/n]", GeneratorHook::QuestionType::QUESTION_USE_IMPLCLASS) == "y")
                 {
                     uid = implUid;
                     break;
@@ -223,18 +221,18 @@ Hyperedges VHDLGenerator::generateImplementationClassFor(const UniqueId& algorit
         if (concreteInterfaceClassUids.empty())
         {
             // If none exists, ignore or generate it
-            if (hook.ask("2. No concrete interface found for "+access(myAbstractInterfaceClassUids[0]).label()+". Generate it? [y/n]") == "y")
+            if (hook.ask("2. No concrete interface found for "+access(myAbstractInterfaceClassUids[0]).label()+". Generate it? [y/n]", GeneratorHook::QuestionType::QUESTION_GENERATE_IFCLASS) == "y")
             {
-                uid = hook.ask("Please provide a unique id");
+                uid = hook.ask("Please provide a unique id", GeneratorHook::QuestionType::QUESTION_PROVIDE_UID);
                 while (exists(uid))
-                    uid = hook.ask(uid + " already exists. Provide a different uid");
+                    uid = hook.ask(uid + " already exists. Provide a different uid", GeneratorHook::QuestionType::QUESTION_PROVIDE_UID);
                 generateConcreteInterfaceClassFor(myAbstractInterfaceClassUids[0], uid, hook);
                 validConcreteInterfaceClassUids.push_back(uid);
             }
         } else {
             for (const UniqueId& ifUid : concreteInterfaceClassUids)
             {
-                if (hook.ask("2. Use concrete interface "+access(ifUid).label()+"? [y/n]") == "y")
+                if (hook.ask("2. Use concrete interface "+access(ifUid).label()+"? [y/n]", GeneratorHook::QuestionType::QUESTION_USE_IFCLASS) == "y")
                 {
                     uid = ifUid;
                     break;
@@ -262,18 +260,18 @@ Hyperedges VHDLGenerator::generateImplementationClassFor(const UniqueId& algorit
         if (implementationClassUids.empty())
         {
             // If none exists, ignore or generate it
-            if (hook.ask("3. No concrete implementation found for "+access(myAbstractPartClassUids[0]).label()+". Generate it? [y/n]") == "y")
+            if (hook.ask("3. No concrete implementation found for "+access(myAbstractPartClassUids[0]).label()+". Generate it? [y/n]", GeneratorHook::QuestionType::QUESTION_GENERATE_IMPLCLASS) == "y")
             {
-                uid = hook.ask("Please provide a unique id");
+                uid = hook.ask("Please provide a unique id", GeneratorHook::QuestionType::QUESTION_PROVIDE_UID);
                 while (exists(uid))
-                    uid = hook.ask(uid + " already exists. Provide a different uid");
+                    uid = hook.ask(uid + " already exists. Provide a different uid", GeneratorHook::QuestionType::QUESTION_PROVIDE_UID);
                 generateImplementationClassFor(myAbstractPartClassUids[0], uid, hook);
                 validImplementationClassUids.push_back(uid);
             }
         } else {
             for (const UniqueId& implUid : implementationClassUids)
             {
-                if (hook.ask("3. Use concrete implementation "+access(implUid).label()+"? [y/n]") == "y")
+                if (hook.ask("3. Use concrete implementation "+access(implUid).label()+"? [y/n]", GeneratorHook::QuestionType::QUESTION_USE_IMPLCLASS) == "y")
                 {
                     uid = implUid;
                     break;
@@ -339,7 +337,8 @@ Hyperedges VHDLGenerator::generateImplementationClassFor(const UniqueId& algorit
             result << "\t" << access(myAbstractIOUid).label() << " : inout " << access(myAbstractIOClassUid).label() << ";\n";
         }
     }
-    result << "\n\t-- Standard Signals --\n";
+    // There has to be at least ONE standard signal: the clock! It's C++ equivalent is the operator() method.
+    // But since we have a constructor in C++ the reset signal is also valid!!!
     result << "\tclk : in std_logic;\n";
     result << "\trst : in std_logic\n";
     result << ");\n";
@@ -357,9 +356,13 @@ Hyperedges VHDLGenerator::generateImplementationClassFor(const UniqueId& algorit
         result << "\tbegin\n";
         result << "\t\tif rising_edge(clk) then\n";
         result << "\t\t\tif (rst='1') then\n";
-        result << "\t\t\t\t-- init here --\n";
+        result << "\t\t\t\t-- TODO: init here --\n";
         result << "\t\t\telse\n";
-        result << "\t\t\t\t-- computation here --\n";
+        result << "\t\t\t\t-- TODO: computation here --\n";
+        // TODO: This is questionable ... we should leave the implementation to the specialist!
+        //std::stringstream question;
+        //question << result.rdbuf() << "Please provide your VHDL code";
+        //result << "\t\t\t\t" << hook.ask(question.str(), GeneratorHook::QuestionType::QUESTION_PROVIDE_CODE) << "\n";
         result << "\t\t\tend if;\n";
         result << "\t\tend if;\n";
         result << "end process main;\n";

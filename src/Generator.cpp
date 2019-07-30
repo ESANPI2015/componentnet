@@ -381,7 +381,7 @@ Hyperedges Generator::generateImplementationClassFor(const UniqueId& algorithmCl
         }
     }
     // TODO: Initialize interfaces of parts
-    result << "\t\t// Initialization code starts here\n";
+    result << "\t\t// TODO: Initialization code starts here\n";
     result << "\t}\n";
 
     // Instantiate interfaces
@@ -438,10 +438,11 @@ Hyperedges Generator::generateImplementationClassFor(const UniqueId& algorithmCl
     }
     if (myAbstractPartUids.empty())
     {
-        result << "\t\t// Implementation starts here\n";
-        std::stringstream question;
-        question << result.rdbuf() << "Please provide your implementation code";
-        result << "\t" << hook.ask(question.str(), GeneratorHook::QuestionType::QUESTION_PROVIDE_CODE) << "\n";
+        result << "\t\t// TODO: Implementation starts here\n";
+        // TODO: This is questionable ... we should leave the implementation to the specialist!
+        //std::stringstream question;
+        //question << result.rdbuf() << "Please provide your implementation code";
+        //result << "\t" << hook.ask(question.str(), GeneratorHook::QuestionType::QUESTION_PROVIDE_CODE) << "\n";
     } else {
         // Evaluate parts
         for (const UniqueId& myAbstractPartUid : myAbstractPartUids)
