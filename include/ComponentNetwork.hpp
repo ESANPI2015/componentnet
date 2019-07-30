@@ -19,7 +19,7 @@ namespace Component {
     INTERFACE <-- CONNECTED-TO --> INTERFACE
     INTERFACE <-- ALIAS-OF --> INTERFACE  (used for renaming interfaces)
     INTERFACE <-- HAS-A --> VALUE (used to assign a constant/initial value to an interface) 
-    INTERFACE <-- PART-OF --> INTERFACE
+    INTERFACE <-- HAS-A --> INTERFACE
     COMPONENT <-- PART-OF --> COMPONENT
 
 */
@@ -40,7 +40,7 @@ class Network : public CommonConceptGraph
         static const UniqueId AliasOfId;
         static const UniqueId HasAValueId;
         static const UniqueId PartOfComponentId;
-        static const UniqueId PartOfInterfaceId;
+        static const UniqueId HasASubInterfaceId;
 
         // Constructor/Destructor
         Network();
@@ -78,7 +78,7 @@ class Network : public CommonConceptGraph
         // Query the values of an interface
         Hyperedges valuesOf(const Hyperedges& uids, const std::string& value="", const TraversalDirection dir=FORWARD) const;
         // Query the subinterfaces of an interface
-        Hyperedges subinterfacesOf(const Hyperedges& uids, const std::string& name="", const TraversalDirection dir=INVERSE) const;
+        Hyperedges subinterfacesOf(const Hyperedges& uids, const std::string& name="", const TraversalDirection dir=FORWARD) const;
         // Query the subcomponents of a component
         Hyperedges subcomponentsOf(const Hyperedges& uids, const std::string& name="", const TraversalDirection dir=INVERSE) const;
 
@@ -87,7 +87,7 @@ class Network : public CommonConceptGraph
         // Specifiy a (composite) component
         Hyperedges partOfComponent(const Hyperedges& componentIds, const Hyperedges& compositeComponentIds);
         // Specify a (composite) interface
-        Hyperedges partOfInterface(const Hyperedges& interfaceIds, const Hyperedges& compositeInterfaceIds);
+        Hyperedges hasSubInterface(const Hyperedges& interfaceIds, const Hyperedges& subInterfaceIds);
         // Connect interfaces
         Hyperedges connectInterface(const Hyperedges& fromInterfaceIds, const Hyperedges& toInterfaceIds);
         // Specify that an interface is an alias of another interface
