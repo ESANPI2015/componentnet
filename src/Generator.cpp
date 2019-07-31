@@ -461,7 +461,7 @@ Hyperedges Generator::generateImplementationClassFor(const UniqueId& algorithmCl
     result << "\t// Evaluation function\n";
     result << "\tvoid operator() ()\n";
     result << "\t{\n";
-    result << "\t// Pass external inputs to internal inputs\n";
+    result << "\t\t// Pass external inputs to internal inputs\n";
     // Read in external inputs
     for (const UniqueId& myAbstractInputUid : myAbstractInputUids)
     {
@@ -479,7 +479,7 @@ Hyperedges Generator::generateImplementationClassFor(const UniqueId& algorithmCl
             }
         }
     }
-    result << "\t// Pass external bidirectional interfaces to internal interfaces\n";
+    result << "\t\t// Pass external bidirectional interfaces to internal bidirectional interfaces/inputs\n";
     // Pass bidirectional data to corresponding internal interfaces
     for (const UniqueId& myAbstractIOUid : myAbstractIOUids)
     {
@@ -487,6 +487,7 @@ Hyperedges Generator::generateImplementationClassFor(const UniqueId& algorithmCl
         for (const UniqueId& myOriginalAbstractInputUid : myOriginalAbstractInputUids)
         {
             Hyperedges myAbstractInternalPartUids(interfacesOf(Hyperedges{myOriginalAbstractInputUid},"",INVERSE));
+            myAbstractInternalPartUids = subtract(myAbstractInternalPartUids, outputsOf(Hyperedges{myOriginalAbstractInputUid}, "", INVERSE));
             for (const UniqueId& myAbstractInternalPartUid : myAbstractInternalPartUids)
             {
                 result << "\t\t";
@@ -509,36 +510,37 @@ Hyperedges Generator::generateImplementationClassFor(const UniqueId& algorithmCl
         //question << result.rdbuf() << "Please provide your implementation code";
         //result << "\t" << hook.ask(question.str(), GeneratorHook::QuestionType::QUESTION_PROVIDE_CODE) << "\n";
     } else {
-        result << "\t// Call inner parts\n";
+        result << "\t\t// Call inner parts\n";
         // Evaluate parts
         for (const UniqueId& myAbstractPartUid : myAbstractPartUids)
         {
             result << "\t\t" << access(myAbstractPartUid).label() << "();\n";
         }
     }
-    result << "\t// Pass internal outputs to internal inputs\n";
+    result << "\t\t// Pass internal outputs/bidirectional interfaces to internal inputs/bidirectional interfaces\n";
     // Pass outputs of internal parts to inputs of connected internal parts
-    // TODO: Pass bidirectional interfaces to connected inputs
     for (const UniqueId& myAbstractProducerUid : myAbstractPartUids)
     {
-        Hyperedges internalAbstractOutputUids(outputsOf(Hyperedges{myAbstractProducerUid}));
+        Hyperedges internalAbstractOutputUids(interfacesOf(Hyperedges{myAbstractProducerUid})); // these are ALL interfaces
+        internalAbstractOutputUids = subtract(internalAbstractOutputUids, inputsOf(Hyperedges{myAbstractProducerUid})); // ... so we subtract the inputs from it :)
         for (const UniqueId& internalAbstractOutputUid : internalAbstractOutputUids)
         {
-            Hyperedges internalAbstractInputUids(endpointsOf(Hyperedges{internalAbstractOutputUid}));
-            for (const UniqueId& internalAbstractInputUid : internalAbstractInputUids)
+            Hyperedges internalAbstractInterfaceUids(endpointsOf(Hyperedges{internalAbstractOutputUid})); // could be any interface (including outputs)
+            for (const UniqueId& internalAbstractInterfaceUid : internalAbstractInterfaceUids)
             {
-                Hyperedges myAbstractConsumerUids(inputsOf(Hyperedges{internalAbstractInputUid}, "", INVERSE));
+                Hyperedges myAbstractConsumerUids(interfacesOf(Hyperedges{internalAbstractInterfaceUid},"",INVERSE)); // this could contain invalid consumers (connections to outputs)
+                myAbstractConsumerUids = subtract(myAbstractConsumerUids, outputsOf(Hyperedges{internalAbstractInterfaceUid}, "", INVERSE)); // ... so we subtract the ones with outputs
                 for (const UniqueId& myAbstractConsumerUid : myAbstractConsumerUids)
                 {
                     result << "\t\t";
-                    result << access(myAbstractConsumerUid).label() << "." << access(internalAbstractInputUid).label() << " = ";
+                    result << access(myAbstractConsumerUid).label() << "." << access(internalAbstractInterfaceUid).label() << " = ";
                     result << access(myAbstractProducerUid).label() << "." << access(internalAbstractOutputUid).label();
                     result << ";\n";
                 }
             }
         }
     }
-    result << "\t// Pass internal outputs to external outputs\n";
+    result << "\t\t// Pass internal outputs to external outputs\n";
     // Pass internal outputs to external outputs
     for (const UniqueId& myAbstractOutputUid : myAbstractOutputUids)
     {
@@ -555,7 +557,7 @@ Hyperedges Generator::generateImplementationClassFor(const UniqueId& algorithmCl
             }
         }
     }
-    result << "\t// Pass internal bidirectional interfaces to external interfaces\n";
+    result << "\t\t// Pass internal bidirectional interfaces to external bidirectional interfaces/outputs\n";
     // Pass bidirectional data to corresponding external interface
     for (const UniqueId& myAbstractIOUid : myAbstractIOUids)
     {
@@ -563,6 +565,7 @@ Hyperedges Generator::generateImplementationClassFor(const UniqueId& algorithmCl
         for (const UniqueId& myOriginalAbstractOutputUid : myOriginalAbstractOutputUids)
         {
             Hyperedges myAbstractInternalPartUids(interfacesOf(Hyperedges{myOriginalAbstractOutputUid},"",INVERSE));
+            myAbstractInternalPartUids = subtract(myAbstractInternalPartUids, inputsOf(Hyperedges{myOriginalAbstractOutputUid}, "", INVERSE));
             for (const UniqueId& myAbstractInternalPartUid : myAbstractInternalPartUids)
             {
                 result << "\t\t";

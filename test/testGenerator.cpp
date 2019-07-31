@@ -14,10 +14,13 @@ int main (void)
     Software::Network net;
     Software::Generator gen(net);
 
+    gen.createValue("SimpleValue", "0.f");
     gen.createAlgorithm("SimpleAlgorithm", "F");
     gen.createInterface("ARealNumber", "Real");
     gen.needsInterface(Hyperedges{"SimpleAlgorithm"}, gen.instantiateFrom("ARealNumber", "x"));
     gen.providesInterface(Hyperedges{"SimpleAlgorithm"}, gen.instantiateFrom("ARealNumber", "y"));
+
+    gen.instantiateValueFor(gen.interfacesOf(Hyperedges{"SimpleAlgorithm"}), Hyperedges{"SimpleValue"}, "2.f");
 
     Hyperedges generatedStuff;
     generatedStuff = unite(generatedStuff, gen.generateConcreteInterfaceClassFor("ARealNumber", "ConcreteRealNumber"));
@@ -33,9 +36,11 @@ int main (void)
     gen.needsInterface(Hyperedges{"SimpleNestedAlgorithm"}, gen.instantiateFrom("ARealNumber", "a"));
     gen.providesInterface(Hyperedges{"SimpleNestedAlgorithm"}, gen.instantiateFrom("ARealNumber", "b"));
 
+    gen.instantiateValueFor(gen.interfacesOf(Hyperedges{"SimpleNestedAlgorithm"}), Hyperedges{"SimpleValue"}, "1.f");
+
     Hyperedges innerPart(gen.instantiateComponent(Hyperedges{"SimpleAlgorithm"}, "f"));
     gen.partOfComponent(innerPart, Hyperedges{"SimpleNestedAlgorithm"});
-    gen.aliasOf(gen.inputsOf(Hyperedges{"SimpleNestedAlgorithm"}, "a"), gen.inputsOf(innerPart, "x")); // NOK
+    gen.aliasOf(gen.inputsOf(Hyperedges{"SimpleNestedAlgorithm"}, "a"), gen.inputsOf(innerPart, "x"));
     gen.aliasOf(gen.outputsOf(Hyperedges{"SimpleNestedAlgorithm"}, "b"), gen.outputsOf(innerPart, "y"));
 
     generatedStuff = unite(generatedStuff, gen.generateImplementationClassFor("SimpleNestedAlgorithm", "SimpleNestedImplementation"));
@@ -49,8 +54,6 @@ int main (void)
     gen.needsInterface(Hyperedges{"NestedAlgorithm"}, gen.instantiateFrom("ARealNumber", "u"));
     gen.providesInterface(Hyperedges{"NestedAlgorithm"}, gen.instantiateFrom("ARealNumber", "v"));
 
-    std::cout << "Place initial values on the interfaces\n";
-    gen.createValue("SimpleValue", "0.f");
     gen.instantiateValueFor(gen.interfacesOf(Hyperedges{"NestedAlgorithm"}), Hyperedges{"SimpleValue"}, "0.f");
 
     Hyperedges innerPart2(gen.instantiateComponent(Hyperedges{"SimpleAlgorithm"}, "f"));
