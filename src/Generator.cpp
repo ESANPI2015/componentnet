@@ -367,20 +367,58 @@ Hyperedges Generator::generateImplementationClassFor(const UniqueId& algorithmCl
     result << "\t" << name << "()\n";
     // NOTE: Base class constructors will be called by default
     result << "\t{\n";
-    // Initialize interfaces
+    result << "\t\t// Initialize atomic interfaces\n";
+    // Initialize atomic interfaces only
+    // For each atomic (sub-) interface call init
+    // Complex case: we now have to make something like a depth-first-search to identify atomic subinterfaces and also track the path to it
+    // Define a prefix (used later)
+    std::string prefix("");
+    auto cf = [&](const Conceptgraph& cg, const UniqueId& c, const Hyperedges& p) -> bool {
+        const Component::Network& cn(static_cast<const Component::Network&>(cg));
+        // Check if interface has subinterfaces
+        Hyperedges subUids(cn.subinterfacesOf(Hyperedges{c}));
+        if (subUids.empty())
+        {
+            // If not, get values & use path to update result
+            Hyperedges valueUids(cn.valuesOf(Hyperedges{c}));
+            for (const UniqueId& valueUid : valueUids)
+            {
+                result << "\t\t" << prefix;
+                for (const UniqueId& pUid : p)
+                    result << cn.access(pUid).label() << ".";
+                result << "init(";
+                result << cn.access(valueUid).label();
+                result << ");\n";
+            }
+        }
+        // If it does, do nothing
+        return false;
+    };
+    auto rf = [](const Conceptgraph& cg, const UniqueId& c, const UniqueId& r) -> bool {
+        const Component::Network& cn(static_cast<const Component::Network&>(cg));
+        // Check r <- FACT-OF -> subrelationsOf(HasASubInterfaceId)
+        Hyperedges toSearch(cn.isPointingTo(cn.relationsFrom(Hyperedges{r}, cn.access(CommonConceptGraph::FactOfId).label())));
+        if (intersect(toSearch, cn.subrelationsOf(Hyperedges{Component::Network::HasASubInterfaceId})).empty())
+            return false;
+        return true;
+    };
+    // We use the traverse function to generate the correct code
     for (const UniqueId& myAbstractInterfaceUid : myAbstractInterfaceUids)
     {
-        Hyperedges myAbstractInterfaceValueUids(valuesOf(Hyperedges{myAbstractInterfaceUid}));
-        for (const UniqueId& myAbstractInterfaceValueUid : myAbstractInterfaceValueUids)
+        Conceptgraph::traverse(myAbstractInterfaceUid, cf, rf);
+    }
+    // Initialize atomic interfaces of parts (see above)
+    result << "\t\t// Initialize atomic interfaces of parts\n";
+    // Fill with partInterfaceUid and "<partLabel>.<partInterfaceLabel>"
+    for (const UniqueId& myAbstractPartUid : myAbstractPartUids)
+    {
+        prefix = access(myAbstractPartUid).label() + ".";
+        Hyperedges myAbstractPartInterfaceUids(interfacesOf(Hyperedges{myAbstractPartUid}));
+        for (const UniqueId& myAbstractPartInterfaceUid : myAbstractPartInterfaceUids)
         {
-            result << "\t\t";
-            result << access(myAbstractInterfaceUid).label() << ".init(\"";
-            result << access(myAbstractInterfaceValueUid).label();
-            result << "\");\n";
+            Conceptgraph::traverse(myAbstractPartInterfaceUid, cf, rf);
         }
     }
-    // TODO: Initialize interfaces of parts
-    result << "\t\t// TODO: Initialization code starts here\n";
     result << "\t\t// TODO: Custom initialization code starts here\n";
     result << "\t}\n";
 
