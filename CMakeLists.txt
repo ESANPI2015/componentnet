@@ -2,104 +2,22 @@ cmake_minimum_required(VERSION 2.8)
 
 project(componentnet)
 
-include_directories(src)
-include_directories(include)
+# Use a .in file to get a correct installation of yaml-cpp
+configure_file(CMakeLists.hypergraph.txt.in ext/hypergraph/CMakeLists.txt)
+execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
+    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/ext/hypergraph" )
+execute_process(COMMAND "${CMAKE_COMMAND}" --build .
+    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/ext/hypergraph" )
+add_subdirectory("${CMAKE_CURRENT_BINARY_DIR}/hypergraph-src"
+                 "${CMAKE_CURRENT_BINARY_DIR}/hypergraph-build")
 
-SET(ENV{PKG_CONFIG_PATH}
-    ${CMAKE_BINARY_DIR}:$ENV{PKG_CONFIG_PATH}
-    )
-
-# Yes, we have to add the directory at least
-if(NOT TARGET hypergraph)
-    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../hypergraph hypergraph)
-endif(NOT TARGET hypergraph)
-if(NOT TARGET yaml-cpp)
-    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../ext/yaml-cpp yaml-cpp)
-endif(NOT TARGET yaml-cpp)
-
-find_package(PkgConfig)
-pkg_check_modules(componentnet_PKGCONFIG REQUIRED
-    hypergraph yaml-cpp
-    )
-
-set(CMAKE_BUILD_TYPE RelWithDebInfo)
 set(CMAKE_CXX_STANDARD 11)
-include_directories(${componentnet_PKGCONFIG_INCLUDE_DIRS})
-#message(${componentnet_PKGCONFIG_INCLUDE_DIRS})
-link_directories(${componentnet_PKGCONFIG_LIBRARY_DIRS})
-add_definitions(${componentnet_PKGCONFIG_CFLAGS_OTHER} --pedantic -Wall)
-
-set(SOURCES
-    src/ComponentNetwork.cpp
-    src/HardwareComputationalNetwork.cpp
-    src/SoftwareNetwork.cpp
-    src/ResourceCostModel.cpp
-    src/Mapper.cpp
-    src/Generator.cpp
-    src/VHDLGenerator.cpp
-    )
-set(HEADERS
-    include/ComponentNetwork.hpp
-    include/HardwareComputationalNetwork.hpp
-    include/SoftwareNetwork.hpp
-    include/ResourceCostModel.hpp
-    include/Mapper.hpp
-    include/Generator.hpp
-    include/VHDLGenerator.hpp
-    )
-
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules/")
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-
-add_library(componentnet STATIC ${SOURCES})
-target_link_libraries(componentnet
-    ${componentnet_PKGCONFIG_STATIC_LIBRARIES}
-    )
-
-add_executable(testComponentNetwork test/testComponentNetwork.cpp)
-target_link_libraries(testComponentNetwork componentnet)
-install(TARGETS testComponentNetwork
-RUNTIME DESTINATION bin)
-
-add_executable(testHWNetwork test/testHWNetwork.cpp)
-target_link_libraries(testHWNetwork componentnet)
-install(TARGETS testHWNetwork
-RUNTIME DESTINATION bin)
-
-add_executable(testMapping test/testMapping.cpp)
-target_link_libraries(testMapping componentnet)
-install(TARGETS testMapping
-RUNTIME DESTINATION bin)
-
-add_executable(createEmptyNetworks test/createEmptyNetworks.cpp)
-target_link_libraries(createEmptyNetworks componentnet)
-install(TARGETS createEmptyNetworks
-RUNTIME DESTINATION bin)
-
-add_executable(testGenerator test/testGenerator.cpp)
-target_link_libraries(testGenerator componentnet)
-install(TARGETS testGenerator
-RUNTIME DESTINATION bin)
-
-add_executable(gen_vhdl_entity tools/gen_vhdl_entity.cpp)
-target_link_libraries(gen_vhdl_entity componentnet)
-install(TARGETS gen_vhdl_entity
-RUNTIME DESTINATION bin)
-
-add_executable(gen_cpp_class tools/gen_cpp_class.cpp)
-target_link_libraries(gen_cpp_class componentnet)
-install(TARGETS gen_cpp_class
-RUNTIME DESTINATION bin)
-
-add_executable(sw2hw_map tools/sw2hw_map.cpp)
-target_link_libraries(sw2hw_map componentnet)
-install(TARGETS sw2hw_map
-RUNTIME DESTINATION bin)
-
-add_executable(gen_impl_networks tools/gen_impl_networks.cpp)
-target_link_libraries(gen_impl_networks componentnet)
-install(TARGETS gen_impl_networks
-RUNTIME DESTINATION bin)
+include_directories(include)
+add_subdirectory(src)
+target_include_directories(${PROJECT_NAME} PUBLIC include)
+add_subdirectory(tools)
+enable_testing()
+add_subdirectory(test)
 
 # pkg-config, to be installed:
 configure_file(${PROJECT_NAME}.pc.in ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc @ONLY)
