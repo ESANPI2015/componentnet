@@ -1,54 +1,44 @@
+#define CATCH_CONFIG_MAIN
+#include "catch.hpp"
 #include "ComponentNetwork.hpp"
 #include "HypergraphYAML.hpp"
 
-#include <fstream>
 #include <iostream>
-#include <cassert>
 
-int main(void)
+TEST_CASE("Setup and operate on a component network", "[Component::Network]")
 {
-    std::cout << "*** COMPONENT NETWORK TEST ***\n";
     Component::Network cnd;
-
-    std::cout << "> Create two component classes\n";
-    std::cout << cnd.createComponent("MyFirstComponent", "A") << "\n";
-    std::cout << cnd.createComponent("MySecondComponent", "B") << "\n";
-
-    std::cout << "> Create common interface class\n";
-    std::cout << cnd.createInterface("CommonInterface", "Interface") << "\n";
-
-    std::cout << "> Each component shall get two common interfaces\n";
-    std::cout << cnd.hasInterface(Hyperedges{"MyFirstComponent"},  cnd.instantiateFrom(Hyperedges{"CommonInterface"}, "x")) << "\n";
-    std::cout << cnd.hasInterface(Hyperedges{"MyFirstComponent"},  cnd.instantiateFrom(Hyperedges{"CommonInterface"}, "y")) << "\n";
-    std::cout << cnd.hasInterface(Hyperedges{"MySecondComponent"}, cnd.instantiateFrom(Hyperedges{"CommonInterface"}, "u")) << "\n";
-    std::cout << cnd.hasInterface(Hyperedges{"MySecondComponent"}, cnd.instantiateFrom(Hyperedges{"CommonInterface"}, "v")) << "\n";
-
-    std::cout << "> Instantiate components and connect their interfaces\n";
-    Hyperedges instanceA(cnd.instantiateComponent(Hyperedges{"MyFirstComponent"}));
-    Hyperedges instanceB(cnd.instantiateComponent(Hyperedges{"MySecondComponent"}));
-    std::cout << cnd.instancesOf(Hyperedges{"MyFirstComponent","MySecondComponent"}) << "\n";
-
-    std::cout << "> Query their interfaces\n";
-    std::cout << cnd.interfacesOf(cnd.instancesOf(Hyperedges{"MyFirstComponent","MySecondComponent"})) << "\n";
-
-    std::cout << "> Connect interface y of A to interface u of B\n";
-    std::cout << cnd.connectInterface(cnd.interfacesOf(instanceA,"y"), cnd.interfacesOf(instanceB,"u")) << "\n";
-
-    std::cout << "> Make the components part of a composite component\n";
-    std::cout << cnd.partOfComponent(unite(instanceA, instanceB), cnd.createComponent("MyFirstNetwork","C")) << "\n";
-
-    std::cout << "> Export internal interfaces\n";
-    std::cout << cnd.hasInterface(Hyperedges{"MyFirstNetwork"}, unite(cnd.interfacesOf(instanceA,"x"), cnd.interfacesOf(instanceB,"v"))) << "\n";
-
-    std::cout << "> Store component network using YAML" << std::endl;
-    std::ofstream fout;
-    fout.open("cnd.yml");
-    if(fout.good()) {
-        fout << YAML::StringFrom(cnd) << std::endl;
-    } else {
-        std::cout << "FAILED\n";
-    }
-    fout.close();
-
-    std::cout << "*** TEST DONE ***\n";
+    // Create component and interface classes
+    REQUIRE(cnd.createComponent("MyFirstComponent", "A") == Hyperedges{"MyFirstComponent"});
+    REQUIRE(cnd.createComponent("MySecondComponent", "B") == Hyperedges{"MySecondComponent"});
+    REQUIRE(intersect(cnd.componentClasses(), Hyperedges{"MyFirstComponent", "MySecondComponent"}) == Hyperedges{"MyFirstComponent", "MySecondComponent"});
+    REQUIRE(cnd.createInterface("CommonInterface", "Interface") == Hyperedges{"CommonInterface"});
+    // Assign interface instances to component classes
+    cnd.hasInterface(Hyperedges{"MyFirstComponent"},  cnd.instantiateFrom(Hyperedges{"CommonInterface"}, "x"));
+    cnd.hasInterface(Hyperedges{"MyFirstComponent"},  cnd.instantiateFrom(Hyperedges{"CommonInterface"}, "y"));
+    cnd.hasInterface(Hyperedges{"MySecondComponent"}, cnd.instantiateFrom(Hyperedges{"CommonInterface"}, "u"));
+    cnd.hasInterface(Hyperedges{"MySecondComponent"}, cnd.instantiateFrom(Hyperedges{"CommonInterface"}, "v"));
+    REQUIRE(cnd.interfacesOf(Hyperedges{"MyFirstComponent"}).size() == 2);
+    REQUIRE(cnd.interfacesOf(Hyperedges{"MySecondComponent"}).size() == 2);
+    // Create component and interface instances
+    cnd.instantiateComponent(Hyperedges{"MyFirstComponent"}, "a");
+    cnd.instantiateComponent(Hyperedges{"MySecondComponent"}, "b");
+    REQUIRE(cnd.instancesOf(Hyperedges{"MyFirstComponent"}).size() == 1);
+    REQUIRE(cnd.instancesOf(Hyperedges{"MySecondComponent"}).size() == 1);
+    // Check inheritance of interfaces
+    REQUIRE(cnd.interfacesOf(Hyperedges{"MyFirstComponent"}).size() == cnd.interfacesOf(cnd.instancesOf(Hyperedges{"MyFirstComponent"})).size());
+    REQUIRE(cnd.interfacesOf(Hyperedges{"MySecondComponent"}).size() == cnd.interfacesOf(cnd.instancesOf(Hyperedges{"MySecondComponent"})).size());
+    // Check connectivity
+    cnd.connectInterface(cnd.interfacesOf(cnd.instancesOf(Hyperedges{"MyFirstComponent"}),"y"), cnd.interfacesOf(cnd.instancesOf(Hyperedges{"MySecondComponent"}),"u"));
+    REQUIRE(cnd.endpointsOf(cnd.interfacesOf(cnd.instancesOf(Hyperedges{"MyFirstComponent"}),"y")) == cnd.interfacesOf(cnd.instancesOf(Hyperedges{"MySecondComponent"}),"u"));
+    // Create a composite component class
+    cnd.partOfComponent(cnd.components(), cnd.createComponent("MyFirstNetwork","C"));
+    REQUIRE(cnd.componentsOf(Hyperedges{"MyFirstNetwork"}).size() == 2);
+    // Export internal interfaces
+    cnd.hasInterface(Hyperedges{"MyFirstNetwork"}, cnd.instantiateFrom(Hyperedges{"CommonInterface"}, "a"));
+    cnd.hasInterface(Hyperedges{"MyFirstNetwork"}, cnd.instantiateFrom(Hyperedges{"CommonInterface"}, "b"));
+    cnd.aliasOf(cnd.interfacesOf(Hyperedges{"MyFirstNetwork"}, "a"), cnd.interfacesOf(cnd.instancesOf(Hyperedges{"MyFirstComponent"}), "x"));
+    cnd.aliasOf(cnd.interfacesOf(Hyperedges{"MyFirstNetwork"}, "b"), cnd.interfacesOf(cnd.instancesOf(Hyperedges{"MySecondComponent"}), "v"));
+    REQUIRE(cnd.originalInterfacesOf(cnd.interfacesOf(Hyperedges{"MyFirstNetwork"})).size() == 2);
+    // TODO: Values & subinterfaces
 }
