@@ -6,6 +6,12 @@ install(TARGETS testComponentNetwork RUNTIME DESTINATION bin)
 add_test(testComponentNetwork testComponentNetwork)
 add_custom_command(TARGET testComponentNetwork POST_BUILD COMMAND testComponentNetwork)
 
+add_executable(testSoftwareNetwork testSoftwareNetwork.cpp)
+target_link_libraries(testSoftwareNetwork ${PROJECT_NAME})
+install(TARGETS testSoftwareNetwork RUNTIME DESTINATION bin)
+add_test(testSoftwareNetwork testSoftwareNetwork)
+add_custom_command(TARGET testSoftwareNetwork POST_BUILD COMMAND testSoftwareNetwork)
+
 add_executable(testHWNetwork testHWNetwork.cpp)
 target_link_libraries(testHWNetwork ${PROJECT_NAME})
 install(TARGETS testHWNetwork RUNTIME DESTINATION bin)
