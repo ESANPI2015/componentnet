@@ -1,9 +1,6 @@
 #define CATCH_CONFIG_MAIN
 #include "catch.hpp"
 #include "ComponentNetwork.hpp"
-#include "HypergraphYAML.hpp"
-
-#include <iostream>
 
 TEST_CASE("Setup and operate on a component network", "[Component::Network]")
 {
