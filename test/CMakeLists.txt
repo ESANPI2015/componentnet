@@ -21,6 +21,8 @@ add_custom_command(TARGET testHardwareComputationalNetwork POST_BUILD COMMAND te
 add_executable(testMapping testMapping.cpp)
 target_link_libraries(testMapping ${PROJECT_NAME})
 install(TARGETS testMapping RUNTIME DESTINATION bin)
+add_test(testMapping testMapping)
+add_custom_command(TARGET testMapping POST_BUILD COMMAND testMapping)
 
 add_executable(createEmptyNetworks createEmptyNetworks.cpp)
 target_link_libraries(createEmptyNetworks ${PROJECT_NAME})
