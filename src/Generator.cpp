@@ -41,7 +41,6 @@ Hyperedges Generator::generateConcreteInterfaceClassFor(const UniqueId& abstract
     //          ...
     //          custom member variables
     // };
-    // TODO: Can we do better than copiing code?
 
     std::stringstream result;
     Hyperedges validConcreteInterfaceClassUids(concreteInterfaceClasses());
@@ -127,13 +126,26 @@ Hyperedges Generator::generateConcreteInterfaceClassFor(const UniqueId& abstract
 
     // Collect other definitions (superclasses & parts)
     // NOTE: We do this by copiing code ... Maybe we can do something better?
-    for (const UniqueId& validConcreteIfSuperclassUid : validConcreteIfSuperclassUids)
+    //for (const UniqueId& validConcreteIfSuperclassUid : validConcreteIfSuperclassUids)
+    //{
+    //    result << access(validConcreteIfSuperclassUid).label();
+    //}
+    //for (const UniqueId& validInterfacePartClassUid : validInterfacePartClassUids)
+    //{
+    //    result << access(validInterfacePartClassUid).label();
+    //}
+    // Alternative: Say, that we want to include another header file
+    for (const UniqueId& abstractIfSuperclassUid : abstractIfSuperclassUids)
     {
-        result << access(validConcreteIfSuperclassUid).label();
+        result << "#include \"";
+        result << access(abstractIfSuperclassUid).label();
+        result << ".hpp\"\n";
     }
-    for (const UniqueId& validInterfacePartClassUid : validInterfacePartClassUids)
+    for (const UniqueId& myAbstractInterfacePartClassUid : validInterfacePartClassUids)
     {
-        result << access(validInterfacePartClassUid).label();
+        result << "#include \"";
+        result << access(myAbstractInterfacePartClassUid).label();
+        result << ".hpp\"\n";
     }
     // CLASS DEF
     // NOTE: We use a struct because then all members are per default public
@@ -200,7 +212,6 @@ Hyperedges Generator::generateImplementationClassFor(const UniqueId& algorithmCl
     //          ImplementationClass partName;
     //          ...
     // };
-    // TODO: Can we do better than copiing code?
 
     std::stringstream result;
     Hyperedges validConcreteInterfaceClassUids(concreteInterfaceClasses());
@@ -247,23 +258,24 @@ Hyperedges Generator::generateImplementationClassFor(const UniqueId& algorithmCl
     // Collect all interface info (and instantiate concrete interfaces)
     Hyperedges _myAbstractInterfaceUids(interfacesOf(Hyperedges{algorithmClassUid}));
     Hyperedges myAbstractInterfaceUids;
+    Hyperedges myAbstractInterfaceClassUids;
     Hyperedges myConcreteInterfaceClassUids;
     Hyperedges myConcreteInterfaceUids;
     for (const UniqueId& myAbstractInterfaceUid : _myAbstractInterfaceUids)
     {
         // Get concrete interface
-        Hyperedges myAbstractInterfaceClassUids(instancesOf(Hyperedges{myAbstractInterfaceUid},"",FORWARD));
-        Hyperedges concreteInterfaceClassUids(intersect(validConcreteInterfaceClassUids, encodersOf(Hyperedges{myAbstractInterfaceClassUids})));
+        Hyperedges abstractInterfaceClassUids(instancesOf(Hyperedges{myAbstractInterfaceUid},"",FORWARD));
+        Hyperedges concreteInterfaceClassUids(intersect(validConcreteInterfaceClassUids, encodersOf(abstractInterfaceClassUids)));
         UniqueId uid;
         if (concreteInterfaceClassUids.empty())
         {
             // If none exists, ignore or generate it
-            if (hook.ask("No concrete interface found for "+access(myAbstractInterfaceClassUids[0]).label()+". Generate it? [y/n]", GeneratorHook::QuestionType::QUESTION_GENERATE_IFCLASS) == "y")
+            if (hook.ask("No concrete interface found for "+access(abstractInterfaceClassUids[0]).label()+". Generate it? [y/n]", GeneratorHook::QuestionType::QUESTION_GENERATE_IFCLASS) == "y")
             {
                 uid = hook.ask("Please provide a unique id", GeneratorHook::QuestionType::QUESTION_PROVIDE_UID);
                 while (exists(uid))
                     uid = hook.ask(uid + " already exists. Provide a different uid", GeneratorHook::QuestionType::QUESTION_PROVIDE_UID);
-                generateConcreteInterfaceClassFor(myAbstractInterfaceClassUids[0], uid, hook);
+                generateConcreteInterfaceClassFor(abstractInterfaceClassUids[0], uid, hook);
                 validConcreteInterfaceClassUids.push_back(uid);
             }
         } else {
@@ -279,6 +291,7 @@ Hyperedges Generator::generateImplementationClassFor(const UniqueId& algorithmCl
         if (uid.empty())
             continue;
         myAbstractInterfaceUids = unite(myAbstractInterfaceUids, Hyperedges{myAbstractInterfaceUid});
+        myAbstractInterfaceClassUids = unite(myAbstractInterfaceClassUids, abstractInterfaceClassUids);
         myConcreteInterfaceClassUids = unite(myConcreteInterfaceClassUids, Hyperedges{uid});
         myConcreteInterfaceUids = unite(myConcreteInterfaceUids, instantiateFrom(Hyperedges{uid}, access(myAbstractInterfaceUid).label()));
     }
@@ -286,23 +299,24 @@ Hyperedges Generator::generateImplementationClassFor(const UniqueId& algorithmCl
     // ... and of our parts (instantiate them as well)
     Hyperedges _myAbstractPartUids(subcomponentsOf(Hyperedges{algorithmClassUid}));
     Hyperedges myAbstractPartUids;
+    Hyperedges myAbstractPartClassUids;
     Hyperedges myImplementationPartClassUids;
     Hyperedges myImplementationPartUids;
     for (const UniqueId& myAbstractPartUid : _myAbstractPartUids)
     {
         // Get concrete implementation from myAbstractPartUid superclass
-        Hyperedges myAbstractPartClassUids(instancesOf(Hyperedges{myAbstractPartUid},"",FORWARD));
-        Hyperedges implementationClassUids(intersect(validImplementationClassUids, implementationsOf(myAbstractPartClassUids)));
+        Hyperedges abstractPartClassUids(instancesOf(Hyperedges{myAbstractPartUid},"",FORWARD));
+        Hyperedges implementationClassUids(intersect(validImplementationClassUids, implementationsOf(abstractPartClassUids)));
         UniqueId uid;
         if (implementationClassUids.empty())
         {
             // If none exists, ignore or generate it
-            if (hook.ask("No concrete implementation found for "+access(myAbstractPartClassUids[0]).label()+". Generate it? [y/n]", GeneratorHook::QuestionType::QUESTION_GENERATE_IMPLCLASS) == "y")
+            if (hook.ask("No concrete implementation found for "+access(abstractPartClassUids[0]).label()+". Generate it? [y/n]", GeneratorHook::QuestionType::QUESTION_GENERATE_IMPLCLASS) == "y")
             {
                 uid = hook.ask("Please provide a unique id", GeneratorHook::QuestionType::QUESTION_PROVIDE_UID);
                 while (exists(uid))
                     uid = hook.ask(uid + " already exists. Provide a different uid", GeneratorHook::QuestionType::QUESTION_PROVIDE_UID);
-                generateImplementationClassFor(myAbstractPartClassUids[0], uid, hook);
+                generateImplementationClassFor(abstractPartClassUids[0], uid, hook);
                 validImplementationClassUids.push_back(uid);
             }
         } else {
@@ -318,6 +332,7 @@ Hyperedges Generator::generateImplementationClassFor(const UniqueId& algorithmCl
         if (uid.empty())
             continue;
         myAbstractPartUids = unite(myAbstractPartUids, Hyperedges{myAbstractPartUid});
+        myAbstractPartClassUids = unite(myAbstractPartClassUids, abstractPartClassUids);
         myImplementationPartClassUids = unite(myImplementationPartClassUids, Hyperedges{uid});
         myImplementationPartUids = unite(myImplementationPartUids, instantiateComponent(Hyperedges{uid}, access(myAbstractPartUid).label()));
     }
@@ -331,17 +346,36 @@ Hyperedges Generator::generateImplementationClassFor(const UniqueId& algorithmCl
     result << "#define _ALGORITHM_" << name << "_IMPL\n";
 
     // Copy and paste the needed classes into this definition
-    for (const UniqueId& uid : myImplementationSuperclassUids)
+    //for (const UniqueId& uid : myImplementationSuperclassUids)
+    //{
+    //    result << access(uid).label() << std::endl;
+    //}
+    //for (const UniqueId& uid : myConcreteInterfaceClassUids)
+    //{
+    //    result << access(uid).label() << std::endl;
+    //}
+    //for (const UniqueId& uid : myImplementationPartClassUids)
+    //{
+    //    result << access(uid).label() << std::endl;
+    //}
+    // Alternative: Say, that we want to include another header file
+    for (const UniqueId& uid : algorithmSuperclassUids)
     {
-        result << access(uid).label() << std::endl;
+        result << "#include \"";
+        result << access(uid).label();
+        result << ".hpp\"\n";
     }
-    for (const UniqueId& uid : myConcreteInterfaceClassUids)
+    for (const UniqueId& uid : myAbstractInterfaceClassUids)
     {
-        result << access(uid).label() << std::endl;
+        result << "#include \"";
+        result << access(uid).label();
+        result << ".hpp\"\n";
     }
-    for (const UniqueId& uid : myImplementationPartClassUids)
+    for (const UniqueId& uid : myAbstractPartClassUids)
     {
-        result << access(uid).label() << std::endl;
+        result << "#include \"";
+        result << access(uid).label();
+        result << ".hpp\"\n";
     }
 
     if (algorithmSuperclassUids.empty())
@@ -457,139 +491,166 @@ Hyperedges Generator::generateImplementationClassFor(const UniqueId& algorithmCl
         }
     }
 
-    // Evaluation function
-    result << "\t// Evaluation function\n";
-    result << "\tvoid operator() ()\n";
-    result << "\t{\n";
-    result << "\t\t// Pass external inputs to internal inputs\n";
-    // Read in external inputs
-    for (const UniqueId& myAbstractInputUid : myAbstractInputUids)
+    if (myAbstractPartUids.empty() && algorithmSuperclassUids.empty())
     {
-        // Pass external inputs to internal inputs
-        Hyperedges myOriginalAbstractInputUids(originalInterfacesOf(Hyperedges{myAbstractInputUid}));
-        for (const UniqueId& myOriginalAbstractInputUid : myOriginalAbstractInputUids)
-        {
-            Hyperedges myAbstractInternalPartUids(inputsOf(Hyperedges{myOriginalAbstractInputUid},"",INVERSE));
-            for (const UniqueId& myAbstractInternalPartUid : myAbstractInternalPartUids)
-            {
-                result << "\t\t";
-                result << access(myAbstractInternalPartUid).label() << "." << access(myOriginalAbstractInputUid).label() << " = ";
-                result << access(myAbstractInputUid).label();
-                result << ";\n";
-            }
-        }
-    }
-    result << "\t\t// Pass external bidirectional interfaces to internal bidirectional interfaces/inputs\n";
-    // Pass bidirectional data to corresponding internal interfaces
-    for (const UniqueId& myAbstractIOUid : myAbstractIOUids)
-    {
-        Hyperedges myOriginalAbstractInputUids(originalInterfacesOf(Hyperedges{myAbstractIOUid}));
-        for (const UniqueId& myOriginalAbstractInputUid : myOriginalAbstractInputUids)
-        {
-            Hyperedges myAbstractInternalPartUids(interfacesOf(Hyperedges{myOriginalAbstractInputUid},"",INVERSE));
-            myAbstractInternalPartUids = subtract(myAbstractInternalPartUids, outputsOf(Hyperedges{myOriginalAbstractInputUid}, "", INVERSE));
-            for (const UniqueId& myAbstractInternalPartUid : myAbstractInternalPartUids)
-            {
-                result << "\t\t";
-                result << access(myAbstractInternalPartUid).label() << "." << access(myOriginalAbstractInputUid).label() << " = ";
-                result << access(myAbstractIOUid).label();
-                result << ";\n";
-            }
-        }
-    }
-    // Call base class evaluate operators
-    for (const UniqueId& algorithmSuperclassUid : algorithmSuperclassUids)
-    {
-        result << "\t\t" << access(algorithmSuperclassUid).label() << "::();\n";
-    }
-    if (myAbstractPartUids.empty())
-    {
-        result << "\t\t// TODO: Implementation starts here\n";
-        // TODO: This is questionable ... we should leave the implementation to the specialist!
-        //std::stringstream question;
-        //question << result.rdbuf() << "Please provide your implementation code";
-        //result << "\t" << hook.ask(question.str(), GeneratorHook::QuestionType::QUESTION_PROVIDE_CODE) << "\n";
+        // NOTE: This will force the developer to implement that function
+        result << "\t// Evaluation function\n";
+        result << "\tvoid operator() ()\n";
+        result << "\t{\n";
+        result << "\t#error \"Implement me\"\n";
+        result << "\t}\n";
     } else {
-        result << "\t\t// Call inner parts\n";
-        // Evaluate parts
-        for (const UniqueId& myAbstractPartUid : myAbstractPartUids)
+        // Evaluation function
+        result << "\t// Evaluation function\n";
+        result << "\tvoid operator() ()\n";
+        result << "\t{\n";
+        if (!myAbstractInputUids.empty())
         {
-            result << "\t\t" << access(myAbstractPartUid).label() << "();\n";
-        }
-    }
-    result << "\t\t// Pass internal outputs/bidirectional interfaces to internal inputs/bidirectional interfaces\n";
-    // Pass outputs of internal parts to inputs of connected internal parts
-    for (const UniqueId& myAbstractProducerUid : myAbstractPartUids)
-    {
-        Hyperedges internalAbstractOutputUids(interfacesOf(Hyperedges{myAbstractProducerUid})); // these are ALL interfaces
-        internalAbstractOutputUids = subtract(internalAbstractOutputUids, inputsOf(Hyperedges{myAbstractProducerUid})); // ... so we subtract the inputs from it :)
-        for (const UniqueId& internalAbstractOutputUid : internalAbstractOutputUids)
-        {
-            Hyperedges internalAbstractInterfaceUids(endpointsOf(Hyperedges{internalAbstractOutputUid})); // could be any interface (including outputs)
-            for (const UniqueId& internalAbstractInterfaceUid : internalAbstractInterfaceUids)
+            result << "\t\t// Pass external inputs to internal inputs\n";
+            // Read in external inputs
+            for (const UniqueId& myAbstractInputUid : myAbstractInputUids)
             {
-                Hyperedges myAbstractConsumerUids(interfacesOf(Hyperedges{internalAbstractInterfaceUid},"",INVERSE)); // this could contain invalid consumers (connections to outputs)
-                myAbstractConsumerUids = subtract(myAbstractConsumerUids, outputsOf(Hyperedges{internalAbstractInterfaceUid}, "", INVERSE)); // ... so we subtract the ones with outputs
-                for (const UniqueId& myAbstractConsumerUid : myAbstractConsumerUids)
+                // Pass external inputs to internal inputs
+                Hyperedges myOriginalAbstractInputUids(originalInterfacesOf(Hyperedges{myAbstractInputUid}));
+                for (const UniqueId& myOriginalAbstractInputUid : myOriginalAbstractInputUids)
                 {
-                    result << "\t\t";
-                    result << access(myAbstractConsumerUid).label() << "." << access(internalAbstractInterfaceUid).label() << " = ";
-                    result << access(myAbstractProducerUid).label() << "." << access(internalAbstractOutputUid).label();
-                    result << ";\n";
+                    Hyperedges myAbstractInternalPartUids(inputsOf(Hyperedges{myOriginalAbstractInputUid},"",INVERSE));
+                    for (const UniqueId& myAbstractInternalPartUid : myAbstractInternalPartUids)
+                    {
+                        result << "\t\t";
+                        result << access(myAbstractInternalPartUid).label() << "." << access(myOriginalAbstractInputUid).label() << " = ";
+                        result << access(myAbstractInputUid).label();
+                        result << ";\n";
+                    }
                 }
             }
         }
-    }
-    result << "\t\t// Pass internal outputs to external outputs\n";
-    // Pass internal outputs to external outputs
-    for (const UniqueId& myAbstractOutputUid : myAbstractOutputUids)
-    {
-        Hyperedges myOriginalAbstractOutputUids(originalInterfacesOf(Hyperedges{myAbstractOutputUid}));
-        for (const UniqueId& myOriginalAbstractOutputUid : myOriginalAbstractOutputUids)
+        if (!myAbstractIOUids.empty())
         {
-            Hyperedges myAbstractInternalPartUids(outputsOf(Hyperedges{myOriginalAbstractOutputUid},"",INVERSE));
-            for (const UniqueId& myAbstractInternalPartUid : myAbstractInternalPartUids)
+            result << "\t\t// Pass external bidirectional interfaces to internal bidirectional interfaces/inputs\n";
+            // Pass bidirectional data to corresponding internal interfaces
+            for (const UniqueId& myAbstractIOUid : myAbstractIOUids)
             {
-                result << "\t\t";
-                result << access(myAbstractOutputUid).label() << " = ";
-                result << access(myAbstractInternalPartUid).label() << "." << access(myOriginalAbstractOutputUid).label();
-                result << ";\n";
+                Hyperedges myOriginalAbstractInputUids(originalInterfacesOf(Hyperedges{myAbstractIOUid}));
+                for (const UniqueId& myOriginalAbstractInputUid : myOriginalAbstractInputUids)
+                {
+                    Hyperedges myAbstractInternalPartUids(interfacesOf(Hyperedges{myOriginalAbstractInputUid},"",INVERSE));
+                    myAbstractInternalPartUids = subtract(myAbstractInternalPartUids, outputsOf(Hyperedges{myOriginalAbstractInputUid}, "", INVERSE));
+                    for (const UniqueId& myAbstractInternalPartUid : myAbstractInternalPartUids)
+                    {
+                        result << "\t\t";
+                        result << access(myAbstractInternalPartUid).label() << "." << access(myOriginalAbstractInputUid).label() << " = ";
+                        result << access(myAbstractIOUid).label();
+                        result << ";\n";
+                    }
+                }
             }
         }
-    }
-    result << "\t\t// Pass internal bidirectional interfaces to external bidirectional interfaces/outputs\n";
-    // Pass bidirectional data to corresponding external interface
-    for (const UniqueId& myAbstractIOUid : myAbstractIOUids)
-    {
-        Hyperedges myOriginalAbstractOutputUids(originalInterfacesOf(Hyperedges{myAbstractIOUid}));
-        for (const UniqueId& myOriginalAbstractOutputUid : myOriginalAbstractOutputUids)
+        // Call base class evaluate operators
+        for (const UniqueId& algorithmSuperclassUid : algorithmSuperclassUids)
         {
-            Hyperedges myAbstractInternalPartUids(interfacesOf(Hyperedges{myOriginalAbstractOutputUid},"",INVERSE));
-            myAbstractInternalPartUids = subtract(myAbstractInternalPartUids, inputsOf(Hyperedges{myOriginalAbstractOutputUid}, "", INVERSE));
-            for (const UniqueId& myAbstractInternalPartUid : myAbstractInternalPartUids)
+            result << "\t\t" << access(algorithmSuperclassUid).label() << "::();\n";
+        }
+        if (myAbstractPartUids.empty())
+        {
+            result << "\t\t// TODO: Implementation starts here\n";
+            // TODO: This is questionable ... we should leave the implementation to the specialist!
+            //std::stringstream question;
+            //question << result.rdbuf() << "Please provide your implementation code";
+            //result << "\t" << hook.ask(question.str(), GeneratorHook::QuestionType::QUESTION_PROVIDE_CODE) << "\n";
+        } else {
+            result << "\t\t// Call inner parts\n";
+            // Evaluate parts
+            for (const UniqueId& myAbstractPartUid : myAbstractPartUids)
             {
-                result << "\t\t";
-                result << access(myAbstractIOUid).label() << " = ";
-                result << access(myAbstractInternalPartUid).label() << "." << access(myOriginalAbstractOutputUid).label();
-                result << ";\n";
+                result << "\t\t" << access(myAbstractPartUid).label() << "();\n";
             }
         }
+        if (!myAbstractPartUids.empty())
+        {
+            result << "\t\t// Pass internal outputs/bidirectional interfaces to internal inputs/bidirectional interfaces\n";
+            // Pass outputs of internal parts to inputs of connected internal parts
+            for (const UniqueId& myAbstractProducerUid : myAbstractPartUids)
+            {
+                Hyperedges internalAbstractOutputUids(interfacesOf(Hyperedges{myAbstractProducerUid})); // these are ALL interfaces
+                internalAbstractOutputUids = subtract(internalAbstractOutputUids, inputsOf(Hyperedges{myAbstractProducerUid})); // ... so we subtract the inputs from it :)
+                for (const UniqueId& internalAbstractOutputUid : internalAbstractOutputUids)
+                {
+                    Hyperedges internalAbstractInterfaceUids(endpointsOf(Hyperedges{internalAbstractOutputUid})); // could be any interface (including outputs)
+                    for (const UniqueId& internalAbstractInterfaceUid : internalAbstractInterfaceUids)
+                    {
+                        Hyperedges myAbstractConsumerUids(interfacesOf(Hyperedges{internalAbstractInterfaceUid},"",INVERSE)); // this could contain invalid consumers (connections to outputs)
+                        myAbstractConsumerUids = subtract(myAbstractConsumerUids, outputsOf(Hyperedges{internalAbstractInterfaceUid}, "", INVERSE)); // ... so we subtract the ones with outputs
+                        for (const UniqueId& myAbstractConsumerUid : myAbstractConsumerUids)
+                        {
+                            result << "\t\t";
+                            result << access(myAbstractConsumerUid).label() << "." << access(internalAbstractInterfaceUid).label() << " = ";
+                            result << access(myAbstractProducerUid).label() << "." << access(internalAbstractOutputUid).label();
+                            result << ";\n";
+                        }
+                    }
+                }
+            }
+        }
+        if (!myAbstractOutputUids.empty())
+        {
+            result << "\t\t// Pass internal outputs to external outputs\n";
+            // Pass internal outputs to external outputs
+            for (const UniqueId& myAbstractOutputUid : myAbstractOutputUids)
+            {
+                Hyperedges myOriginalAbstractOutputUids(originalInterfacesOf(Hyperedges{myAbstractOutputUid}));
+                for (const UniqueId& myOriginalAbstractOutputUid : myOriginalAbstractOutputUids)
+                {
+                    Hyperedges myAbstractInternalPartUids(outputsOf(Hyperedges{myOriginalAbstractOutputUid},"",INVERSE));
+                    for (const UniqueId& myAbstractInternalPartUid : myAbstractInternalPartUids)
+                    {
+                        result << "\t\t";
+                        result << access(myAbstractOutputUid).label() << " = ";
+                        result << access(myAbstractInternalPartUid).label() << "." << access(myOriginalAbstractOutputUid).label();
+                        result << ";\n";
+                    }
+                }
+            }
+        }
+        if (!myAbstractIOUids.empty())
+        {
+            result << "\t\t// Pass internal bidirectional interfaces to external bidirectional interfaces/outputs\n";
+            // Pass bidirectional data to corresponding external interface
+            for (const UniqueId& myAbstractIOUid : myAbstractIOUids)
+            {
+                Hyperedges myOriginalAbstractOutputUids(originalInterfacesOf(Hyperedges{myAbstractIOUid}));
+                for (const UniqueId& myOriginalAbstractOutputUid : myOriginalAbstractOutputUids)
+                {
+                    Hyperedges myAbstractInternalPartUids(interfacesOf(Hyperedges{myOriginalAbstractOutputUid},"",INVERSE));
+                    myAbstractInternalPartUids = subtract(myAbstractInternalPartUids, inputsOf(Hyperedges{myOriginalAbstractOutputUid}, "", INVERSE));
+                    for (const UniqueId& myAbstractInternalPartUid : myAbstractInternalPartUids)
+                    {
+                        result << "\t\t";
+                        result << access(myAbstractIOUid).label() << " = ";
+                        result << access(myAbstractInternalPartUid).label() << "." << access(myOriginalAbstractOutputUid).label();
+                        result << ";\n";
+                    }
+                }
+            }
+        }
+        result << "\t}\n";
     }
-    result << "\t}\n";
 
-    result << "\t// Instantiate parts\n";
-    // TODO: Protected or private?
+    // Parts are protected so subclasses can access them
     if (!myAbstractPartUids.empty())
+    {
+        result << "\t// Instantiate parts\n";
         result << "protected:\n";
 
-    // Instantiate parts
-    // NOTE: myAbstractPartUid holds the name of the instance, myAbstractPartClassUid holds the name of the class
-    for (const UniqueId& myAbstractPartUid : myAbstractPartUids)
-    {
-        Hyperedges myAbstractPartClassUids(instancesOf(Hyperedges{myAbstractPartUid},"",FORWARD));
-        for (const UniqueId& myAbstractPartClassUid : myAbstractPartClassUids)
+        // Instantiate parts
+        // NOTE: myAbstractPartUid holds the name of the instance, myAbstractPartClassUid holds the name of the class
+        for (const UniqueId& myAbstractPartUid : myAbstractPartUids)
         {
-            result << "\t" << access(myAbstractPartClassUid).label() << " " << access(myAbstractPartUid).label() << ";\n";
+            Hyperedges myAbstractPartClassUids(instancesOf(Hyperedges{myAbstractPartUid},"",FORWARD));
+            for (const UniqueId& myAbstractPartClassUid : myAbstractPartClassUids)
+            {
+                result << "\t" << access(myAbstractPartClassUid).label() << " " << access(myAbstractPartUid).label() << ";\n";
+            }
         }
     }
 

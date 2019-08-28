@@ -31,4 +31,3 @@ install(TARGETS createEmptyNetworks RUNTIME DESTINATION bin)
 add_executable(testGenerator testGenerator.cpp)
 target_link_libraries(testGenerator ${PROJECT_NAME})
 install(TARGETS testGenerator RUNTIME DESTINATION bin)
-

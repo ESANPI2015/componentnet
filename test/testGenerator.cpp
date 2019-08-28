@@ -69,6 +69,7 @@ int main (void)
         std::cout << gen.access(uid).label();
 
 
+    // TODO: We have to export all code (interface code, part code, nestedalgorithm code
     std::ofstream fout;
     fout.open("nested.hpp");
     Hyperedges impls(gen.implementationsOf(Hyperedges{"NestedAlgorithm"}));
