@@ -95,6 +95,7 @@ int main (int argc, char **argv)
     // Get all algorithm classes (without overall superclass)
     // and find the candidate(s)
     Hyperedges algorithmUids(gen.algorithmClasses(label));
+    algorithmUids = subtract(algorithmUids, gen.implementationClasses()); // Remove implementation classes
     if (!uid.empty())
         algorithmUids = intersect(algorithmUids, Hyperedges{uid});
 
