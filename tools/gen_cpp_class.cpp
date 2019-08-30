@@ -13,6 +13,7 @@ static struct option long_options[] = {
     {"label", required_argument, 0, 'l'},
     {"generate-files", no_argument, 0, 'g'},
     {"overwrite", no_argument, 0, 'o'},
+    {"include-subclasses", no_argument, 0, 'i'},
     {0,0,0,0}
 };
 
@@ -26,6 +27,7 @@ void usage (const char *myName)
     std::cout << "--label=<label>\t" << "Specify the algorithm(s) to be used to generate code by label\n";
     std::cout << "--generate-files\t" << "If given, the generator will produce the file(s) needed for compilation\n";
     std::cout << "--overwrite\t" << "If given, the generator will overwrite existing implementation(s) with the same uid\n";
+    std::cout << "--include-subclasses\t" << "If given, the generator will also generate code for subclasses of a given uid or label\n";
     std::cout << "\nExample:\n";
     std::cout << myName << " --label=\"MyAlgorithm\" initial_model.yml new_model.yml\n";
 }
@@ -42,6 +44,7 @@ int main (int argc, char **argv)
     std::ofstream fout;
     bool generateFiles = false;
     bool overwrite = false;
+    bool includeSubclasses = false;
     UniqueId uid;
     std::string label;
 
@@ -68,6 +71,9 @@ int main (int argc, char **argv)
                 break;
             case 'u':
                 uid=std::string(optarg);
+                break;
+            case 'i':
+                includeSubclasses = true;
                 break;
             case 'l':
                 label=std::string(optarg);
@@ -97,7 +103,17 @@ int main (int argc, char **argv)
     Hyperedges algorithmUids(gen.algorithmClasses(label));
     algorithmUids = subtract(algorithmUids, gen.implementationClasses()); // Remove implementation classes
     if (!uid.empty())
+    {
+        std::cout << "Filtering by uid " << uid << std::endl;
         algorithmUids = intersect(algorithmUids, Hyperedges{uid});
+    }
+
+    // Include subclasses if desired
+    if (includeSubclasses)
+    {
+        std::cout << "Including subclasses of " << algorithmUids << std::endl;
+        algorithmUids = unite(algorithmUids, gen.subclassesOf(algorithmUids));
+    }
 
     if (!algorithmUids.size())
     {
@@ -121,18 +137,47 @@ int main (int argc, char **argv)
         }
         std::cout << "Generating code for " << gen.access(algorithmUid).label() << "\n";
         gen.generateImplementationClassFor(algorithmUid, implUid);
+    }
 
-        // If desired, write implementation to file
-        if (generateFiles)
+    // After generation phase, write code to file if desired
+    if (generateFiles)
+    {
+        std::cout << "Exporting all code to file(s)\n";
+        Hyperedges allAlgClassUids(gen.algorithmClasses());
+        for (const UniqueId& algClassUid : allAlgClassUids)
         {
-            std::cout << "Writing implementation of " << gen.access(algorithmUid).label() << " to file\n";
-            fout.open(gen.access(algorithmUid).label()+".hpp");
-            if(fout.good()) {
-                fout << gen.access(implUid).label() << std::endl;
-            } else {
-                std::cout << "FAILED\n";
+            Hyperedges implClassUids(gen.implementationsOf(Hyperedges{algClassUid}));
+            for (const UniqueId& implClassUid : implClassUids)
+            {
+                std::cout << "Storing " << gen.access(algClassUid).label() << " ... ";
+                fout.open(gen.access(algClassUid).label() + ".hpp");
+                if (!fout.good())
+                {
+                    std::cout << "FAILED\n";
+                    continue;
+                }
+                fout << gen.access(implClassUid).label();
+                fout.close();
+                std::cout << "DONE\n";
             }
-            fout.close();
+        }
+        Hyperedges interfaceUids(gen.interfaceClasses());
+        for (const UniqueId& interfaceUid : interfaceUids)
+        {
+            Hyperedges implInterfaceUids(gen.encodersOf(Hyperedges{interfaceUid}));
+            for (const UniqueId& implInterfaceUid : implInterfaceUids)
+            {
+                std::cout << "Storing " << gen.access(interfaceUid).label() << " ... ";
+                fout.open(gen.access(interfaceUid).label() + ".hpp");
+                if (!fout.good())
+                {
+                    std::cout << "FAILED\n";
+                    continue;
+                }
+                fout << gen.access(implInterfaceUid).label();
+                fout.close();
+                std::cout << "DONE\n";
+            }
         }
     }
 
