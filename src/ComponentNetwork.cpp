@@ -83,20 +83,6 @@ Hyperedges Network::valueClasses(const std::string& name, const Hyperedges& suid
 
 Hyperedges Network::instantiateComponent(const Hyperedges& componentIds, const std::string& newName)
 {
-    // When instantiating a component, we also want to instantiate the interfaces
-    // NOTE: Here we have to clone the facts of any subrelation of 'HasAInterface'
-    //Hyperedges superClassUids(subclassesOf(componentIds,"",FORWARD));
-    //Hyperedges instanceUid(instantiateFrom(componentIds, newName));
-    //for (const UniqueId& superClassUid : superClassUids)
-    //{
-    //    Hyperedges interfacesToBeCloned(interfacesOf(Hyperedges{superClassUid}));
-    //    for (const UniqueId& interfaceUid : interfacesToBeCloned)
-    //    {
-    //        factFromAnother(instanceUid, instantiateAnother(Hyperedges{interfaceUid}), factsOf(subrelationsOf(Hyperedges{Network::HasAInterfaceId}), Hyperedges{superClassUid}, Hyperedges{interfaceUid}));
-    //    }
-    //}
-    //return instanceUid;
-    // I. Find all superclasses
     Hyperedges superClassUids(subclassesOf(componentIds,"",FORWARD));
     Hyperedges instanceUid(instantiateFrom(componentIds, newName));
     for (const UniqueId& superClassUid : superClassUids)
