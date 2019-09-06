@@ -39,7 +39,27 @@ Hyperedges Mapper::processors (const ResourceCost::Model& rcm)
 Hyperedges Mapper::swInterfaces (const ResourceCost::Model& rcm)
 {
     const Software::Network& sw(static_cast<const ResourceCost::Model&>(rcm));
-    return intersect(ResourceCost::Model::partitionFuncLeft(rcm), sw.interfacesOf(implementations(rcm)));
+    const Hyperedges& candidateInterfaces(intersect(ResourceCost::Model::partitionFuncLeft(rcm), sw.interfacesOf(implementations(rcm))));
+    // We remove all interfaces which are pure internal interfaces. These dont have to be mapped to hw interfaces
+    Hyperedges internalInterfaces;
+    for (const UniqueId& a : candidateInterfaces)
+    {
+        // Get targets of owner
+        const Hyperedges& swOwnerUids(sw.interfacesOf(Hyperedges{a},"",Hypergraph::TraversalDirection::INVERSE));
+        const Hyperedges& swTargetUids(rcm.providersOf(swOwnerUids));
+        // Get connected interfaces
+        const Hyperedges& swNeighbourInterfaceUids(sw.endpointsOf(Hyperedges{a},"",Hypergraph::TraversalDirection::BOTH));
+        // ... and their owners
+        const Hyperedges& swNeighbourOwnerUids(sw.interfacesOf(swNeighbourInterfaceUids,"",Hypergraph::TraversalDirection::INVERSE));
+        // ... and the targets of the owners
+        const Hyperedges& swNeighbourTargetUids(rcm.providersOf(swNeighbourOwnerUids));
+        // Check that each swNeighbourTargetUid is in swTargetUids
+        if (subtract(swNeighbourTargetUids, swTargetUids).size())
+            continue; // at least one target is different
+        std::cout << "PARTITION INTERFACES: Removing pure internal sw interface: " << a << "\n";
+        internalInterfaces.push_back(a);
+    }
+    return subtract(candidateInterfaces, internalInterfaces);
 }
 
 Hyperedges Mapper::hwInterfaces (const ResourceCost::Model& rcm)
@@ -58,39 +78,49 @@ float Mapper::matchSwToHwInterface (const ResourceCost::Model& rcm, const Unique
 
     const Software::Network& sw(static_cast<const ResourceCost::Model&>(rcm));
     const ::Hardware::Computational::Network& hw(static_cast<const ResourceCost::Model&>(rcm));
-    // b) reachability constraints
-    // Lets check if the owner of a is mapped to the owner of b
-    Hyperedges swOwnerUids(sw.interfacesOf(Hyperedges{a},"",Hypergraph::TraversalDirection::INVERSE));
-    Hyperedges hwOwnerUids(hw.interfacesOf(Hyperedges{b},"",Hypergraph::TraversalDirection::INVERSE));
-    Hyperedges swTargetUids(rcm.providersOf(swOwnerUids));
-    // Condition check: swTargetUids must be a true subset of hwOwnerUids and not empty. That means that the intersection must be equal to hwTargetUids.
-    // Why: The owner of an interface has to be mapped first, and its target has to match the owner of the target interface
-    if (swTargetUids.empty() || (intersect(swTargetUids, hwOwnerUids).size() != swTargetUids.size()))
+
+    // NEW
+    const Hyperedges& swOwnerUids(sw.interfacesOf(Hyperedges{a},"",Hypergraph::TraversalDirection::INVERSE));
+    const Hyperedges& hwOwnerUids(hw.interfacesOf(Hyperedges{b},"",Hypergraph::TraversalDirection::INVERSE));
+    const Hyperedges& swTargetUids(rcm.providersOf(swOwnerUids));
+    // RULE I: if owner of 'a' is not mapped at all, we fail
+    if (swTargetUids.empty())
     {
-        std::cout << "REACH CHECK FAILED sw interface: " << sw.access(a).label() << " hardware interface: " << hw.access(b).label() << " OWNER MISMATCH\n";
+        std::cout << "REACH CHECK FAILED: sw interface: " << a << " hardware interface: " << b << " OWNER NOT MAPPED\n";
         return -std::numeric_limits<float>::infinity();
     }
-    // Lets check if all endpoints of a are mapped to endpoints of b or not mapped at all.
-    Hyperedges swNeighbourInterfaceUids(sw.endpointsOf(Hyperedges{a},"",Hypergraph::TraversalDirection::BOTH));
-    Hyperedges hwNeighbourInterfaceUids(hw.endpointsOf(Hyperedges{b},"",Hypergraph::TraversalDirection::BOTH));
-    // NOTE: We can be mapped to the same interface!
-    hwNeighbourInterfaceUids = unite(hwNeighbourInterfaceUids, Hyperedges{b});
-    Hyperedges swTargetInterfaceUids(rcm.providersOf(swNeighbourInterfaceUids));
-    if (intersect(swTargetInterfaceUids, hwNeighbourInterfaceUids).size() != swTargetInterfaceUids.size())
+    // RULE II: Check if owner of 'b' is the target of owner of 'a'
+    if (subtract(swTargetUids, hwOwnerUids).size()) // Some entries in swTargetUids are not in hwOwnerUids
     {
-        std::cout << "REACH CHECK FAILED sw interface: " << sw.access(a).label() << " hardware interface: " << hw.access(b).label() << " ENDPOINTS UNREACHABLE\n";
+        std::cout << "REACH CHECK FAILED: sw interface: " << a << " hardware interface: " << b << " OWNER MISMATCH\n";
         return -std::numeric_limits<float>::infinity();
     }
-    // Lets check if the owners of the endpoints of a are mapped to the owners of the endpoints of b
-    Hyperedges swNeighbourOwnerUids(sw.interfacesOf(swNeighbourInterfaceUids,"",Hypergraph::TraversalDirection::INVERSE));
-    Hyperedges hwNeighbourOwnerUids(hw.interfacesOf(hwNeighbourInterfaceUids,"",Hypergraph::TraversalDirection::INVERSE));
-    Hyperedges swNeighbourTargetUids(rcm.providersOf(swNeighbourOwnerUids));
-    // Condition check: hwNeighbourTargetUids must be a true subset of hwNeighbourOwnerUids and not empty. That means that the intersection must be equal to hwNeighbourTargetUids.
-    if (swNeighbourTargetUids.empty() || (intersect(swNeighbourTargetUids, hwNeighbourOwnerUids).size() != swNeighbourTargetUids.size()))
+    // NOTE: We do not have to check for internal interfaces. They have been filtered by the partition function already
+    const Hyperedges& swNeighbourInterfaceUids(sw.endpointsOf(Hyperedges{a},"",Hypergraph::TraversalDirection::BOTH));
+    const Hyperedges& hwNeighbourInterfaceUids(hw.endpointsOf(Hyperedges{b},"",Hypergraph::TraversalDirection::BOTH));
+    const Hyperedges& swTargetInterfaceUids(rcm.providersOf(swNeighbourInterfaceUids));
+    // RULE III: Some of the connections are external or unmapped. Check if every hw interface of connected interfaces can be reached by 'b'
+    if (subtract(swTargetInterfaceUids, hwNeighbourInterfaceUids).size()) // Some x in swTargetInterfaceUids not in hwNeighbourInterfaceUids
     {
-        std::cout << "REACH CHECK FAILED sw interface: " << sw.access(a).label() << " hardware interface: " << hw.access(b).label() << " ENDPOINT OWNER MISMATCH\n";
+        std::cout << "REACH CHECK FAILED: sw interface: " << a << " hardware interface: " << b << " ENDPOINTS UNREACHABLE\n";
         return -std::numeric_limits<float>::infinity();
     }
+    const Hyperedges& swNeighbourOwnerUids(sw.interfacesOf(swNeighbourInterfaceUids,"",Hypergraph::TraversalDirection::INVERSE));
+    const Hyperedges& hwNeighbourOwnerUids(hw.interfacesOf(hwNeighbourInterfaceUids,"",Hypergraph::TraversalDirection::INVERSE));
+    const Hyperedges& swNeighbourTargetUids(rcm.providersOf(swNeighbourOwnerUids));
+    // RULE IV: If all remote interfaces are unmapped we are unable to verify reachability.
+    if (swNeighbourTargetUids.empty())
+    {
+        std::cout << "REACH CHECK FAILED: sw interface: " << a << " hardware interface: " << b << " ENDPOINT OWNERS UNMAPPED\n";
+        return -std::numeric_limits<float>::infinity();
+    }
+    // RULE V: owners of the endpoints of 'a' have to be mapped to the owners of the endpoints of 'b'
+    if (subtract(swNeighbourTargetUids, hwNeighbourOwnerUids).size()) // Some x in swNeighbourTargetUids not in hwNeighbourOwnerUids
+    {
+        std::cout << "REACH CHECK FAILED: sw interface: " << a << " hardware interface: " << b << " ENDPOINT OWNERS MISMATCH\n";
+        return -std::numeric_limits<float>::infinity();
+    }
+    //std::cout << "REACH CHECK SUCCESSFUL sw interface: " << sw.access(a).label() << " hardware interface: " << hw.access(b).label() << " MATCH\n";
     return costs;
 }
 
@@ -106,15 +136,14 @@ float Mapper::matchImplementationAndProcessor (const ResourceCost::Model& rcm, c
     const ::Hardware::Computational::Network& hw(static_cast<const ResourceCost::Model&>(rcm));
     // b) reachability constraints
     // Lets check if all neighbours of a are mapped to neighbours of b or not mapped at all
-    Hyperedges swNeighbourUids(sw.interfacesOf(sw.endpointsOf(sw.interfacesOf(Hyperedges{a}),"", Hypergraph::TraversalDirection::BOTH),"",Hypergraph::TraversalDirection::INVERSE));
-    Hyperedges hwNeighbourUids(hw.interfacesOf(hw.endpointsOf(hw.interfacesOf(Hyperedges{b}),"", Hypergraph::TraversalDirection::BOTH),"",Hypergraph::TraversalDirection::INVERSE));
-    hwNeighbourUids = unite(hwNeighbourUids, Hyperedges{b}); // NOTE: We can map also to the same target!
-    Hyperedges swTargetUids(rcm.providersOf(swNeighbourUids));
+    const Hyperedges& swNeighbourUids(sw.interfacesOf(sw.endpointsOf(sw.interfacesOf(Hyperedges{a}),"", Hypergraph::TraversalDirection::BOTH),"",Hypergraph::TraversalDirection::INVERSE));
+    const Hyperedges& hwNeighbourUids(unite(hw.interfacesOf(hw.endpointsOf(hw.interfacesOf(Hyperedges{b}),"", Hypergraph::TraversalDirection::BOTH),"",Hypergraph::TraversalDirection::INVERSE), Hyperedges{b}));
+    const Hyperedges& swTargetUids(rcm.providersOf(swNeighbourUids));
     // If any of the targets of sw neighbours is not in hw neighbours, we cannot reach that sw component
-    if (intersect(hwNeighbourUids, swTargetUids).size() != swTargetUids.size())
+    if (subtract(swTargetUids, hwNeighbourUids).size()) // Some owner of an endpoint of 'a' is not in the owners of the endpoints of 'b'
     {
         // Reachability constraint failed!
-        std::cout << "REACH CHECK FAILED for consumer: " << sw.access(a).label() << " and provider: " << hw.access(b).label() << "\n";
+        std::cout << "REACH CHECK FAILED: for consumer: " << sw.access(a).label() << " and provider: " << hw.access(b).label() << "\n";
         return -std::numeric_limits<float>::infinity();
     }
     return costs;
@@ -142,7 +171,7 @@ float Mapper::mapAllImplementationsToProcessors()
     importFrom(result);
 
     // Check if every sw implementation could be mapped
-    Hyperedges implUids(implementations(result));
+    const Hyperedges& implUids(implementations(result));
     for (const UniqueId& implUid : implUids)
     {
         if (!providersOf(Hyperedges{implUid}).size())
@@ -154,23 +183,21 @@ float Mapper::mapAllImplementationsToProcessors()
 
     // Calculate global costs
     float globalCosts(0.f);
-    Hyperedges hwUids(processors(result));
+    const Hyperedges& hwUids(processors(result));
     for (const UniqueId& hwUid : hwUids)
     {
-        Hyperedges swUids(consumersOf(Hyperedges{hwUid}));
-        Hyperedges availableResourceUids(resourcesOf(Hyperedges{hwUid}));
-        Hyperedges consumedResourceUids;
-        if (swUids.size())
-            consumedResourceUids = isPointingTo(factsOf(subrelationsOf(Hyperedges{ResourceCost::Model::ConsumesUid}), swUids));
+        const Hyperedges& swUids(consumersOf(Hyperedges{hwUid}));
+        const Hyperedges& availableResourceUids(resourcesOf(Hyperedges{hwUid}));
+        const Hyperedges& consumedResourceUids(swUids.size() > 0 ? isPointingTo(factsOf(subrelationsOf(Hyperedges{ResourceCost::Model::ConsumesUid}), swUids)) : Hyperedges());
         for (const UniqueId& availableResourceUid : availableResourceUids)
         {
             const float available(std::stof(access(availableResourceUid).label()));
-            Hyperedges availableResourceClassUids(instancesOf(Hyperedges{availableResourceUid}, "", FORWARD));
+            const Hyperedges& availableResourceClassUids(instancesOf(Hyperedges{availableResourceUid}, "", FORWARD));
             // Calculate already consumed resources
             float used = 0.f;
             for (const UniqueId& consumedResourceUid : consumedResourceUids)
             {
-                Hyperedges consumedResourceClassUids(instancesOf(Hyperedges{consumedResourceUid}, "", FORWARD));
+                const Hyperedges& consumedResourceClassUids(instancesOf(Hyperedges{consumedResourceUid}, "", FORWARD));
                 // If types mismatch, continue
                 if (intersect(availableResourceClassUids, consumedResourceClassUids).empty())
                     continue;
