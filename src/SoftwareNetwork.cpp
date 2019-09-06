@@ -130,128 +130,27 @@ Hyperedges Network::implementations(const std::string& name, const std::string& 
 
 Hyperedges Network::inputsOf(const Hyperedges& uids, const std::string& name, const TraversalDirection dir) const
 {
-    Hyperedges result;
-    // For empty uids, return empty result
-    if (uids.empty())
-        return result;
-    Hyperedges subRelUids(subrelationsOf(Hyperedges{Network::NeedsId}));
-    Hyperedges factUids;
-    switch (dir)
-    {
-        case INVERSE:
-            factUids = unite(factUids, factsOf(subRelUids, Hyperedges(), uids));
-            result = unite(result, isPointingFrom(factUids, name));
-            break;
-        case BOTH:
-            factUids = unite(factUids, factsOf(subRelUids, Hyperedges(), uids));
-            result = unite(result, isPointingFrom(factUids, name));
-        case FORWARD:
-            factUids = unite(factUids, factsOf(subRelUids, uids, Hyperedges()));
-            result = unite(result, isPointingTo(factUids, name));
-            break;
-    }
-    return result;
+    return relatedTo(uids, Hyperedges{Network::NeedsId}, name, dir);
 }
 
 Hyperedges Network::outputsOf(const Hyperedges& uids, const std::string& name, const TraversalDirection dir) const
 {
-    Hyperedges result;
-    // For empty uids, return empty result
-    if (uids.empty())
-        return result;
-    Hyperedges subRelUids(subrelationsOf(Hyperedges{Network::ProvidesId}));
-    Hyperedges factUids;
-    switch (dir)
-    {
-        case INVERSE:
-            factUids = unite(factUids, factsOf(subRelUids, Hyperedges(), uids));
-            result = unite(result, isPointingFrom(factUids, name));
-            break;
-        case BOTH:
-            factUids = unite(factUids, factsOf(subRelUids, Hyperedges(), uids));
-            result = unite(result, isPointingFrom(factUids, name));
-        case FORWARD:
-            factUids = unite(factUids, factsOf(subRelUids, uids, Hyperedges()));
-            result = unite(result, isPointingTo(factUids, name));
-            break;
-    }
-    return result;
+    return relatedTo(uids, Hyperedges{Network::ProvidesId}, name, dir);
 }
 
 Hyperedges Network::implementationsOf(const Hyperedges& uids, const std::string& name, const TraversalDirection dir) const
 {
-    // Get all X,name <-- IMPLEMENTS --> ALG and return the X (INVERSE) or ALG (FORWARD)
-    Hyperedges result;
-    // For empty uids, return empty result
-    if (uids.empty())
-        return result;
-    Hyperedges subRelUids(subrelationsOf(Hyperedges{Network::ImplementsId}));
-    Hyperedges factUids;
-    switch (dir)
-    {
-        case INVERSE:
-            factUids = unite(factUids, factsOf(subRelUids, Hyperedges(), uids));
-            result = unite(result, isPointingFrom(factUids, name));
-            break;
-        case BOTH:
-            factUids = unite(factUids, factsOf(subRelUids, Hyperedges(), uids));
-            result = unite(result, isPointingFrom(factUids, name));
-        case FORWARD:
-            factUids = unite(factUids, factsOf(subRelUids, uids, Hyperedges()));
-            result = unite(result, isPointingTo(factUids, name));
-            break;
-    }
-    return result;
+    return relatedTo(uids, Hyperedges{Network::ImplementsId}, name, dir);
 }
 
 Hyperedges Network::encodersOf(const Hyperedges& uids, const std::string& name, const TraversalDirection dir) const
 {
-    Hyperedges result;
-    // For empty uids, return empty result
-    if (uids.empty())
-        return result;
-    Hyperedges subRelUids(subrelationsOf(Hyperedges{Network::EncodesId}));
-    Hyperedges factUids;
-    switch (dir)
-    {
-        case INVERSE:
-            factUids = unite(factUids, factsOf(subRelUids, Hyperedges(), uids));
-            result = unite(result, isPointingFrom(factUids, name));
-            break;
-        case BOTH:
-            factUids = unite(factUids, factsOf(subRelUids, Hyperedges(), uids));
-            result = unite(result, isPointingFrom(factUids, name));
-        case FORWARD:
-            factUids = unite(factUids, factsOf(subRelUids, uids, Hyperedges()));
-            result = unite(result, isPointingTo(factUids, name));
-            break;
-    }
-    return result;
+    return relatedTo(uids, Hyperedges{Network::EncodesId}, name, dir);
 }
 
 Hyperedges Network::realizersOf(const Hyperedges& uids, const std::string& name, const TraversalDirection dir) const
 {
-    Hyperedges result;
-    // For empty uids, return empty result
-    if (uids.empty())
-        return result;
-    Hyperedges subRelUids(subrelationsOf(Hyperedges{Network::RealizesId}));
-    Hyperedges factUids;
-    switch (dir)
-    {
-        case INVERSE:
-            factUids = unite(factUids, factsOf(subRelUids, Hyperedges(), uids));
-            result = unite(result, isPointingFrom(factUids, name));
-            break;
-        case BOTH:
-            factUids = unite(factUids, factsOf(subRelUids, Hyperedges(), uids));
-            result = unite(result, isPointingFrom(factUids, name));
-        case FORWARD:
-            factUids = unite(factUids, factsOf(subRelUids, uids, Hyperedges()));
-            result = unite(result, isPointingTo(factUids, name));
-            break;
-    }
-    return result;
+    return relatedTo(uids, Hyperedges{Network::RealizesId}, name, dir);
 }
 
 Hyperedges Network::providesInterface(const Hyperedges& algorithmIds, const Hyperedges& outputIds)
