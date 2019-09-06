@@ -133,35 +133,26 @@ Hyperedges Model::consumes(const Hyperedges& consumerUids, const Hyperedges& res
 
 Hyperedges Model::demandsOf(const Hyperedges& consumerUids, const Hyperedges& resourceClassUids) const
 {
-    if (consumerUids.empty())
-        return Hyperedges();
     const Hyperedges& validResourceInstanceUids(instancesOf(subclassesOf(resourceClassUids)));
-    const Hyperedges& relevantFacts(factsOf(subrelationsOf(Hyperedges{Model::NeedsUid}), consumerUids, validResourceInstanceUids));
-    return isPointingTo(relevantFacts);
+    const Hyperedges& candidates(relatedTo(consumerUids, Hyperedges{Model::NeedsUid}, "", FORWARD));
+    return intersect(candidates, validResourceInstanceUids);
 }
 
 Hyperedges Model::resourcesOf(const Hyperedges& providerUids, const Hyperedges& resourceClassUids) const
 {
-    if (providerUids.empty())
-        return Hyperedges();
     const Hyperedges& validResourceInstanceUids(instancesOf(subclassesOf(resourceClassUids)));
-    return intersect(validResourceInstanceUids, childrenOf(providerUids));
+    const Hyperedges& candidates(relatedTo(providerUids, Hyperedges{Model::ProvidesUid}, "", FORWARD));
+    return intersect(candidates, validResourceInstanceUids);
 }
 
 Hyperedges Model::consumersOf(const Hyperedges& providerUids) const
 {
-    if (providerUids.empty())
-        return Hyperedges();
-    const Hyperedges& relevantFacts(factsOf(subrelationsOf(Hyperedges{Model::MappedToUid}), Hyperedges(), providerUids));
-    return isPointingFrom(relevantFacts);
+    return relatedTo(providerUids, Hyperedges{Model::MappedToUid},"", INVERSE);
 }
 
 Hyperedges Model::providersOf(const Hyperedges& consumerUids) const
 {
-    if (consumerUids.empty())
-        return Hyperedges();
-    const Hyperedges& relevantFacts(factsOf(subrelationsOf(Hyperedges{Model::MappedToUid}), consumerUids, Hyperedges()));
-    return isPointingTo(relevantFacts);
+    return relatedTo(consumerUids, Hyperedges{Model::MappedToUid},"", FORWARD);
 }
 
 float Model::satisfies(const Hyperedges& providerUids, const Hyperedges& consumerUids) const
