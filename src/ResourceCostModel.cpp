@@ -41,7 +41,7 @@ Model::~Model()
 
 Hyperedges Model::defineResource(const UniqueId& uid, const std::string& name, const Hyperedges& superResourceUids)
 {
-    Hyperedges all(subclassesOf(Hyperedges{Model::ResourceUid}));
+    const Hyperedges& all(subclassesOf(Hyperedges{Model::ResourceUid}));
     if(!isA(concept(uid, name), intersect(unite(Hyperedges{Model::ResourceUid}, superResourceUids), all)).empty())
         return Hyperedges{uid};
     return Hyperedges();
@@ -49,7 +49,7 @@ Hyperedges Model::defineResource(const UniqueId& uid, const std::string& name, c
 
 Hyperedges Model::instantiateResource(const Hyperedges& resourceUids, const float amount)
 {
-    Hyperedges validResourceUids(intersect(resourceUids, subclassesOf(Hyperedges{Model::ResourceUid})));
+    const Hyperedges& validResourceUids(intersect(resourceUids, subclassesOf(Hyperedges{Model::ResourceUid})));
     return instantiateFrom(validResourceUids, std::to_string(amount));
 }
 
@@ -61,7 +61,7 @@ Hyperedges Model::isConsumer(const Hyperedges& consumerUids)
 
 Hyperedges Model::consumerClasses(const std::string& name, const Hyperedges& suids) const
 {
-    Hyperedges all(subclassesOf(Hyperedges{Model::ConsumerUid}, name));
+    const Hyperedges& all(subclassesOf(Hyperedges{Model::ConsumerUid}, name));
     return intersect(all, subclassesOf(suids, name));
 }
 
@@ -77,7 +77,7 @@ Hyperedges Model::isProvider(const Hyperedges& providerUids)
 
 Hyperedges Model::providerClasses(const std::string& name, const Hyperedges& suids) const
 {
-    Hyperedges all(subclassesOf(Hyperedges{Model::ProviderUid}, name));
+    const Hyperedges& all(subclassesOf(Hyperedges{Model::ProviderUid}, name));
     return intersect(all, subclassesOf(suids, name));
 }
 
@@ -89,8 +89,8 @@ Hyperedges Model::providers(const std::string& name) const
 Hyperedges Model::needs(const Hyperedges& consumerUids, const Hyperedges& resourceUids)
 {
     Hyperedges result;
-    Hyperedges fromIds(intersect(consumerUids, unite(consumerClasses(), consumers())));
-    Hyperedges toIds(intersect(resourceUids, instancesOf(subclassesOf(Hyperedges{Model::ResourceUid}))));
+    const Hyperedges& fromIds(intersect(consumerUids, unite(consumerClasses(), consumers())));
+    const Hyperedges& toIds(intersect(resourceUids, instancesOf(subclassesOf(Hyperedges{Model::ResourceUid}))));
     for (const UniqueId& fromId : fromIds)
     {
         for (const UniqueId& toId : toIds)
@@ -104,8 +104,8 @@ Hyperedges Model::needs(const Hyperedges& consumerUids, const Hyperedges& resour
 Hyperedges Model::provides(const Hyperedges& providerUids, const Hyperedges& resourceUids)
 {
     Hyperedges result;
-    Hyperedges fromIds(intersect(providerUids, unite(providerClasses(), providers())));
-    Hyperedges toIds(intersect(resourceUids, instancesOf(subclassesOf(Hyperedges{Model::ResourceUid}))));
+    const Hyperedges& fromIds(intersect(providerUids, unite(providerClasses(), providers())));
+    const Hyperedges& toIds(intersect(resourceUids, instancesOf(subclassesOf(Hyperedges{Model::ResourceUid}))));
     for (const UniqueId& fromId : fromIds)
     {
         for (const UniqueId& toId : toIds)
@@ -119,8 +119,8 @@ Hyperedges Model::provides(const Hyperedges& providerUids, const Hyperedges& res
 Hyperedges Model::consumes(const Hyperedges& consumerUids, const Hyperedges& resourceUids)
 {
     Hyperedges result;
-    Hyperedges fromIds(intersect(consumerUids, unite(consumerClasses(), consumers())));
-    Hyperedges toIds(intersect(resourceUids, instancesOf(subclassesOf(Hyperedges{Model::ResourceUid}))));
+    const Hyperedges& fromIds(intersect(consumerUids, unite(consumerClasses(), consumers())));
+    const Hyperedges& toIds(intersect(resourceUids, instancesOf(subclassesOf(Hyperedges{Model::ResourceUid}))));
     for (const UniqueId& fromId : fromIds)
     {
         for (const UniqueId& toId : toIds)
@@ -135,8 +135,8 @@ Hyperedges Model::demandsOf(const Hyperedges& consumerUids, const Hyperedges& re
 {
     if (consumerUids.empty())
         return Hyperedges();
-    Hyperedges validResourceInstanceUids(instancesOf(subclassesOf(resourceClassUids)));
-    Hyperedges relevantFacts(factsOf(subrelationsOf(Hyperedges{Model::NeedsUid}), consumerUids, validResourceInstanceUids));
+    const Hyperedges& validResourceInstanceUids(instancesOf(subclassesOf(resourceClassUids)));
+    const Hyperedges& relevantFacts(factsOf(subrelationsOf(Hyperedges{Model::NeedsUid}), consumerUids, validResourceInstanceUids));
     return isPointingTo(relevantFacts);
 }
 
@@ -144,7 +144,7 @@ Hyperedges Model::resourcesOf(const Hyperedges& providerUids, const Hyperedges& 
 {
     if (providerUids.empty())
         return Hyperedges();
-    Hyperedges validResourceInstanceUids(instancesOf(subclassesOf(resourceClassUids)));
+    const Hyperedges& validResourceInstanceUids(instancesOf(subclassesOf(resourceClassUids)));
     return intersect(validResourceInstanceUids, childrenOf(providerUids));
 }
 
@@ -152,7 +152,7 @@ Hyperedges Model::consumersOf(const Hyperedges& providerUids) const
 {
     if (providerUids.empty())
         return Hyperedges();
-    Hyperedges relevantFacts(factsOf(subrelationsOf(Hyperedges{Model::MappedToUid}), Hyperedges(), providerUids));
+    const Hyperedges& relevantFacts(factsOf(subrelationsOf(Hyperedges{Model::MappedToUid}), Hyperedges(), providerUids));
     return isPointingFrom(relevantFacts);
 }
 
@@ -160,7 +160,7 @@ Hyperedges Model::providersOf(const Hyperedges& consumerUids) const
 {
     if (consumerUids.empty())
         return Hyperedges();
-    Hyperedges relevantFacts(factsOf(subrelationsOf(Hyperedges{Model::MappedToUid}), consumerUids, Hyperedges()));
+    const Hyperedges& relevantFacts(factsOf(subrelationsOf(Hyperedges{Model::MappedToUid}), consumerUids, Hyperedges()));
     return isPointingTo(relevantFacts);
 }
 
@@ -173,8 +173,8 @@ float Model::satisfies(const Hyperedges& providerUids, const Hyperedges& consume
     for (const UniqueId& providerUid : providerUids)
     {
         // Find already mapped consumers and available resources
-        Hyperedges mappedConsumerUids(consumersOf(Hyperedges{providerUid}));
-        Hyperedges availableResourceUids(resourcesOf(Hyperedges{providerUid}));
+        const Hyperedges& mappedConsumerUids(consumersOf(Hyperedges{providerUid}));
+        const Hyperedges& availableResourceUids(resourcesOf(Hyperedges{providerUid}));
         // For every mapped consumer, we gather all consumed resources
         Hyperedges consumedResourceUids;
         if (mappedConsumerUids.size())
@@ -183,19 +183,19 @@ float Model::satisfies(const Hyperedges& providerUids, const Hyperedges& consume
         // Handle only unmapped consumers
         for (const UniqueId& consumerUid : subtract(consumerUids, mappedConsumerUids))
         {
-            Hyperedges neededResourceUids(demandsOf(Hyperedges{consumerUid}));
+            const Hyperedges& neededResourceUids(demandsOf(Hyperedges{consumerUid}));
             // Now we have to identify matching pairs of resources
             // Remember number of matchting pairs of available and needed resources (by class)
             unsigned int matchingResources = 0;
             for (const UniqueId& availableResourceUid : availableResourceUids)
             {
                 const float available(std::stof(access(availableResourceUid).label()));
-                Hyperedges availableResourceClassUids(instancesOf(Hyperedges{availableResourceUid}, "", FORWARD));
+                const Hyperedges& availableResourceClassUids(instancesOf(Hyperedges{availableResourceUid}, "", FORWARD));
                 // Calculate already consumed resources
                 float used = 0.f;
                 for (const UniqueId& consumedResourceUid : consumedResourceUids)
                 {
-                    Hyperedges consumedResourceClassUids(instancesOf(Hyperedges{consumedResourceUid}, "", FORWARD));
+                    const Hyperedges& consumedResourceClassUids(instancesOf(Hyperedges{consumedResourceUid}, "", FORWARD));
                     // If types mismatch, continue
                     if (intersect(availableResourceClassUids, consumedResourceClassUids).empty())
                         continue;
@@ -206,7 +206,7 @@ float Model::satisfies(const Hyperedges& providerUids, const Hyperedges& consume
                 for (const UniqueId& neededResourceUid : neededResourceUids)
                 {
                     const float needed(std::stof(access(neededResourceUid).label()));
-                    Hyperedges neededResourceClassUids(instancesOf(Hyperedges{neededResourceUid}, "", FORWARD));
+                    const Hyperedges& neededResourceClassUids(instancesOf(Hyperedges{neededResourceUid}, "", FORWARD));
                     // If types mismatch, continue
                     if (intersect(availableResourceClassUids, neededResourceClassUids).empty())
                         continue;
@@ -240,12 +240,12 @@ float Model::satisfies(const Hyperedges& providerUids, const Hyperedges& consume
 
 Hyperedges Model::partitionFuncLeft (const ResourceCost::Model& rcm)
 {
-    Hyperedges consumerUids(rcm.consumers()); // get all consumer instances
+    const Hyperedges& consumerUids(rcm.consumers()); // get all consumer instances
     return consumerUids;
 }
 Hyperedges Model::partitionFuncRight (const ResourceCost::Model& rcm)
 {
-    Hyperedges providerUids(rcm.providers()); // get all provider instances
+    const Hyperedges& providerUids(rcm.providers()); // get all provider instances
     return providerUids;
 }
 
