@@ -77,53 +77,53 @@ Hyperedges Network::createImplementationInterface(const UniqueId& uid, const std
 
 Hyperedges Network::algorithmClasses(const std::string& name, const Hyperedges& suids) const
 {
-    Hyperedges all(componentClasses(name, Hyperedges{Network::AlgorithmId}));
+    const Hyperedges& all(componentClasses(name, Hyperedges{Network::AlgorithmId}));
     return suids.empty() ? all : intersect(all, subclassesOf(suids, name));
 }
 
 Hyperedges Network::interfaceClasses(const std::string& name, const Hyperedges& suids) const
 {
-    Hyperedges all(Component::Network::interfaceClasses(name, Hyperedges{Network::InterfaceId}));
+    const Hyperedges& all(Component::Network::interfaceClasses(name, Hyperedges{Network::InterfaceId}));
     return suids.empty() ? all : intersect(all, subclassesOf(suids, name));
 }
 
 Hyperedges Network::implementationClasses(const std::string& name, const Hyperedges& suids) const
 {
-    Hyperedges all(algorithmClasses(name, Hyperedges{Network::ImplementationId}));
+    const Hyperedges& all(algorithmClasses(name, Hyperedges{Network::ImplementationId}));
     return suids.empty() ? all : intersect(all, subclassesOf(suids, name));
 }
 
 Hyperedges Network::implementationInterfaceClasses(const std::string& name, const Hyperedges& suids) const
 {
-    Hyperedges all(Component::Network::interfaceClasses(name, Hyperedges{Network::ImplementationInterfaceId}));
+    const Hyperedges& all(Component::Network::interfaceClasses(name, Hyperedges{Network::ImplementationInterfaceId}));
     return suids.empty() ? all : intersect(all, subclassesOf(suids, name));
 }
 
 Hyperedges Network::algorithms(const std::string& name, const std::string& className) const
 {
     // Get all super classes
-    Hyperedges classIds = algorithmClasses(className);
+    const Hyperedges& classIds(algorithmClasses(className));
     // ... and then the instances of them
     return instancesOf(classIds, name);
 }
 Hyperedges Network::interfaces(const std::string& name, const std::string& className) const
 {
     // Get all super classes
-    Hyperedges classIds = interfaceClasses(className);
+    const Hyperedges& classIds(interfaceClasses(className));
     // ... and then the instances of them
     return instancesOf(classIds, name);
 }
 Hyperedges Network::implementationInterfaces(const std::string& name, const std::string& className) const
 {
     // Get all super classes
-    Hyperedges classIds = implementationInterfaceClasses(className);
+    const Hyperedges& classIds(implementationInterfaceClasses(className));
     // ... and then the instances of them
     return instancesOf(classIds, name);
 }
 Hyperedges Network::implementations(const std::string& name, const std::string& className) const
 {
     // Get all super classes
-    Hyperedges classIds = implementationClasses(className);
+    const Hyperedges& classIds(implementationClasses(className));
     // ... and then the instances of them
     return instancesOf(classIds, name);
 }
@@ -157,8 +157,8 @@ Hyperedges Network::providesInterface(const Hyperedges& algorithmIds, const Hype
 {
     Hyperedges result;
     // An algorithm class or instance can only have an output instance
-    Hyperedges fromIds = unite(intersect(this->algorithms(), algorithmIds), intersect(algorithmClasses(), algorithmIds));
-    Hyperedges toIds = intersect(this->interfaces(), outputIds);
+    const Hyperedges& fromIds(unite(intersect(this->algorithms(), algorithmIds), intersect(algorithmClasses(), algorithmIds)));
+    const Hyperedges& toIds(intersect(this->interfaces(), outputIds));
     for (const UniqueId& fromId : fromIds)
     {
         for (const UniqueId& toId : toIds)
@@ -173,8 +173,8 @@ Hyperedges Network::needsInterface(const Hyperedges& algorithmIds, const Hypered
 {
     Hyperedges result;
     // An algorithm class or instance can only have an output instance
-    Hyperedges fromIds = unite(intersect(this->algorithms(), algorithmIds), intersect(algorithmClasses(), algorithmIds));
-    Hyperedges toIds = intersect(this->interfaces(), inputIds);
+    const Hyperedges& fromIds(unite(intersect(this->algorithms(), algorithmIds), intersect(algorithmClasses(), algorithmIds)));
+    const Hyperedges& toIds(intersect(this->interfaces(), inputIds));
     for (const UniqueId& fromId : fromIds)
     {
         for (const UniqueId& toId : toIds)
@@ -189,8 +189,8 @@ Hyperedges Network::dependsOn(const Hyperedges& inputIds, const Hyperedges& outp
 {
     Hyperedges result;
     // For now only input instances can depend on output instances
-    Hyperedges fromIds = intersect(this->interfaces(), inputIds);
-    Hyperedges toIds = intersect(this->interfaces(), outputIds);
+    const Hyperedges& fromIds(intersect(this->interfaces(), inputIds));
+    const Hyperedges& toIds(intersect(this->interfaces(), outputIds));
     for (const UniqueId& fromId : fromIds)
     {
         for (const UniqueId& toId : toIds)
@@ -204,8 +204,8 @@ Hyperedges Network::dependsOn(const Hyperedges& inputIds, const Hyperedges& outp
 Hyperedges Network::implements(const Hyperedges& implementationIds, const Hyperedges& algorithmIds)
 {
     Hyperedges result;
-    Hyperedges fromIds = intersect(implementationClasses(), implementationIds);
-    Hyperedges toIds = intersect(algorithmClasses(), algorithmIds);
+    const Hyperedges& fromIds(intersect(implementationClasses(), implementationIds));
+    const Hyperedges& toIds(intersect(algorithmClasses(), algorithmIds));
     for (const UniqueId& fromId : fromIds)
     {
         for (const UniqueId& toId : toIds)
@@ -219,8 +219,8 @@ Hyperedges Network::implements(const Hyperedges& implementationIds, const Hypere
 Hyperedges Network::encodes(const Hyperedges& concreteInterfaceIds, const Hyperedges& interfaceIds)
 {
     Hyperedges result;
-    Hyperedges fromIds = intersect(interfaceClasses(), concreteInterfaceIds);
-    Hyperedges toIds = intersect(interfaceClasses(), interfaceIds);
+    const Hyperedges& fromIds(intersect(interfaceClasses(), concreteInterfaceIds));
+    const Hyperedges& toIds(intersect(interfaceClasses(), interfaceIds));
     for (const UniqueId& fromId : fromIds)
     {
         for (const UniqueId& toId : toIds)
@@ -234,8 +234,8 @@ Hyperedges Network::encodes(const Hyperedges& concreteInterfaceIds, const Hypere
 Hyperedges Network::realizes(const Hyperedges& implementationIds, const Hyperedges& algorithmIds)
 {
     Hyperedges result;
-    Hyperedges fromIds = intersect(implementations(), implementationIds);
-    Hyperedges toIds = intersect(algorithms(), algorithmIds);
+    const Hyperedges& fromIds(intersect(implementations(), implementationIds));
+    const Hyperedges& toIds(intersect(algorithms(), algorithmIds));
     for (const UniqueId& fromId : fromIds)
     {
         for (const UniqueId& toId : toIds)
@@ -252,12 +252,12 @@ std::vector< Software::Network > Software::Network::generateAllImplementationNet
     results.push_back(*this);
 
     // Cycle through all algorithm instances
-    Hyperedges algUids(algorithms());
+    const Hyperedges& algUids(algorithms());
     for (const UniqueId& algUid : algUids)
     {
         // Find all implementation classes
-        Hyperedges algClassUids(instancesOf(Hyperedges{algUid},"", Hypergraph::TraversalDirection::FORWARD));
-        Hyperedges implClassUids(implementationsOf(algClassUids));
+        const Hyperedges& algClassUids(instancesOf(Hyperedges{algUid},"", Hypergraph::TraversalDirection::FORWARD));
+        const Hyperedges& implClassUids(implementationsOf(algClassUids));
 
         // For each possible implementation (except of the first one) we have a new possibility
         std::vector< Software::Network > newResults;
@@ -280,15 +280,15 @@ std::vector< Software::Network > Software::Network::generateAllImplementationNet
     for (const UniqueId& algUid : algUids)
     {
         // Find interfaces
-        Hyperedges algInterfaceUids(interfacesOf(Hyperedges{algUid}));
+        const Hyperedges& algInterfaceUids(interfacesOf(Hyperedges{algUid}));
         for (const UniqueId& algInterfaceUid : algInterfaceUids)
         {
             // Find other interfaces
-            Hyperedges endpointUids(endpointsOf(Hyperedges{algInterfaceUid}));
+            const Hyperedges& endpointUids(endpointsOf(Hyperedges{algInterfaceUid}));
             for (const UniqueId& otherAlgInterfaceUid : endpointUids)
             {
                 // Find other algorithms
-                Hyperedges otherAlgUids(intersect(algUids, interfacesOf(Hyperedges{otherAlgInterfaceUid}, "", Hypergraph::TraversalDirection::INVERSE)));
+                const Hyperedges& otherAlgUids(intersect(algUids, interfacesOf(Hyperedges{otherAlgInterfaceUid}, "", Hypergraph::TraversalDirection::INVERSE)));
                 for (const UniqueId& otherAlgUid : otherAlgUids)
                 {
                     // We now have algUid -> algInterfaceUid -> otherAlgInterfaceUid -> otherAlgUid
@@ -297,11 +297,11 @@ std::vector< Software::Network > Software::Network::generateAllImplementationNet
                     {
                         // NOTE: For each result, we have different instances (at most one though)
                         // To find them, we need to get all facts of Network::RealizedById, which also point from algUid or otherAlgUid
-                        Hyperedges implUids(current.realizersOf(Hyperedges{algUid}));
-                        Hyperedges otherImplUids(current.realizersOf(Hyperedges{otherAlgUid}));
+                        const Hyperedges& implUids(current.realizersOf(Hyperedges{algUid}));
+                        const Hyperedges& otherImplUids(current.realizersOf(Hyperedges{otherAlgUid}));
                         // Find the correct interfaces ... by ownership & name
-                        Hyperedges implInterfaceUids(current.interfacesOf(implUids, access(algInterfaceUid).label()));
-                        Hyperedges otherImplInterfaceUids(current.interfacesOf(otherImplUids, access(otherAlgInterfaceUid).label()));
+                        const Hyperedges& implInterfaceUids(current.interfacesOf(implUids, access(algInterfaceUid).label()));
+                        const Hyperedges& otherImplInterfaceUids(current.interfacesOf(otherImplUids, access(otherAlgInterfaceUid).label()));
                         // Wire
                         // NOTE: implInterfaceUids are inputs, otherImplInterfaceUids are outputs
                         current.dependsOn(implInterfaceUids, otherImplInterfaceUids);
