@@ -175,28 +175,7 @@ Hyperedges Network::hasValue(const Hyperedges& interfaceIds, const Hyperedges& v
 
 Hyperedges Network::valuesOf(const Hyperedges& uids, const std::string& value, const TraversalDirection dir) const
 {
-    Hyperedges result;
-    // For empty uids, return empty result
-    if (uids.empty())
-        return result;
-
-    Hyperedges subRelUids(subrelationsOf(Hyperedges{Network::HasAValueId}));
-    Hyperedges factUids;
-    switch (dir)
-    {
-        case INVERSE:
-            factUids = unite(factUids, factsOf(subRelUids, Hyperedges(), uids));
-            result = unite(result, isPointingFrom(factUids, value));
-            break;
-        case BOTH:
-            factUids = unite(factUids, factsOf(subRelUids, Hyperedges(), uids));
-            result = unite(result, isPointingFrom(factUids, value));
-        case FORWARD:
-            factUids = unite(factUids, factsOf(subRelUids, uids, Hyperedges()));
-            result = unite(result, isPointingTo(factUids, value));
-            break;
-    }
-    return result;
+    return CommonConceptGraph::relatedTo(uids, Hyperedges{Network::HasAValueId}, value, dir);
 }
 
 Hyperedges Network::instantiateValueFor(const Hyperedges& interfaceUids, const Hyperedges& valueClassUids, const std::string& value)
@@ -242,24 +221,7 @@ Hyperedges Network::instantiateAliasInterfaceFor(const Hyperedges& parentUids, c
 
 Hyperedges Network::originalInterfacesOf(const Hyperedges& uids, const std::string& name, const TraversalDirection dir) const
 {
-    Hyperedges result;
-    Hyperedges subRelUids(subrelationsOf(Hyperedges{Network::AliasOfId}));
-    Hyperedges factUids;
-    switch (dir)
-    {
-        case INVERSE:
-            factUids = unite(factUids, factsOf(subRelUids, Hyperedges(), uids));
-            result = unite(result, isPointingFrom(factUids, name));
-            break;
-        case BOTH:
-            factUids = unite(factUids, factsOf(subRelUids, Hyperedges(), uids));
-            result = unite(result, isPointingFrom(factUids, name));
-        case FORWARD:
-            factUids = unite(factUids, factsOf(subRelUids, uids, Hyperedges()));
-            result = unite(result, isPointingTo(factUids, name));
-            break;
-    }
-    return result;
+    return CommonConceptGraph::relatedTo(uids, Hyperedges{Network::AliasOfId}, name, dir);
 }
 
 
@@ -295,27 +257,7 @@ Hyperedges Network::connectInterface(const Hyperedges& fromInterfaceIds, const H
 
 Hyperedges Network::interfacesOf(const Hyperedges& uids, const std::string& name, const TraversalDirection dir) const
 {
-    Hyperedges result;
-    // For empty uids, return empty result
-    if (uids.empty())
-        return result;
-    Hyperedges subRelUids(subrelationsOf(Hyperedges{Network::HasAInterfaceId}));
-    Hyperedges factUids;
-    switch (dir)
-    {
-        case INVERSE:
-            factUids = unite(factUids, factsOf(subRelUids, Hyperedges(), uids));
-            result = unite(result, isPointingFrom(factUids, name));
-            break;
-        case BOTH:
-            factUids = unite(factUids, factsOf(subRelUids, Hyperedges(), uids));
-            result = unite(result, isPointingFrom(factUids, name));
-        case FORWARD:
-            factUids = unite(factUids, factsOf(subRelUids, uids, Hyperedges()));
-            result = unite(result, isPointingTo(factUids, name));
-            break;
-    }
-    return result;
+    return CommonConceptGraph::relatedTo(uids, Hyperedges{Network::HasAInterfaceId}, name, dir);
 }
 
 Hyperedges Network::partOfComponent(const Hyperedges& componentIds, const Hyperedges& compositeComponentIds)
@@ -350,52 +292,12 @@ Hyperedges Network::hasSubInterface(const Hyperedges& interfaceIds, const Hypere
 
 Hyperedges Network::subinterfacesOf(const Hyperedges& uids, const std::string& name, const TraversalDirection dir) const
 {
-    Hyperedges result;
-    // For empty uids, return empty result
-    if (uids.empty())
-        return result;
-    Hyperedges subRelUids(subrelationsOf(Hyperedges{Network::HasASubInterfaceId}));
-    Hyperedges factUids;
-    switch (dir)
-    {
-        case INVERSE:
-            factUids = unite(factUids, factsOf(subRelUids, Hyperedges(), uids));
-            result = unite(result, isPointingFrom(factUids, name));
-            break;
-        case BOTH:
-            factUids = unite(factUids, factsOf(subRelUids, Hyperedges(), uids));
-            result = unite(result, isPointingFrom(factUids, name));
-        case FORWARD:
-            factUids = unite(factUids, factsOf(subRelUids, uids, Hyperedges()));
-            result = unite(result, isPointingTo(factUids, name));
-            break;
-    }
-    return result;
+    return CommonConceptGraph::relatedTo(uids, Hyperedges{Network::HasASubInterfaceId}, name, dir);
 }
 
 Hyperedges Network::subcomponentsOf(const Hyperedges& uids, const std::string& name, const TraversalDirection dir) const
 {
-    Hyperedges result;
-    // For empty uids, return empty result
-    if (uids.empty())
-        return result;
-    Hyperedges subRelUids(subrelationsOf(Hyperedges{Network::PartOfComponentId}));
-    Hyperedges factUids;
-    switch (dir)
-    {
-        case INVERSE:
-            factUids = unite(factUids, factsOf(subRelUids, Hyperedges(), uids));
-            result = unite(result, isPointingFrom(factUids, name));
-            break;
-        case BOTH:
-            factUids = unite(factUids, factsOf(subRelUids, Hyperedges(), uids));
-            result = unite(result, isPointingFrom(factUids, name));
-        case FORWARD:
-            factUids = unite(factUids, factsOf(subRelUids, uids, Hyperedges()));
-            result = unite(result, isPointingTo(factUids, name));
-            break;
-    }
-    return result;
+    return CommonConceptGraph::relatedTo(uids, Hyperedges{Network::PartOfComponentId}, name, dir);
 }
 
 
