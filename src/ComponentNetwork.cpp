@@ -128,7 +128,7 @@ Hyperedges Network::instantiateInterfaceFor(const Hyperedges& componentIds, cons
     Hyperedges result;
     for (const UniqueId& componentId : componentIds)
     {
-        Hyperedges newIfs(instantiateFrom(interfaceClassIds, name));
+        const Hyperedges& newIfs(instantiateFrom(interfaceClassIds, name));
         hasInterface(Hyperedges{componentId}, newIfs);
         result = unite(result, newIfs);
     }
@@ -138,7 +138,7 @@ Hyperedges Network::instantiateInterfaceFor(const Hyperedges& componentIds, cons
 Hyperedges Network::components(const std::string& name, const std::string& className) const
 {
     // Get all super classes
-    Hyperedges classIds = componentClasses(className);
+    const Hyperedges classIds(componentClasses(className));
     // ... and then the instances of them
     return instancesOf(classIds, name);
 }
@@ -146,7 +146,7 @@ Hyperedges Network::components(const std::string& name, const std::string& class
 Hyperedges Network::interfaces(const std::string& name, const std::string& className) const
 {
     // Get all super classes
-    Hyperedges classIds = interfaceClasses(className);
+    const Hyperedges& classIds(interfaceClasses(className));
     // ... and then the instances of them
     return instancesOf(classIds, name);
 }
@@ -154,7 +154,7 @@ Hyperedges Network::interfaces(const std::string& name, const std::string& class
 Hyperedges Network::values(const std::string& name, const std::string& className) const
 {
     // Get all super classes
-    Hyperedges classIds = valueClasses(className);
+    const Hyperedges& classIds(valueClasses(className));
     // ... and then the instances of them
     return instancesOf(classIds, name);
 }
@@ -162,10 +162,11 @@ Hyperedges Network::values(const std::string& name, const std::string& className
 Hyperedges Network::hasValue(const Hyperedges& interfaceIds, const Hyperedges& valueIds)
 {
     Hyperedges result;
-    Hyperedges fromIds(intersect(interfaceIds, interfaces()));
+    const Hyperedges& fromIds(intersect(interfaceIds, interfaces()));
+    const Hyperedges& toIds(intersect(valueIds, values()));
     for (const UniqueId& fromId : fromIds)
     {
-        for (const UniqueId& toId : valueIds)
+        for (const UniqueId& toId : toIds)
         {
             result = unite(result, CommonConceptGraph::factFrom(Hyperedges{fromId}, Hyperedges{toId}, Network::HasAValueId));
         }
@@ -183,7 +184,7 @@ Hyperedges Network::instantiateValueFor(const Hyperedges& interfaceUids, const H
     Hyperedges result;
     for (const UniqueId& interfaceUid : interfaceUids)
     {
-        Hyperedges newValueUids(instantiateFrom(valueClassUids, value));
+        const Hyperedges& newValueUids(instantiateFrom(valueClassUids, value));
         hasValue(Hyperedges{interfaceUid}, newValueUids);
         result = unite(result, newValueUids);
     }
@@ -193,9 +194,9 @@ Hyperedges Network::instantiateValueFor(const Hyperedges& interfaceUids, const H
 Hyperedges Network::aliasOf(const Hyperedges& aliasInterfaceUids, const Hyperedges& originalInterfaceUids)
 {
     Hyperedges result;
-    Hyperedges valid(interfaces());
-    Hyperedges fromIds(intersect(aliasInterfaceUids, valid));
-    Hyperedges toIds(intersect(originalInterfaceUids, valid));
+    const Hyperedges& valid(interfaces());
+    const Hyperedges& fromIds(intersect(aliasInterfaceUids, valid));
+    const Hyperedges& toIds(intersect(originalInterfaceUids, valid));
     for (const UniqueId& fromId : fromIds)
     {
         for (const UniqueId& toId : toIds)
@@ -211,7 +212,7 @@ Hyperedges Network::instantiateAliasInterfaceFor(const Hyperedges& parentUids, c
     Hyperedges result;
     for (const UniqueId& parentUid : parentUids)
     {
-        Hyperedges newInterfaceUids(instantiateAnother(interfaceUids, label));
+        const Hyperedges& newInterfaceUids(instantiateAnother(interfaceUids, label));
         hasInterface(Hyperedges{parentUid}, newInterfaceUids);
         aliasOf(newInterfaceUids, interfaceUids);
         result = unite(result, newInterfaceUids);
@@ -228,8 +229,8 @@ Hyperedges Network::originalInterfacesOf(const Hyperedges& uids, const std::stri
 Hyperedges Network::hasInterface(const Hyperedges& componentIds, const Hyperedges& interfaceIds)
 {
     Hyperedges result;
-    Hyperedges fromIds(intersect(componentIds, unite(componentClasses(), components())));
-    Hyperedges toIds(intersect(interfaceIds, interfaces()));
+    const Hyperedges& fromIds(intersect(componentIds, unite(componentClasses(), components())));
+    const Hyperedges& toIds(intersect(interfaceIds, interfaces()));
     for (const UniqueId& fromId : fromIds)
     {
         for (const UniqueId& toId : toIds)
@@ -242,9 +243,9 @@ Hyperedges Network::hasInterface(const Hyperedges& componentIds, const Hyperedge
 Hyperedges Network::connectInterface(const Hyperedges& fromInterfaceIds, const Hyperedges& toInterfaceIds)
 {
     Hyperedges result;
-    Hyperedges valid(interfaces());
-    Hyperedges fromIds(intersect(fromInterfaceIds, valid));
-    Hyperedges toIds(intersect(toInterfaceIds, valid));
+    const Hyperedges& valid(interfaces());
+    const Hyperedges& fromIds(intersect(fromInterfaceIds, valid));
+    const Hyperedges& toIds(intersect(toInterfaceIds, valid));
     for (const UniqueId& fromId : fromIds)
     {
         for (const UniqueId& toId : toIds)
@@ -263,8 +264,8 @@ Hyperedges Network::interfacesOf(const Hyperedges& uids, const std::string& name
 Hyperedges Network::partOfComponent(const Hyperedges& componentIds, const Hyperedges& compositeComponentIds)
 {
     Hyperedges result;
-    Hyperedges fromIds(intersect(componentIds, components()));
-    Hyperedges toIds(intersect(compositeComponentIds, unite(components(), componentClasses())));
+    const Hyperedges& fromIds(intersect(componentIds, components()));
+    const Hyperedges& toIds(intersect(compositeComponentIds, unite(components(), componentClasses())));
     for (const UniqueId& fromId : fromIds)
     {
         for (const UniqueId& toId : toIds)
@@ -278,8 +279,8 @@ Hyperedges Network::partOfComponent(const Hyperedges& componentIds, const Hypere
 Hyperedges Network::hasSubInterface(const Hyperedges& interfaceIds, const Hyperedges& subInterfaceIds)
 {
     Hyperedges result;
-    Hyperedges fromIds(intersect(interfaceIds, unite(interfaces(), interfaceClasses())));
-    Hyperedges toIds(intersect(subInterfaceIds, interfaces()));
+    const Hyperedges& fromIds(intersect(interfaceIds, unite(interfaces(), interfaceClasses())));
+    const Hyperedges& toIds(intersect(subInterfaceIds, interfaces()));
     for (const UniqueId& fromId : fromIds)
     {
         for (const UniqueId& toId : toIds)
