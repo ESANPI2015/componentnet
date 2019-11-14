@@ -17,6 +17,12 @@ namespace Software {
     * produce a 'header-only' code which will be stored in the label of the implementation which respects the previously defined type system.
 
     This generator class per default generates pure, header-only C++ code.
+
+    TODO:
+    * Review the hook system ... do we really want that? If an interface class does not exist, shall we just ignore it? Or just refer to it and let the compilation fail? Or skip the complete process?
+      Or shall we ALWAYS generate code (but then we have to generate UIDs as well!)?
+    * If we keep the hook, provide a DEFAULT hook
+    * Review the generator system in total ... It is not better to use a template-based system? In that case, we could emit a dictionary std::map< std::string, std::string> of (token, replacement) stuff?
 */
 
 class GeneratorHook {
