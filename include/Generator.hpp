@@ -47,10 +47,10 @@ class Generator : public Network {
         Hyperedges concreteImplementationClasses() const;
 
         /* This function actually generates language specific implementation code stored in the label. It needs some decision function to determine language specific type of the interface */
-        virtual Hyperedges generateConcreteInterfaceClassFor(const UniqueId& abstractInterfaceClassUid, const UniqueId& concreteInterfaceClassUid, const GeneratorHook& hook = GeneratorHook());
+        virtual Hyperedges generateConcreteInterfaceClassFor(const UniqueId& abstractInterfaceClassUid, const GeneratorHook& hook = GeneratorHook());
 
         /* This function actually generates language specific implementation code stored in the label */
-        virtual Hyperedges generateImplementationClassFor(const UniqueId& algorithmClassUid, const UniqueId& concreteImplementationClassUid, const GeneratorHook& hook = GeneratorHook());
+        virtual Hyperedges generateImplementationClassFor(const UniqueId& algorithmClassUid, const GeneratorHook& hook = GeneratorHook());
 
     protected:
         UniqueId ifClassUid;

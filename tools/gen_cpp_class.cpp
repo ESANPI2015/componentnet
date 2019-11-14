@@ -124,19 +124,8 @@ int main (int argc, char **argv)
     // For each of these algorithms
     for (const UniqueId& algorithmUid : algorithmUids)
     {
-        const UniqueId implUid("Software::Generator::C++::Implementation::"+gen.access(algorithmUid).label());
-        if (gen.exists(implUid) && !overwrite)
-        {
-            std::cout << "Implementation for " << gen.access(algorithmUid).label() << " with UID " << implUid << " already exists!\n";
-            continue;
-        }
-        if (gen.exists(implUid) && overwrite)
-        {
-            std::cout << "Overwrite mechanism not implemented yet :(\n";
-            continue;
-        }
         std::cout << "Generating code for " << gen.access(algorithmUid).label() << "\n";
-        gen.generateImplementationClassFor(algorithmUid, implUid);
+        gen.generateImplementationClassFor(algorithmUid);
     }
 
     // After generation phase, write code to file if desired

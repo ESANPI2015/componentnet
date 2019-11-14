@@ -23,8 +23,8 @@ int main (void)
     gen.instantiateValueFor(gen.interfacesOf(Hyperedges{"SimpleAlgorithm"}), Hyperedges{"SimpleValue"}, "2.f");
 
     Hyperedges generatedStuff;
-    generatedStuff = unite(generatedStuff, gen.generateConcreteInterfaceClassFor("ARealNumber", "ConcreteRealNumber"));
-    generatedStuff = unite(generatedStuff, gen.generateImplementationClassFor("SimpleAlgorithm","SimpleImplementation"));
+    generatedStuff = unite(generatedStuff, gen.generateConcreteInterfaceClassFor("ARealNumber"));
+    generatedStuff = unite(generatedStuff, gen.generateImplementationClassFor("SimpleAlgorithm"));
 
     std::cout << "Generated code:\n";
     for (const UniqueId& uid : generatedStuff)
@@ -43,7 +43,7 @@ int main (void)
     gen.aliasOf(gen.inputsOf(Hyperedges{"SimpleNestedAlgorithm"}, "a"), gen.inputsOf(innerPart, "x"));
     gen.aliasOf(gen.outputsOf(Hyperedges{"SimpleNestedAlgorithm"}, "b"), gen.outputsOf(innerPart, "y"));
 
-    generatedStuff = unite(generatedStuff, gen.generateImplementationClassFor("SimpleNestedAlgorithm", "SimpleNestedImplementation"));
+    generatedStuff = unite(generatedStuff, gen.generateImplementationClassFor("SimpleNestedAlgorithm"));
     std::cout << "Generated code:\n";
     for (const UniqueId& uid : generatedStuff)
         std::cout << gen.access(uid).label();
@@ -63,7 +63,7 @@ int main (void)
     gen.aliasOf(gen.inputsOf(Hyperedges{"NestedAlgorithm"}, "u"), gen.inputsOf(innerPart2, "x"));
     gen.aliasOf(gen.outputsOf(Hyperedges{"NestedAlgorithm"}, "v"), gen.outputsOf(innerPart3, "b"));
 
-    generatedStuff = unite(generatedStuff, gen.generateImplementationClassFor("NestedAlgorithm", "NestedImplementation"));
+    generatedStuff = unite(generatedStuff, gen.generateImplementationClassFor("NestedAlgorithm"));
     std::cout << "Generated code:\n";
     for (const UniqueId& uid : generatedStuff)
         std::cout << gen.access(uid).label();
