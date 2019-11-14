@@ -161,47 +161,43 @@ float Model::satisfies(const Hyperedges& providerUids, const Hyperedges& consume
     // To check satisfiability
     // we have to check for every consumer,provider pair, that
     // each needed resource N of type X fullfills N <= M of any provided resource M of type X minus already consumed amounts of that resource
-    for (const UniqueId& providerUid : providerUids)
+    for (const UniqueId& consumerUid : consumerUids)
     {
-        // Find already mapped consumers and available resources
-        const Hyperedges& mappedConsumerUids(consumersOf(Hyperedges{providerUid}));
-        const Hyperedges& availableResourceUids(resourcesOf(Hyperedges{providerUid}));
-        // For every mapped consumer, we gather all consumed resources
-        Hyperedges consumedResourceUids;
-        if (mappedConsumerUids.size())
-            consumedResourceUids = isPointingTo(factsOf(subrelationsOf(Hyperedges{Model::ConsumesUid}), mappedConsumerUids));
-
-        // Handle only unmapped consumers
-        for (const UniqueId& consumerUid : subtract(consumerUids, mappedConsumerUids))
+        // Collect demands of consumer
+        const Hyperedges& neededResourceUids(demandsOf(Hyperedges{consumerUid}));
+        for (const UniqueId& providerUid : providerUids)
         {
-            const Hyperedges& neededResourceUids(demandsOf(Hyperedges{consumerUid}));
-            // Now we have to identify matching pairs of resources
-            // Remember number of matchting pairs of available and needed resources (by class)
-            unsigned int matchingResources = 0;
-            for (const UniqueId& availableResourceUid : availableResourceUids)
+            // Collect available resources of provider
+            const Hyperedges& availableResourceUids(resourcesOf(Hyperedges{providerUid}));
+            // ... by also taking into account potential consumers of that resource
+            const Hyperedges& mappedConsumerUids(consumersOf(Hyperedges{providerUid}));
+            const Hyperedges& consumedResourceUids(mappedConsumerUids.size() ? isPointingTo(factsOf(subrelationsOf(Hyperedges{Model::ConsumesUid}), mappedConsumerUids)) : Hyperedges());
+            for (const UniqueId& neededResourceUid : neededResourceUids)
             {
-                const float available(std::stof(access(availableResourceUid).label()));
-                const Hyperedges& availableResourceClassUids(instancesOf(Hyperedges{availableResourceUid}, "", FORWARD));
-                // Calculate already consumed resources
-                float used = 0.f;
-                for (const UniqueId& consumedResourceUid : consumedResourceUids)
+                // Get amount of needed resources (demand)
+                const float needed(std::stof(access(neededResourceUid).label()));
+                const Hyperedges& neededResourceClassUids(instancesOf(Hyperedges{neededResourceUid}, "", FORWARD));
+                bool matched = false;
+                for (const UniqueId& availableResourceUid : availableResourceUids)
                 {
-                    const Hyperedges& consumedResourceClassUids(instancesOf(Hyperedges{consumedResourceUid}, "", FORWARD));
-                    // If types mismatch, continue
-                    if (intersect(availableResourceClassUids, consumedResourceClassUids).empty())
-                        continue;
-                    // Update usage
-                    used += std::stof(access(consumedResourceUid).label());
-                }
-                // Check constraints
-                for (const UniqueId& neededResourceUid : neededResourceUids)
-                {
-                    const float needed(std::stof(access(neededResourceUid).label()));
-                    const Hyperedges& neededResourceClassUids(instancesOf(Hyperedges{neededResourceUid}, "", FORWARD));
+                    // Get amount of available resources
+                    const float available(std::stof(access(availableResourceUid).label()));
+                    const Hyperedges& availableResourceClassUids(instancesOf(Hyperedges{availableResourceUid}, "", FORWARD));
                     // If types mismatch, continue
                     if (intersect(availableResourceClassUids, neededResourceClassUids).empty())
                         continue;
-                    matchingResources++;
+                    // When we are here, we have found a matching pair of resources
+                    // Calculate already consumed resources
+                    float used = 0.f;
+                    for (const UniqueId& consumedResourceUid : consumedResourceUids)
+                    {
+                        const Hyperedges& consumedResourceClassUids(instancesOf(Hyperedges{consumedResourceUid}, "", FORWARD));
+                        // If types mismatch, continue
+                        if (intersect(availableResourceClassUids, consumedResourceClassUids).empty())
+                            continue;
+                        // Update usage
+                        used += std::stof(access(consumedResourceUid).label());
+                    }
                     // Calculate a quantity which reflects the amount of resources consumed
                     // A very small value stands for a high amount of resources needed
                     // A high value (<= 1) stands for a low amount of resources needed
@@ -216,13 +212,17 @@ float Model::satisfies(const Hyperedges& providerUids, const Hyperedges& consume
                         std::cout << "SAT-CHECK FAILED: Available: " << available << " Used: " << used << " Needed: " << needed << "\n";
                         return cost;
                     }
+                    // When we are here, the demands have been fullfilled!!! That means, we can leave the loop and check another demand.
+                    matched = true;
+                    break;
                 }
-            }
-            // Check if every needed resource has been matched to an available resource
-            if (matchingResources < neededResourceUids.size())
-            {
-                std::cout << "SAT-CHECK FAILED: Resource classes needed: " << neededResourceUids.size() << " Resource classes found: " << matchingResources << "\n";
-                return -std::numeric_limits<float>::infinity();
+                // Check if we have found a match
+                if (!matched)
+                {
+                    // If not, we are done :/
+                    std::cout << "SAT-CHECK FAILED: No resources found for " << neededResourceUid << "\n";
+                    return -std::numeric_limits<float>::infinity();
+                }
             }
         }
     }
