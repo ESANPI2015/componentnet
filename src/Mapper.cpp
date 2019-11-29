@@ -20,8 +20,8 @@ Mapper::Mapper(const ResourceCost::Model& rcm,
     // Make sure that both relations exist
     subrelationFrom(ExecutedOnUid, Hyperedges{Software::Network::ImplementationId}, Hyperedges{::Hardware::Computational::Network::ProcessorId}, ResourceCost::Model::MappedToUid);
     subrelationFrom(ReachableViaUid, Hyperedges{Software::Network::InterfaceId}, Hyperedges{::Hardware::Computational::Network::InterfaceId}, ResourceCost::Model::MappedToUid);
-    access(ExecutedOnUid).updateLabel("EXECUTED-ON");
-    access(ReachableViaUid).updateLabel("REACHABLE-VIA");
+    access(ExecutedOnUid).label("EXECUTED-ON");
+    access(ReachableViaUid).label("REACHABLE-VIA");
 }
 
 Hyperedges Mapper::implementations (const ResourceCost::Model& rcm)

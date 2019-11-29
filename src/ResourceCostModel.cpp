@@ -17,11 +17,11 @@ void Model::setupMetaModel()
     concept(Model::ResourceUid, "Resource");
     relate(Model::NeedsUid, Hyperedges{Model::ConsumerUid}, Hyperedges{Model::ResourceUid}, "NEEDS");
     subrelationFrom(Model::ConsumesUid, Hyperedges{Model::ConsumerUid}, Hyperedges{Model::ResourceUid}, Model::NeedsUid);
-    access(Model::ConsumesUid).updateLabel("CONSUMES");
+    access(Model::ConsumesUid).label("CONSUMES");
     subrelationFrom(Model::ProvidesUid, Hyperedges{Model::ProviderUid}, Hyperedges{Model::ResourceUid}, CommonConceptGraph::HasAId);
-    access(Model::ProvidesUid).updateLabel("PROVIDES");
+    access(Model::ProvidesUid).label("PROVIDES");
     subrelationFrom(Model::MappedToUid, Hyperedges{Model::ConsumerUid}, Hyperedges{Model::ProviderUid}, CommonConceptGraph::PartOfId);
-    access(Model::MappedToUid).updateLabel("MAPPED-TO");
+    access(Model::MappedToUid).label("MAPPED-TO");
 }
 
 Model::Model()

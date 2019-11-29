@@ -27,13 +27,13 @@ void Network::createMainConcepts()
 
     // Relations
     subrelationFrom(Network::DependsOnId, Hyperedges{Network::InterfaceId}, Hyperedges{Network::InterfaceId}, Component::Network::ConnectedToInterfaceId);
-    access(Network::DependsOnId).updateLabel("DEPENDS-ON");
+    access(Network::DependsOnId).label("DEPENDS-ON");
 
     subrelationFrom(Network::NeedsId, Hyperedges{Network::AlgorithmId}, Hyperedges{Network::InterfaceId}, Component::Network::HasAInterfaceId);
-    access(Network::NeedsId).updateLabel("NEEDS");
+    access(Network::NeedsId).label("NEEDS");
 
     subrelationFrom(Network::ProvidesId, Hyperedges{Network::AlgorithmId}, Hyperedges{Network::InterfaceId}, Component::Network::HasAInterfaceId);
-    access(Network::ProvidesId).updateLabel("PROVIDES");
+    access(Network::ProvidesId).label("PROVIDES");
 
     relate(Network::ImplementsId, Hyperedges{Network::ImplementationId}, Hyperedges{Network::AlgorithmId}, "IMPLEMENTS");
     relate(Network::EncodesId, Hyperedges{Network::ImplementationInterfaceId}, Hyperedges{Network::InterfaceId}, "ENCODES");
