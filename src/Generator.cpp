@@ -291,15 +291,14 @@ Hyperedges Generator::generateImplementationClassFor(const UniqueId& algorithmCl
         const Hyperedges& subUids(cn.subinterfacesOf(Hyperedges{c}));
         if (subUids.empty())
         {
-            // If not, get values & use path to update code
-            const Hyperedges& valueUids(cn.valuesOf(Hyperedges{c}));
-            for (const UniqueId& valueUid : valueUids)
+            // c contains the atomic interface uid, p contains the complete path of subinterface(s) to c (and including c)
+            if (cn.access(c).hasProperty("value"))
             {
                 code << "\t\t" << prefix;
                 for (const UniqueId& pUid : p)
                     code << cn.access(pUid).label() << ".";
                 code << "init(";
-                code << cn.access(valueUid).label();
+                code << cn.access(c).property("value");
                 code << ");\n";
             }
         }
@@ -317,6 +316,7 @@ Hyperedges Generator::generateImplementationClassFor(const UniqueId& algorithmCl
     // We use the traverse function to generate the correct code
     for (const UniqueId& myAbstractInterfaceUid : myAbstractInterfaceUids)
     {
+        prefix = "";
         Conceptgraph::traverse(myAbstractInterfaceUid, cf, rf);
     }
     // Initialize atomic interfaces of parts (see above)

@@ -14,13 +14,12 @@ int main (void)
     Software::Network net;
     Software::Generator gen(net);
 
-    gen.createValue("SimpleValue", "0.f");
     gen.createAlgorithm("SimpleAlgorithm", "F");
     gen.createInterface("ARealNumber", "Real");
     gen.needsInterface(Hyperedges{"SimpleAlgorithm"}, gen.instantiateFrom("ARealNumber", "x"));
     gen.providesInterface(Hyperedges{"SimpleAlgorithm"}, gen.instantiateFrom("ARealNumber", "y"));
 
-    gen.instantiateValueFor(gen.interfacesOf(Hyperedges{"SimpleAlgorithm"}), Hyperedges{"SimpleValue"}, "2.f");
+    // TODO: Set 'value' properties of x and y
 
     Hyperedges generatedStuff;
     generatedStuff = unite(generatedStuff, gen.generateConcreteInterfaceClassFor("ARealNumber"));
@@ -36,7 +35,7 @@ int main (void)
     gen.needsInterface(Hyperedges{"SimpleNestedAlgorithm"}, gen.instantiateFrom("ARealNumber", "a"));
     gen.providesInterface(Hyperedges{"SimpleNestedAlgorithm"}, gen.instantiateFrom("ARealNumber", "b"));
 
-    gen.instantiateValueFor(gen.interfacesOf(Hyperedges{"SimpleNestedAlgorithm"}), Hyperedges{"SimpleValue"}, "1.f");
+    // TODO: Set 'value' properties of a and b
 
     Hyperedges innerPart(gen.instantiateComponent(Hyperedges{"SimpleAlgorithm"}, "f"));
     gen.partOfComponent(innerPart, Hyperedges{"SimpleNestedAlgorithm"});
@@ -54,7 +53,7 @@ int main (void)
     gen.needsInterface(Hyperedges{"NestedAlgorithm"}, gen.instantiateFrom("ARealNumber", "u"));
     gen.providesInterface(Hyperedges{"NestedAlgorithm"}, gen.instantiateFrom("ARealNumber", "v"));
 
-    gen.instantiateValueFor(gen.interfacesOf(Hyperedges{"NestedAlgorithm"}), Hyperedges{"SimpleValue"}, "0.f");
+    // TODO: Set 'value' properties of u and v
 
     Hyperedges innerPart2(gen.instantiateComponent(Hyperedges{"SimpleAlgorithm"}, "f"));
     Hyperedges innerPart3(gen.instantiateComponent(Hyperedges{"SimpleNestedAlgorithm"}, "g"));

@@ -4,9 +4,7 @@ namespace Component {
 
 const UniqueId Network::ComponentId            = "Component::Network::Component";
 const UniqueId Network::InterfaceId            = "Component::Network::Interface";
-const UniqueId Network::ValueId                = "Component::Network::Value";
 const UniqueId Network::HasAInterfaceId        = "Component::Network::HasAInterface";
-const UniqueId Network::HasAValueId            = "Component::Network::HasAValue";
 const UniqueId Network::ConnectedToInterfaceId = "Component::Network::ConnectedToInterface";
 const UniqueId Network::AliasOfId              = "Component::Network::AliasOf";
 const UniqueId Network::PartOfComponentId      = "Component::Network::PartOfComponent";
@@ -30,12 +28,10 @@ Network::~Network()
 
 void Network::createMainConcepts()
 {
-    concept(Network::ValueId, "VALUE");
     concept(Network::InterfaceId, "INTERFACE");
     concept(Network::ComponentId, "COMPONENT");
 
     subrelationFrom(Network::HasAInterfaceId, Hyperedges{Network::ComponentId}, Hyperedges{Network::InterfaceId}, CommonConceptGraph::HasAId);
-    subrelationFrom(Network::HasAValueId, Hyperedges{Network::InterfaceId}, Hyperedges{Network::ValueId}, CommonConceptGraph::HasAId);
     subrelationFrom(Network::ConnectedToInterfaceId, Hyperedges{Network::InterfaceId}, Hyperedges{Network::InterfaceId}, CommonConceptGraph::ConnectsId);
     subrelationFrom(Network::PartOfComponentId, Hyperedges{Network::ComponentId}, Hyperedges{Network::ComponentId}, CommonConceptGraph::PartOfId);
     subrelationFrom(Network::HasASubInterfaceId, Hyperedges{Network::InterfaceId}, Hyperedges{Network::InterfaceId}, CommonConceptGraph::HasAId);
@@ -56,13 +52,6 @@ Hyperedges Network::createInterface(const UniqueId& uid, const std::string& name
     return Hyperedges();
 }
 
-Hyperedges Network::createValue(const UniqueId& uid, const std::string& name, const Hyperedges& suids)
-{
-    if (!isA(concept(uid, name), intersect(unite(Hyperedges{Network::ValueId}, suids), valueClasses())).empty())
-        return Hyperedges{uid};
-    return Hyperedges();
-}
-
 Hyperedges Network::componentClasses(const std::string& name, const Hyperedges& suids) const
 {
     Hyperedges all(subclassesOf(Hyperedges{Network::ComponentId}, name));
@@ -72,12 +61,6 @@ Hyperedges Network::componentClasses(const std::string& name, const Hyperedges& 
 Hyperedges Network::interfaceClasses(const std::string& name, const Hyperedges& suids) const
 {
     Hyperedges all(subclassesOf(Hyperedges{Network::InterfaceId}, name));
-    return intersect(all, subclassesOf(suids, name));
-}
-
-Hyperedges Network::valueClasses(const std::string& name, const Hyperedges& suids) const
-{
-    Hyperedges all(subclassesOf(Hyperedges{Network::ValueId}, name));
     return intersect(all, subclassesOf(suids, name));
 }
 
@@ -149,46 +132,6 @@ Hyperedges Network::interfaces(const std::string& name, const std::string& class
     const Hyperedges& classIds(interfaceClasses(className));
     // ... and then the instances of them
     return instancesOf(classIds, name);
-}
-
-Hyperedges Network::values(const std::string& name, const std::string& className) const
-{
-    // Get all super classes
-    const Hyperedges& classIds(valueClasses(className));
-    // ... and then the instances of them
-    return instancesOf(classIds, name);
-}
-
-Hyperedges Network::hasValue(const Hyperedges& interfaceIds, const Hyperedges& valueIds)
-{
-    Hyperedges result;
-    const Hyperedges& fromIds(intersect(interfaceIds, interfaces()));
-    const Hyperedges& toIds(intersect(valueIds, values()));
-    for (const UniqueId& fromId : fromIds)
-    {
-        for (const UniqueId& toId : toIds)
-        {
-            result = unite(result, CommonConceptGraph::factFrom(Hyperedges{fromId}, Hyperedges{toId}, Network::HasAValueId));
-        }
-    }
-    return result;
-}
-
-Hyperedges Network::valuesOf(const Hyperedges& uids, const std::string& value, const TraversalDirection dir) const
-{
-    return CommonConceptGraph::relatedTo(uids, Hyperedges{Network::HasAValueId}, value, dir);
-}
-
-Hyperedges Network::instantiateValueFor(const Hyperedges& interfaceUids, const Hyperedges& valueClassUids, const std::string& value)
-{
-    Hyperedges result;
-    for (const UniqueId& interfaceUid : interfaceUids)
-    {
-        const Hyperedges& newValueUids(instantiateFrom(valueClassUids, value));
-        hasValue(Hyperedges{interfaceUid}, newValueUids);
-        result = unite(result, newValueUids);
-    }
-    return result;
 }
 
 Hyperedges Network::aliasOf(const Hyperedges& aliasInterfaceUids, const Hyperedges& originalInterfaceUids)
